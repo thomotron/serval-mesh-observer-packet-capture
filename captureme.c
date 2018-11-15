@@ -22,15 +22,15 @@ int main(int argc, char** argv) {
     char *dev = "mon0";
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *handle;
-    u_char *packet;
-    struct pcap_pkhdr packet_header;
+    u_char packet;
+    struct pcap_pkthdr header;
     int packcountlim = 1;
-    int timeout = 10 //in miliseconds
+    int timeout = 10; //in miliseconds
 
 
     //set up wireless device
-    device = pcap_lookupdev(errbuf);
-    if (device == NULL)
+    dev = pcap_lookupdev(errbuf);
+    if (dev == NULL)
     {
         printf("Error starting device: %s\n", errbuf);
     }
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
     {
         if (dev)
         {
-            packet = pcap_next(handle, &packet_header);
+            packet = *pcap_next(handle, &header);
         }
         /*if (s1)
         {
@@ -61,6 +61,8 @@ int main(int argc, char** argv) {
         {
 
         } */
+       
+        printf("Packet total length %d\n", header.len);
     } while (1);
 
     return (EXIT_SUCCESS);
