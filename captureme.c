@@ -14,11 +14,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pcap.h>
+#include <termios.h>
 
 /*
  * 
  */
 int main(int argc, char** argv) {
+
+    //setup wireless capture settings
     char *dev = "mon0";
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *handle;
@@ -26,6 +29,22 @@ int main(int argc, char** argv) {
     struct pcap_pkthdr header;
     int packcountlim = 1;
     int timeout = 10; //in miliseconds
+
+    //setup serial ports
+    char *port1 = "ttyUSB0";
+    char *port2 = "ttyUSB1";
+    char *port3 = "ttyUSB3";
+    char *port4 = "ttyUSB4";
+    int opensucess;
+    //try to open serial ports
+    opensuccess = open(port1, 0_RDWR | 0NOCTTY | O_SYNC);
+    if (opensucess < 0)
+    {
+        printf("Could not open port %s: %s\n", port1, stderror(errno));
+    }
+
+
+
 
 
     //set up wireless device
