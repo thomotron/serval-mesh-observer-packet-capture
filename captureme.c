@@ -38,18 +38,20 @@ int main(int argc, char** argv) {
     //setup serial ports
     char *port1 = "ttyUSB0";
     char *port2 = "ttyUSB1";
-    char *port3 = "ttyUSB3";
-    char *port4 = "ttyUSB4";
+    char *port3 = "ttyUSB2";
+    char *port4 = "ttyUSB3";
     int open1;
     int open2;
     int open3;
     int open4;
 
+    printf("before open\n");
     //try to open serial portstderr(errno
     open1 = open(port1, O_RDONLY | O_NOCTTY);
+    printf("after open %i\n", open1);
     if (open1 < 0)
     {
-        printf("Could not open port %c: %s\n", port1, strerror(errno));
+        printf("Could not open port %s: %s\n", port1, strerror(errno));
     }
     else
     {
@@ -113,6 +115,7 @@ int main(int argc, char** argv) {
     } while (1);*/
 
     //close opened serial ports
+    printf("before close %i\n", open1);
     close(open1);
     //close(open2);
     //close(open3);
