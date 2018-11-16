@@ -14,7 +14,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pcap.h>
+#include <unistd.h>
 #include <termios.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
 
 /*
  * 
@@ -35,20 +40,43 @@ int main(int argc, char** argv) {
     char *port2 = "ttyUSB1";
     char *port3 = "ttyUSB3";
     char *port4 = "ttyUSB4";
-    int opensucess;
-    //try to open serial ports
-    opensuccess = open(port1, 0_RDWR | 0NOCTTY | O_SYNC);
-    if (opensucess < 0)
+    int open1;
+    int open2;
+    int open3;
+    int open4;
+
+    //try to open serial portstderr(errno
+    open1 = open(port1, O_RDONLY | O_NOCTTY);
+    if (open1 < 0)
     {
-        printf("Could not open port %s: %s\n", port1, stderror(errno));
+        printf("Could not open port %c: %s\n", port1, strerror(errno));
     }
+    else
+    {
+        printf("Opened port %c fine", port1);
+    }
+    /*open2 = open(port2, 0_RDONLY | 0NOCTTY);
+    if (open2 < 0)
+    {
+        printf("Could not open port %s: %s\n", port2, stderror(errno));
+    }
+    open3 = open(port3, 0_RDONLY | 0NOCTTY);
+    if (open3 < 0)
+    {
+        printf("Could not open port %s: %s\n", port3, stderror(errno));
+    }
+    open4 = open(port4, 0_RDONLY | 0NOCTTY);
+    if (open4 < 0)
+    {
+        printf("Could not open port %s: %s\n", port4, stderror(errno));
+    }*/
 
 
 
 
 
     //set up wireless device
-    dev = pcap_lookupdev(errbuf);
+    /*dev = pcap_lookupdev(errbuf);
     if (dev == NULL)
     {
         printf("Error starting device: %s\n", errbuf);
@@ -58,7 +86,7 @@ int main(int argc, char** argv) {
     handle = pcap_open_live(dev, BUFSIZ, packcountlim, timeout, errbuf);
 
     //while loop that serialy searches for a packet to be captured by all devices (round robin)
-    do
+    /*do
     {
         if (dev)
         {
@@ -79,10 +107,16 @@ int main(int argc, char** argv) {
         if (s4)
         {
 
-        } */
+        } 
        
         printf("Packet total length %d\n", header.len);
-    } while (1);
+    } while (1);*/
+
+    //close opened serial ports
+    close(open1);
+    //close(open2);
+    //close(open3);
+    //close(open4);
 
     return (EXIT_SUCCESS);
 }
