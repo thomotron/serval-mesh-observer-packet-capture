@@ -138,22 +138,26 @@ int main(int argc, char** argv) {
 
     printf("before open\n");
     //open serial ports
-	int r1=open(port1, O_RDONLY | O_NOCTTY);
-	if (r1==-1) { fprintf(stderr,"Failed to open serial port '%s'\n",port1); retVal=-1; break; }
-    /*int r2=open(port2, 0_RDONLY | 0NOCTTY);
+	int r1 = open(port1, O_RDONLY | O_NOCTTY | O_NDELAY);
+	if (r1 == -1) { fprintf(stderr,"Failed to open serial port '%s'\n",port1); retVal=-1; break; }
+    printf("after open %i\n", r1);
+    int r2 = open(port2, O_RDONLY | O_NOCTTY | O_NDELAY);
 	if (r2==-1) { fprintf(stderr,"Failed to open serial port '%s'\n",port2); retVal=-1; break; }
-    int s1=open(port3, 0_RDONLY | 0NOCTTY);
+    printf("after open %i\n", r2);
+    int s1 = open(port3, O_RDONLY | O_NOCTTY | O_NDELAY);
 	if (s1==-1) { fprintf(stderr,"Failed to open serial port '%s'\n",port3); retVal=-1; break; }
-    int s2=open(port4, 0_RDONLY | 0NOCTTY);
-	if (s2==-1) { fprintf(stderr,"Failed to open serial port '%s'\n",port4); retVal=-1; break; }*/
+    printf("after open %i\n", s1);
+    int s2 = open(port4, O_RDONLY | O_NOCTTY | O_NDELAY);
+	if (s2==-1) { fprintf(stderr,"Failed to open serial port '%s'\n",port4); retVal=-1; break; }
+    printf("after open %i\n", s2);
     
 
     //set serial port speeds
     serial_setup_port_with_speed(r1,115200);
-    /*serial_setup_port_with_speed(r2,230400);
+    serial_setup_port_with_speed(r2,230400);
     serial_setup_port_with_speed(s1,115200);
-    serial_setup_port_with_speed(s2,230400);*/
-    printf("after open %i\n", r1);
+    serial_setup_port_with_speed(s2,230400);
+    printf("after serial setup\n");
 
     //set up wireless device
     /*dev = pcap_lookupdev(errbuf);
@@ -195,9 +199,9 @@ int main(int argc, char** argv) {
     //close opened serial ports
     printf("before close %i\n", r1);
     close(r1);
-    //close(open2);
-    //close(open3);
-    //close(open4);
+    //close(r2);
+    //close(s1);
+    //close(s2);
 
 	} while (0);
 
