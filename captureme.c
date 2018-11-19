@@ -24,7 +24,102 @@
 /*
  * 
  */
+
+//copied from the serial.c file in lbard
+
+int set_nonblock(int fd)
+{
+  int retVal=0;
+
+  do {
+    if (fd==-1) break;
+      
+    int flags;
+    if ((flags = fcntl(fd, F_GETFL, NULL)) == -1)
+      {
+	perror("fcntl");
+	printf("set_nonblock: fcntl(%d,F_GETFL,NULL)",fd);
+	retVal=-1;
+	break;
+      }
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+    {
+      perror("fcntl");
+      printf("set_nonblock: fcntl(%d,F_SETFL,n|O_NONBLOCK)",fd);
+      return -1;
+    }
+  } while (0);
+  return retVal;
+}
+
+int serial_setup_port_with_speed(int fd,int speed)
+{
+  struct termios t;
+
+  tcgetattr(fd, &t);
+  fprintf(stderr,"Serial port settings before tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
+	  (unsigned int)t.c_cflag,(unsigned int)t.c_iflag,
+	  (unsigned int)t.c_oflag,(unsigned int)t.c_lflag);
+	  
+  speed_t baud_rate;
+  switch(speed){
+  case 115200: baud_rate = B115200; break;
+  case 230400: baud_rate = B230400; break;
+  }
+
+  // XXX Speed and options should be configurable
+  if (cfsetospeed(&t, baud_rate)) return -1;    
+  if (cfsetispeed(&t, baud_rate)) return -1;
+
+  // 8N1
+  t.c_cflag &= ~PARENB;
+  t.c_cflag &= ~CSTOPB;
+  t.c_cflag &= ~CSIZE;
+  t.c_cflag |= CS8;
+  t.c_cflag |= CLOCAL;
+
+  t.c_lflag &= ~(ICANON | ISIG | IEXTEN | ECHO | ECHOE);
+  /* Noncanonical mode, disable signals, extended
+   input processing, and software flow control and echoing */
+  
+  t.c_iflag &= ~(BRKINT | ICRNL | IGNBRK | IGNCR | INLCR |
+		 INPCK | ISTRIP | IXON | IXOFF | IXANY | PARMRK);
+  /* Disable special handling of CR, NL, and BREAK.
+   No 8th-bit stripping or parity error handling.
+   Disable START/STOP output flow control. */
+  
+  // Disable CTS/RTS flow control
+#ifndef CNEW_RTSCTS
+  t.c_cflag &= ~CRTSCTS;
+#else
+  t.c_cflag &= ~CNEW_RTSCTS;
+#endif
+
+  // no output processing
+  t.c_oflag &= ~OPOST;
+
+  fprintf(stderr,"Serial port settings attempting ot be set: c=%08x, i=%08x, o=%08x, l=%08x\n",
+	  (unsigned int)t.c_cflag,(unsigned int)t.c_iflag,
+	  (unsigned int)t.c_oflag,(unsigned int)t.c_lflag);
+  
+  tcsetattr(fd, TCSANOW, &t);
+
+  tcgetattr(fd, &t);
+  fprintf(stderr,"Serial port settings after tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
+	  (unsigned int)t.c_cflag,(unsigned int)t.c_iflag,
+	  (unsigned int)t.c_oflag,(unsigned int)t.c_lflag);
+
+  
+  set_nonblock(fd);
+  
+  return 0;
+}
+
 int main(int argc, char** argv) {
+
+	int retVal=0;
+
+	do {
 
     //setup wireless capture settings
     char *dev = "mon0";
@@ -36,46 +131,29 @@ int main(int argc, char** argv) {
     int timeout = 10; //in miliseconds
 
     //setup serial ports
-    char *port1 = "ttyUSB0";
-    char *port2 = "ttyUSB1";
-    char *port3 = "ttyUSB2";
-    char *port4 = "ttyUSB3";
-    int open1;
-    int open2;
-    int open3;
-    int open4;
+    char *port1 = "/dev/ttyUSB0";
+    char *port2 = "/dev/ttyUSB1";
+    char *port3 = "/dev/ttyUSB2";
+    char *port4 = "/dev/ttyUSB3";
 
     printf("before open\n");
-    //try to open serial portstderr(errno
-    open1 = open(port1, O_RDONLY | O_NOCTTY);
-    printf("after open %i\n", open1);
-    if (open1 < 0)
-    {
-        printf("Could not open port %s: %s\n", port1, strerror(errno));
-    }
-    else
-    {
-        printf("Opened port %c fine", port1);
-    }
-    /*open2 = open(port2, 0_RDONLY | 0NOCTTY);
-    if (open2 < 0)
-    {
-        printf("Could not open port %s: %s\n", port2, stderror(errno));
-    }
-    open3 = open(port3, 0_RDONLY | 0NOCTTY);
-    if (open3 < 0)
-    {
-        printf("Could not open port %s: %s\n", port3, stderror(errno));
-    }
-    open4 = open(port4, 0_RDONLY | 0NOCTTY);
-    if (open4 < 0)
-    {
-        printf("Could not open port %s: %s\n", port4, stderror(errno));
-    }*/
+    //open serial ports
+	int r1=open(port1, O_RDONLY | O_NOCTTY);
+	if (r1==-1) { fprintf(stderr,"Failed to open serial port '%s'\n",port1); retVal=-1; break; }
+    /*int r2=open(port2, 0_RDONLY | 0NOCTTY);
+	if (r2==-1) { fprintf(stderr,"Failed to open serial port '%s'\n",port2); retVal=-1; break; }
+    int s1=open(port3, 0_RDONLY | 0NOCTTY);
+	if (s1==-1) { fprintf(stderr,"Failed to open serial port '%s'\n",port3); retVal=-1; break; }
+    int s2=open(port4, 0_RDONLY | 0NOCTTY);
+	if (s2==-1) { fprintf(stderr,"Failed to open serial port '%s'\n",port4); retVal=-1; break; }*/
+    
 
-
-
-
+    //set serial port speeds
+    serial_setup_port_with_speed(r1,115200);
+    /*serial_setup_port_with_speed(r2,230400);
+    serial_setup_port_with_speed(s1,115200);
+    serial_setup_port_with_speed(s2,230400);*/
+    printf("after open %i\n", r1);
 
     //set up wireless device
     /*dev = pcap_lookupdev(errbuf);
@@ -115,12 +193,14 @@ int main(int argc, char** argv) {
     } while (1);*/
 
     //close opened serial ports
-    printf("before close %i\n", open1);
-    close(open1);
+    printf("before close %i\n", r1);
+    close(r1);
     //close(open2);
     //close(open3);
     //close(open4);
 
-    return (EXIT_SUCCESS);
+	} while (0);
+
+    return (retVal);
 }
 
