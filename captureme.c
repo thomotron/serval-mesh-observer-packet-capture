@@ -54,43 +54,6 @@ int set_nonblock(int fd)
     return retVal;
 }
 
-ssize_t read_nonblock(int fd, void *buf, size_t len)
-{
-    ssize_t nread = read(fd, buf, len);
-    if (nread == -1)
-    {
-        switch (errno)
-        {
-        case EINTR:
-        case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-        case EWOULDBLOCK:
-#endif
-            return 0;
-        }
-        return -1;
-    }
-    return nread;
-}
-
-int set_block(int fd)
-{
-    if (fd == -1)
-        return 0;
-    int flags;
-    if ((flags = fcntl(fd, F_GETFL, NULL)) == -1)
-    {
-        perror("set_block: fcntl(n,F_GETFL,NULL)");
-        return -1;
-    }
-    if (fcntl(fd, F_SETFL, flags & ~O_NONBLOCK) == -1)
-    {
-        perror("set_block: fcntl(n,F_SETFL,n~O_NONBLOCK)");
-        return -1;
-    }
-    return 0;
-}
-
 int serial_setup_port_with_speed(int fd, int speed)
 {
     struct termios t;
@@ -224,6 +187,12 @@ int main(int argc, char **argv)
         serial_setup_port_with_speed(s1, 115200);
         serial_setup_port_with_speed(s2, 230400);
         printf("after serial setup\n");
+
+        //set non blocking for the serial ports
+        set_nonblock(r1);
+        set_nonblock(r2);
+        set_nonblock(s1);
+        set_nonblock(s2);
 
         //set up wireless device
         /*dev = pcap_lookupdev(errbuf);
