@@ -209,21 +209,18 @@ int main(int argc, char **argv)
         char readBuffer[256];
         do
         {
-            //set nonblock
-            //read nonblock
-            //set block?
+            int bytes_read;
+	    bytes_read=read(r1, readBuffer, 256);
+            if (bytes_read>0) printf("Read %d from (r1): %c\n", bytes_read,*readBuffer);
 
-            read(r1, readBuffer, 256);
-            printf("Read(r1): %c\n", *readBuffer);
+	    bytes_read=read(s1, readBuffer, 256);
+            if (bytes_read>0) printf("Read %d from (s1): %c\n", bytes_read,*readBuffer);
 
-            read(r2, readBuffer, 256);
-            printf("Read(r2): %c\n", *readBuffer);
+	    bytes_read=read(r2, readBuffer, 256);
+            if (bytes_read>0) printf("Read %d from (r2): %c\n", bytes_read,*readBuffer);
 
-            read(s1, readBuffer, 256);
-            printf("Read(s1): %c\n", *readBuffer);
-
-            read(s2, readBuffer, 256);
-            printf("Read(s2): %c\n", *readBuffer);
+	    bytes_read=read(s2, readBuffer, 256);
+            if (bytes_read>0) printf("Read %d from (s2): %c\n", bytes_read,*readBuffer);
 
             /*if (dev)
         {
