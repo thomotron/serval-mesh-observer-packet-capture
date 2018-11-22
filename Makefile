@@ -1,4 +1,4 @@
-all:	capture
+all:	cap
 
-capture:	captureme.c Makefile
-	gcc -o capture captureme.c -lpcap
+cap:	captureme.c Makefile
+	gcc -o cap captureme.c -lpcap
