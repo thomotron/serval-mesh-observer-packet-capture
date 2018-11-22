@@ -132,15 +132,17 @@ int main(int argc, char **argv)
     {
 
         //setup wireless capture settings
-        char *dev = "mon0";
+        char *devWifi = "mon0";
+        char *devEth = "eth0";
         char errbuf[PCAP_ERRBUF_SIZE];
-        pcap_t *handle;
+        pcap_t *handleWireless;
+        pcap_t *handleEth;
         u_char packet;
         struct pcap_pkthdr header;
         int packcountlim = 1;
         int timeout = 10; //in miliseconds
 
-        //setup serial ports
+        //specify serial ports
         char *port1 = "/dev/ttyUSB0";
         char *port2 = "/dev/ttyUSB1";
         char *port3 = "/dev/ttyUSB2";
@@ -189,61 +191,55 @@ int main(int argc, char **argv)
         printf("after serial setup\n");
 
         //set non blocking for the serial ports
+        printf("Set nonblock\n");
         set_nonblock(r1);
         set_nonblock(r2);
         set_nonblock(s1);
         set_nonblock(s2);
 
-        //set up wireless device
-        /*dev = pcap_lookupdev(errbuf);
-    if (dev == NULL)
-    {
-        printf("Error starting device: %s\n", errbuf);
-    }
-
-    //open handle for wireless device
-    handle = pcap_open_live(dev, BUFSIZ, packcountlim, timeout, errbuf);*/
+        //open handle for wireless device
+        handleWireless = pcap_open_live(devWifi, BUFSIZ, packcountlim, timeout, errbuf);
+        //open handle for ethernet to send packets back to server
+        handleEth = pcap_open_live(devEth, BUFSIZ, 0,0, errbuf);
 
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
-        //test read
         char readBuffer[256];
+        int bytes_read;
+        printf("Begin loop\n");
         do
         {
-            int bytes_read;
-	    bytes_read=read(r1, readBuffer, 256);
-            if (bytes_read>0) printf("Read %d from (r1): %c\n", bytes_read,*readBuffer);
+            bytes_read = read(r1, readBuffer, 256);
+            if (bytes_read > 0)
+            {
+                printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
+            }
 
-	    bytes_read=read(s1, readBuffer, 256);
-            if (bytes_read>0) printf("Read %d from (s1): %c\n", bytes_read,*readBuffer);
+            bytes_read = read(s1, readBuffer, 256);
+            if (bytes_read > 0)
+            {
+                printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
+            }
 
-	    bytes_read=read(r2, readBuffer, 256);
-            if (bytes_read>0) printf("Read %d from (r2): %c\n", bytes_read,*readBuffer);
+            bytes_read = read(r2, readBuffer, 256);
+            if (bytes_read > 0)
+            {
+                printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
+            }
 
-	    bytes_read=read(s2, readBuffer, 256);
-            if (bytes_read>0) printf("Read %d from (s2): %c\n", bytes_read,*readBuffer);
+            bytes_read = read(s2, readBuffer, 256);
+            if (bytes_read > 0)
+            {
+                printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
+            }
 
-            /*if (dev)
-        {
-            packet = *pcap_next(handle, &header);
-        }
-        /*if (s1)
-        {
+            packet = *pcap_next(handleWireless, &header);
+            if (header.len > 0)
+            {
+                printf("Read %d from (mon0): %s\n", header.len, packet);
+                //send packet down to server
+                //pcap_inject(handleEth, *packet, header.len);
+            }
 
-        }
-        if (s2)
-        {
-
-        }
-        if (s3)
-        {
-
-        }
-        if (s4)
-        {
-
-        } 
-       
-        printf("Packet total length %d\n", header.len);*/
         } while (1);
 
         //close opened serial ports
