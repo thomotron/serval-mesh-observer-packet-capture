@@ -222,28 +222,7 @@ int main(int argc, char **argv)
 	    bytes_read=read(s2, readBuffer, 256);
             if (bytes_read>0) printf("Read %d from (s2): %c\n", bytes_read,*readBuffer);
 
-            /*if (dev)
-        {
-            packet = *pcap_next(handle, &header);
-        }
-        /*if (s1)
-        {
-
-        }
-        if (s2)
-        {
-
-        }
-        if (s3)
-        {
-
-        }
-        if (s4)
-        {
-
-        } 
-       
-        printf("Packet total length %d\n", header.len);*/
+       // printf("Packet total length %d\n", header.len);*/
         } while (1);
 
         //close opened serial ports
