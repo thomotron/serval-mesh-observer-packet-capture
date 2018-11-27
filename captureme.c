@@ -211,16 +211,16 @@ int main(int argc, char **argv)
         {
             int bytes_read;
 	    bytes_read=read(r1, readBuffer, 256);
-            if (bytes_read>0) printf("Read %d from (r1): %c\n", bytes_read,*readBuffer);
+            if (bytes_read>0) printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
 
 	    bytes_read=read(s1, readBuffer, 256);
-            if (bytes_read>0) printf("Read %d from (s1): %c\n", bytes_read,*readBuffer);
+            if (bytes_read>0) printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
 
 	    bytes_read=read(r2, readBuffer, 256);
-            if (bytes_read>0) printf("Read %d from (r2): %c\n", bytes_read,*readBuffer);
+            if (bytes_read>0) printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
 
 	    bytes_read=read(s2, readBuffer, 256);
-            if (bytes_read>0) printf("Read %d from (s2): %c\n", bytes_read,*readBuffer);
+            if (bytes_read>0) printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
 
        // printf("Packet total length %d\n", header.len);*/
         } while (1);
