@@ -207,7 +207,7 @@ int main(int argc, char **argv)
     handle = pcap_open_live(dev, BUFSIZ, packcountlim, timeout, errbuf);*/
 
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
-        unsigned char readBuffer[100];
+        char readBuffer[100];
         do
         {
             int bytes_read;
@@ -215,28 +215,28 @@ int main(int argc, char **argv)
             if (bytes_read>0) 
             {
 		readBuffer[bytes_read]=0;
-                printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
+                printf("Read %d from (r1): %X\n", bytes_read, *readBuffer);
             }
 
 	    bytes_read=read(s1, &readBuffer, 254);
             if (bytes_read>0) 
             {
 		readBuffer[bytes_read]=0;
-                printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
+                printf("Read %d from (s1): %X\n", bytes_read, *readBuffer);
             }
 
 	    bytes_read=read(r2, &readBuffer, 254);
             if (bytes_read>0) 
             {
 		readBuffer[bytes_read]=0;
-                printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
+                printf("Read %d from (r2): %X\n", bytes_read, *readBuffer);
             }
 
 	    bytes_read=read(s2, &readBuffer, 254);
             if (bytes_read>0) 
             {
 		readBuffer[bytes_read]=0;
-                printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
+                printf("Read %d from (s2): %X\n", bytes_read, *readBuffer);
             }
 
        // printf("Packet total length %d\n", header.len);
