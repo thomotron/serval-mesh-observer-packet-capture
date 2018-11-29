@@ -152,47 +152,49 @@ int main(int argc, char **argv)
         if (r1 == -1)
         {
             fprintf(stderr, "Failed to open serial port '%s'\n", port1);
-            retVal = -1;
-            break;
+//            retVal = -1;
+//            break;
         }
         printf("after open %i\n", r1);
         int r2 = open(port2, O_RDONLY | O_NOCTTY | O_NDELAY);
         if (r2 == -1)
         {
             fprintf(stderr, "Failed to open serial port '%s'\n", port2);
-            retVal = -1;
-            break;
+//            retVal = -1;
+//            break;
         }
         printf("after open %i\n", r2);
         int s1 = open(port3, O_RDONLY | O_NOCTTY | O_NDELAY);
         if (s1 == -1)
         {
             fprintf(stderr, "Failed to open serial port '%s'\n", port3);
-            retVal = -1;
-            break;
+//            retVal = -1;
+//            break;
         }
         printf("after open %i\n", s1);
         int s2 = open(port4, O_RDONLY | O_NOCTTY | O_NDELAY);
         if (s2 == -1)
         {
             fprintf(stderr, "Failed to open serial port '%s'\n", port4);
-            retVal = -1;
-            break;
+//            retVal = -1;
+//            break;
         }
         printf("after open %i\n", s2);
 
-        //set serial port speeds
-        serial_setup_port_with_speed(r1, 115200);
-        serial_setup_port_with_speed(r2, 230400);
-        serial_setup_port_with_speed(s1, 115200);
-        serial_setup_port_with_speed(s2, 230400);
-        printf("after serial setup\n");
+        
 
         //set non blocking for the serial ports
         set_nonblock(r1);
         set_nonblock(r2);
         set_nonblock(s1);
-        set_nonblock(s2);
+        set_nonblock(s2);    
+
+	//set serial port speeds
+        serial_setup_port_with_speed(r1, 115200);
+        serial_setup_port_with_speed(r2, 230400);
+        serial_setup_port_with_speed(s1, 115200);
+        serial_setup_port_with_speed(s2, 230400);
+        printf("after serial setup\n");
 
         //set up wireless device
         /*dev = pcap_lookupdev(errbuf);
@@ -205,24 +207,39 @@ int main(int argc, char **argv)
     handle = pcap_open_live(dev, BUFSIZ, packcountlim, timeout, errbuf);*/
 
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
-        //test read
-        char readBuffer[256];
+        unsigned char readBuffer[100];
         do
         {
             int bytes_read;
-	    bytes_read=read(r1, readBuffer, 256);
-            if (bytes_read>0) printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
+	    bytes_read=read(r1, &readBuffer, 254);
+            if (bytes_read>0) 
+            {
+		readBuffer[bytes_read]=0;
+                printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
+            }
 
-	    bytes_read=read(s1, readBuffer, 256);
-            if (bytes_read>0) printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
+	    bytes_read=read(s1, &readBuffer, 254);
+            if (bytes_read>0) 
+            {
+		readBuffer[bytes_read]=0;
+                printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
+            }
 
-	    bytes_read=read(r2, readBuffer, 256);
-            if (bytes_read>0) printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
+	    bytes_read=read(r2, &readBuffer, 254);
+            if (bytes_read>0) 
+            {
+		readBuffer[bytes_read]=0;
+                printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
+            }
 
-	    bytes_read=read(s2, readBuffer, 256);
-            if (bytes_read>0) printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
+	    bytes_read=read(s2, &readBuffer, 254);
+            if (bytes_read>0) 
+            {
+		readBuffer[bytes_read]=0;
+                printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
+            }
 
-       // printf("Packet total length %d\n", header.len);*/
+       // printf("Packet total length %d\n", header.len);
         } while (1);
 
         //close opened serial ports
