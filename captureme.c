@@ -139,6 +139,7 @@ int main(int argc, char **argv)
         struct pcap_pkthdr header;
         int packcountlim = 1;
         int timeout = 10; //in miliseconds
+	FILE *out_file = fopen("testFile", "w"); // write only 
 
         //setup serial ports
         char *port1 = "/dev/ttyUSB0";
@@ -152,32 +153,32 @@ int main(int argc, char **argv)
         if (r1 == -1)
         {
             fprintf(stderr, "Failed to open serial port '%s'\n", port1);
-//            retVal = -1;
-//            break;
+            retVal = -1;
+            break;
         }
         printf("after open %i\n", r1);
         int r2 = open(port2, O_RDONLY | O_NOCTTY | O_NDELAY);
         if (r2 == -1)
         {
             fprintf(stderr, "Failed to open serial port '%s'\n", port2);
-//            retVal = -1;
-//            break;
+            retVal = -1;
+            break;
         }
         printf("after open %i\n", r2);
         int s1 = open(port3, O_RDONLY | O_NOCTTY | O_NDELAY);
         if (s1 == -1)
         {
             fprintf(stderr, "Failed to open serial port '%s'\n", port3);
-//            retVal = -1;
-//            break;
+            retVal = -1;
+            break;
         }
         printf("after open %i\n", s1);
         int s2 = open(port4, O_RDONLY | O_NOCTTY | O_NDELAY);
         if (s2 == -1)
         {
             fprintf(stderr, "Failed to open serial port '%s'\n", port4);
-//            retVal = -1;
-//            break;
+            retVal = -1;
+            break;
         }
         printf("after open %i\n", s2);
 
@@ -216,6 +217,7 @@ int main(int argc, char **argv)
             {
 		readBuffer[bytes_read]=0;
                 printf("Read %d from (r1): %X\n", bytes_read, *readBuffer);
+		fprintf(file, "%X\n" , *readBuffer);
             }
 
 	    bytes_read=read(s1, &readBuffer, 254);
@@ -223,6 +225,7 @@ int main(int argc, char **argv)
             {
 		readBuffer[bytes_read]=0;
                 printf("Read %d from (s1): %X\n", bytes_read, *readBuffer);
+		fprintf(file, "%X\n" , *readBuffer);
             }
 
 	    bytes_read=read(r2, &readBuffer, 254);
@@ -230,6 +233,7 @@ int main(int argc, char **argv)
             {
 		readBuffer[bytes_read]=0;
                 printf("Read %d from (r2): %X\n", bytes_read, *readBuffer);
+		fprintf(file, "%X\n" , *readBuffer);
             }
 
 	    bytes_read=read(s2, &readBuffer, 254);
@@ -237,6 +241,7 @@ int main(int argc, char **argv)
             {
 		readBuffer[bytes_read]=0;
                 printf("Read %d from (s2): %X\n", bytes_read, *readBuffer);
+		fprintf(file, "%X\n" , *readBuffer);
             }
 
        // printf("Packet total length %d\n", header.len);
