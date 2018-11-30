@@ -141,7 +141,7 @@ int main(int argc, char **argv)
 	FILE *outFile = fopen("testFile", "ab"); // write only 
 
 	//set nonblobking for getchar
-	struct termios initial_settings, new_settings;
+	/*struct termios initial_settings, new_settings;
 	tcgetattr(0,&initial_settings); 
   	new_settings = initial_settings;
   	new_settings.c_lflag &= ~ICANON;
@@ -149,7 +149,7 @@ int main(int argc, char **argv)
   	new_settings.c_lflag &= ~ISIG;
   	new_settings.c_cc[VMIN] = 0;	
 	new_settings.c_cc[VTIME] = 0;
- 	tcsetattr(0, TCSANOW, &new_settings);
+ 	tcsetattr(0, TCSANOW, &new_settings);*/
 
         //setup serial ports
         char *port1 = "/dev/ttyUSB0";
@@ -190,9 +190,7 @@ int main(int argc, char **argv)
             retVal = -1;
             break;
         }
-        printf("after open %i\n", s2);
-
-        
+        printf("after open %i\n", s2);        
 
         //set non blocking for the serial ports
         set_nonblock(r1);
@@ -272,7 +270,7 @@ int main(int argc, char **argv)
 	//close opened file
 	fclose(outFile);
 	//reset terminal settings
-	tcsetattr(0, TCSANOW, &initial_settings);
+	//tcsetattr(0, TCSANOW, &initial_settings);
         
 
     } while (0);
