@@ -125,7 +125,6 @@ int serial_setup_port_with_speed(int fd, int speed)
 
 int main(int argc, char **argv)
 {
-
     int retVal = 0;
 
     do
@@ -139,7 +138,18 @@ int main(int argc, char **argv)
         struct pcap_pkthdr header;
         int packcountlim = 1;
         int timeout = 10; //in miliseconds
-	FILE *out_file = fopen("testFile", "w"); // write only 
+	FILE *outFile = fopen("testFile", "ab"); // write only 
+
+	//set nonblobking for getchar
+	struct termios initial_settings, new_settings;
+	tcgetattr(0,&initial_settings); 
+  	new_settings = initial_settings;
+  	new_settings.c_lflag &= ~ICANON;
+  	new_settings.c_lflag &= ~ECHO;
+  	new_settings.c_lflag &= ~ISIG;
+  	new_settings.c_cc[VMIN] = 0;	
+	new_settings.c_cc[VTIME] = 0;
+ 	tcsetattr(0, TCSANOW, &new_settings);
 
         //setup serial ports
         char *port1 = "/dev/ttyUSB0";
@@ -209,15 +219,16 @@ int main(int argc, char **argv)
 
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
         char readBuffer[100];
+	char quitInputRead;
+	int bytes_read;
         do
         {
-            int bytes_read;
 	    bytes_read=read(r1, &readBuffer, 254);
             if (bytes_read>0) 
             {
 		readBuffer[bytes_read]=0;
                 printf("Read %d from (r1): %X\n", bytes_read, *readBuffer);
-		fprintf(file, "%X\n" , *readBuffer);
+		fprintf(outFile, "%X\n" , *readBuffer);
             }
 
 	    bytes_read=read(s1, &readBuffer, 254);
@@ -225,7 +236,7 @@ int main(int argc, char **argv)
             {
 		readBuffer[bytes_read]=0;
                 printf("Read %d from (s1): %X\n", bytes_read, *readBuffer);
-		fprintf(file, "%X\n" , *readBuffer);
+		fprintf(outFile, "%X\n" , *readBuffer);
             }
 
 	    bytes_read=read(r2, &readBuffer, 254);
@@ -233,7 +244,7 @@ int main(int argc, char **argv)
             {
 		readBuffer[bytes_read]=0;
                 printf("Read %d from (r2): %X\n", bytes_read, *readBuffer);
-		fprintf(file, "%X\n" , *readBuffer);
+		fprintf(outFile, "%X\n" , *readBuffer);
             }
 
 	    bytes_read=read(s2, &readBuffer, 254);
@@ -241,10 +252,15 @@ int main(int argc, char **argv)
             {
 		readBuffer[bytes_read]=0;
                 printf("Read %d from (s2): %X\n", bytes_read, *readBuffer);
-		fprintf(file, "%X\n" , *readBuffer);
+		fprintf(outFile, "%X\n" , *readBuffer);
             }
 
        // printf("Packet total length %d\n", header.len);
+	quitInputRead = getchar();
+	if (quitInputRead == 'q')
+	{
+		break;
+	}
         } while (1);
 
         //close opened serial ports
@@ -252,7 +268,12 @@ int main(int argc, char **argv)
         close(r2);
         close(s1);
         close(s2);
-        printf("Serial ports closed: %s %s %s %s\n", port1, port2, port3, port4);
+	printf("Serial ports closed: %s %s %s %s\n", port1, port2, port3, port4);
+	//close opened file
+	fclose(outFile);
+	//reset terminal settings
+	tcsetattr(0, TCSANOW, &initial_settings);
+        
 
     } while (0);
 
