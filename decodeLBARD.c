@@ -27,54 +27,78 @@
  */
 
 //Decodes hex values found in lbard's encoding system
+void printBits(size_t const size, void const * const ptr)
+{
+    unsigned char *b = (unsigned char*) ptr;
+    unsigned char byte;
+    int i, j;
+
+    for (i=size-1;i>=0;i--)
+    {
+        for (j=7;j>=0;j--)
+        {
+            byte = (b[i] >> j) & 1;
+            printf("%u", byte);
+        }
+    }
+    puts("");
+}
 
 int hextochar(int h)
 {
-  int retVal = '?';  
+  int retVal = '?';
 
-  do 
+  do
   {
-    if ((h >= 0) && (h < 10)) 
+    if ((h >= 0) && (h < 10))
     {
       retVal = h + '0';
       break;
     }
 
-    if ((h >= 10) && (h < 16)) 
+    if ((h >= 10) && (h < 16))
     {
-      retVal = h+'A'-10;
+      retVal = h + 'A' - 10;
       break;
     }
-  }
-  while (0);
+  } while (0);
 
   return retVal;
 }
 
-
 //decode hex function pulled from lbard's util.c file
-char hex_decode(unsigned char *in, unsigned char *out)
+int hex_decode(char *in, unsigned char *out, int out_len)
 {
-  int i;
-  int out_count = 0;
+  int retVal = -1;
 
-  int inLen = strlen(in);
-  printf ("in = %s", in);
-
-  for (i = 0; i < inLen; i += 2)
+  do
   {
-    int v = hextochar(in[i + 0]) << 4;
-    v |= hextochar(in[i + 1]);
+    int i;
+    int out_count = 0;
 
-    out[out_count++] = v;
-    if (out_count >= 254)
+    int inLen = strlen(in);
+    printf("in = %s", in);
+    printBits(sizeof(in), &in);
+
+    for (i = 0; i < inLen; i += 2)
     {
-      printf("trying to write more than out_len chars");
-      break;
-    }    
-  }
-  out[out_count] = 0;
-  return *out;
+      int v = hextochar(in[i + 0]) << 4;
+      v |= hextochar(in[i + 1]);
+      out[out_count++] = v;
+      if (out_count >= out_len)
+      {
+        printf("trying to write more than out_len chars");
+        break; //for
+      }
+    }
+    out[out_count] = 0;
+    printf("out = %X\n", *out);
+    printBits(sizeof(out), &out);    
+    retVal = out_count;
+  } while (0);
+
+
+  return retVal;
 }
 
 //dump bytes function pulled from the lbard util.c file
@@ -128,8 +152,8 @@ int main(int argc, char **argv)
     //read file line by line
     while (fgets(readBuffer, sizeof(readBuffer), inFile))
     {
-      writeBuffer = hex_decode(readBuffer, &writeBuffer);
-      printf ("writeBuffer = %c\n", writeBuffer);
+      writeBuffer = hex_decode(readBuffer, &writeBuffer, 254);
+      printf("writeBuffer = %c\n\n", writeBuffer);
       //fprintf(outFile, "%s\n", writeBuffer);
     }
 
