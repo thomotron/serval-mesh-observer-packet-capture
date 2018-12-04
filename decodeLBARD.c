@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <string.h>
 
 /*
  * 
@@ -27,72 +28,112 @@
 
 //Decodes hex values found in lbard's encoding system
 
-//decode hex function pulled from lbard's util.c file
-int hex_decode(char *in, unsigned char *out, int out_len, int radio_type)
+int hextochar(int h)
 {
-  int retVal = -1;
-
-  LOG_ENTRY;
+  int retVal = '?';  
 
   do 
   {
-#if COMPILE_TEST_LEVEL >= TEST_LEVEL_LIGHT
-    if (! in) 
+    if ((h >= 0) && (h < 10)) 
     {
-      LOG_ERROR("in is null");
+      retVal = h + '0';
       break;
     }
-    if (! out) 
+
+    if ((h >= 10) && (h < 16)) 
     {
-      LOG_ERROR("out is null");
+      retVal = h+'A'-10;
       break;
     }
-    if (out_len > SENSIBLE_MEMORY_BLOCK_SIZE)
-    {
-      LOG_WARN("out_len seems a bit large: %d", out_len);
-    }
-    if (radio_type < RADIOTYPE_MIN || radio_type > RADIOTYPE_MAX)
-    {
-      LOG_WARN("radio_type out of range %d", radio_type);
-    }
-#endif
-
-    int i;
-    int out_count=0;
-
-    int inLen = strlen(in);
-
-    for (i = 0; i < inLen; i+=2) {
-      int v = hextochar(in[i+0]) << 4;
-      v |= hextochar(in[i+1]);
-      out[out_count++] = v;
-      if (out_count >= out_len) 
-      {
-       LOG_ERROR("trying to write more than out_len chars");
-       break;//for
-      }
-    }
-    out[out_count] = 0;
-    retVal = out_count;
   }
   while (0);
-
-  LOG_EXIT;
 
   return retVal;
 }
 
 
+//decode hex function pulled from lbard's util.c file
+char hex_decode(unsigned char *in, unsigned char *out)
+{
+  int i;
+  int out_count = 0;
+
+  int inLen = strlen(in);
+  printf ("in = %s", in);
+
+  for (i = 0; i < inLen; i += 2)
+  {
+    int v = hextochar(in[i + 0]) << 4;
+    v |= hextochar(in[i + 1]);
+
+    out[out_count++] = v;
+    if (out_count >= 254)
+    {
+      printf("trying to write more than out_len chars");
+      break;
+    }    
+  }
+  out[out_count] = 0;
+  return *out;
+}
+
+//dump bytes function pulled from the lbard util.c file
+int dump_bytes(FILE *f, char *msg, unsigned char *bytes, int length)
+{
+  int retVal = -1;
+
+  do
+  {
+    fprintf(f, "%s:\n", msg);
+    for (int i = 0; i < length; i += 16)
+    {
+      fprintf(f, "%04X: ", i);
+      for (int j = 0; j < 16; j++)
+        if (i + j < length)
+          fprintf(f, " %02X", bytes[i + j]);
+      fprintf(f, "  ");
+      for (int j = 0; j < 16; j++)
+      {
+        int c;
+        if (i + j < length)
+          c = bytes[i + j];
+        else
+          c = ' ';
+        if (c < ' ')
+          c = '.';
+        if (c > 0x7d)
+          c = '.';
+        fprintf(f, "%c", c);
+      }
+      fprintf(f, "\n");
+    }
+    retVal = 0;
+  } while (0);
+
+  return retVal;
+}
+
 int main(int argc, char **argv)
 {
-    int retVal = 0;
+  int retVal = 0;
 
-    do
+  do
+  {
+    //open file containing hex dump
+    FILE *inFile = fopen("testFile", "r");  //read file
+    FILE *outFile = fopen("decoded", "ab"); //coded file
+    char readBuffer[254];
+    unsigned char writeBuffer;
+
+    //read file line by line
+    while (fgets(readBuffer, sizeof(readBuffer), inFile))
     {
-	//open file containing hex dump
-	FILE *outFile = fopen("testFile", "r"); // read file
-        
-    } while (0);
+      writeBuffer = hex_decode(readBuffer, &writeBuffer);
+      printf ("writeBuffer = %c\n", writeBuffer);
+      //fprintf(outFile, "%s\n", writeBuffer);
+    }
 
-    return (retVal);
+  } while (0);
+
+  return (retVal);
 }
