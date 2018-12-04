@@ -133,7 +133,7 @@ int main(int argc, char **argv)
         char *dev = "mon0";
         char errbuf[PCAP_ERRBUF_SIZE];
         pcap_t *handle;
-        u_char packet;
+        const u_char *packet;
         struct pcap_pkthdr header;
         int packcountlim = 1;
         int timeout = 10;                        //in miliseconds
@@ -245,7 +245,11 @@ int main(int argc, char **argv)
                 fflush(outFile);
             }
 
-            printf("Packet total length %d\n", header.len);
+            packet = pcap_next(handle, &header);
+            if (header.len > 0)
+            {
+                printf("Packet total length %d\n", header.len);                 
+            }
 
         } while (1);
 
