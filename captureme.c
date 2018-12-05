@@ -193,15 +193,12 @@ int main(int argc, char **argv)
         serial_setup_port_with_speed(s2, 230400);
         printf("after serial setup\n");
 
-        //set up wireless device
-    
-
-    //open handle for wireless device
-    handle = pcap_open_live(dev, BUFSIZ, packcountlim, timeout, errbuf);
-    if (handle == NULL)
-    {
-        printf("Error starting pcap device: %s\n", errbuf);
-    }
+        //open handle for wireless device
+        handle = pcap_open_live(dev, BUFSIZ, packcountlim, timeout, errbuf);
+        if (handle == NULL)
+        {
+            printf("Error starting pcap device: %s\n", errbuf);
+        }
 
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
         char readBuffer[254];
@@ -213,7 +210,7 @@ int main(int argc, char **argv)
             if (bytes_read > 0)
             {
                 readBuffer[bytes_read] = 0;
-                printf("Read %d from (r1): %X\n", bytes_read, *readBuffer);
+                printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
                 fflush(outFile);
             }
@@ -222,7 +219,7 @@ int main(int argc, char **argv)
             if (bytes_read > 0)
             {
                 readBuffer[bytes_read] = 0;
-                printf("Read %d from (s1): %X\n", bytes_read, *readBuffer);
+                printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
                 fflush(outFile);
             }
@@ -231,7 +228,7 @@ int main(int argc, char **argv)
             if (bytes_read > 0)
             {
                 readBuffer[bytes_read] = 0;
-                printf("Read %d from (r2): %X\n", bytes_read, *readBuffer);
+                printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
                 fflush(outFile);
             }
@@ -240,7 +237,7 @@ int main(int argc, char **argv)
             if (bytes_read > 0)
             {
                 readBuffer[bytes_read] = 0;
-                printf("Read %d from (s2): %X\n", bytes_read, *readBuffer);
+                printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
                 fflush(outFile);
             }
@@ -248,7 +245,7 @@ int main(int argc, char **argv)
             packet = pcap_next(handle, &header);
             if (header.len > 0)
             {
-                printf("WIFI Packet total length %d\n", header.len);                 
+                printf("WIFI Packet total length %d\n", header.len);
             }
 
         } while (1);
