@@ -194,14 +194,14 @@ int main(int argc, char **argv)
         printf("after serial setup\n");
 
         //set up wireless device
-        dev = pcap_lookupdev(errbuf);
-    if (dev == NULL)
-    {
-        printf("Error starting device: %s\n", errbuf);
-    }
+    
 
     //open handle for wireless device
     handle = pcap_open_live(dev, BUFSIZ, packcountlim, timeout, errbuf);
+    if (handle == NULL)
+    {
+        printf("Error starting pcap device: %s\n", errbuf);
+    }
 
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
         char readBuffer[254];
@@ -248,7 +248,7 @@ int main(int argc, char **argv)
             packet = pcap_next(handle, &header);
             if (header.len > 0)
             {
-                printf("Packet total length %d\n", header.len);                 
+                printf("WIFI Packet total length %d\n", header.len);                 
             }
 
         } while (1);
