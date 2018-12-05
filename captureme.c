@@ -201,12 +201,13 @@ int main(int argc, char **argv)
         }
 
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
-        char readBuffer[254];
+	int bufferSize = 255;
+        char readBuffer[bufferSize];
         char quitInputRead;
         int bytes_read;
         do
         {
-            bytes_read = read(r1, &readBuffer, 254);
+            bytes_read = read(r1, &readBuffer, bufferSize);
             if (bytes_read > 0)
             {
                 readBuffer[bytes_read] = 0;
@@ -215,7 +216,7 @@ int main(int argc, char **argv)
                 fflush(outFile);
             }
 
-            bytes_read = read(s1, &readBuffer, 254);
+            bytes_read = read(s1, &readBuffer, bufferSize);
             if (bytes_read > 0)
             {
                 readBuffer[bytes_read] = 0;
@@ -224,7 +225,7 @@ int main(int argc, char **argv)
                 fflush(outFile);
             }
 
-            bytes_read = read(r2, &readBuffer, 254);
+            bytes_read = read(r2, &readBuffer, bufferSize);
             if (bytes_read > 0)
             {
                 readBuffer[bytes_read] = 0;
@@ -233,7 +234,7 @@ int main(int argc, char **argv)
                 fflush(outFile);
             }
 
-            bytes_read = read(s2, &readBuffer, 254);
+            bytes_read = read(s2, &readBuffer, bufferSize);
             if (bytes_read > 0)
             {
                 readBuffer[bytes_read] = 0;
