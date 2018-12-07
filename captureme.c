@@ -20,7 +20,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
-
+#include <socket.h> 
+#define SVR_IP "192.168.2.2"
 /*
  * 
  */
@@ -123,6 +124,61 @@ int serial_setup_port_with_speed(int fd, int speed)
     return 0;
 }
 
+pcap_t encaptulatePacketForSending(pcap_t packetToSend)
+{
+/*#define SIZE_ETHERNET_HDR 14
+
+    //save incoming packet header
+    struct pcap_pkthdr originalHeader = packetToSend.header;
+
+    //following deconstruction is taken from example here https://www.tcpdump.org/pcap.html
+    const struct sniff_ethernet *ethernet; // The ethernet header
+    const struct sniff_ip *ip;             // The IP header
+    const struct sniff_tcp *tcp;           // The TCP header
+    const char *payload;                   // Packet payload
+    
+
+    u_int size_ip;
+    u_int size_tcp;
+
+    //deconstruct packet
+    ip = (struct sniff_ip *)(packet + SIZE_ETHERNET);
+    size_ip = IP_HL(ip) * 4;
+    if (size_ip < 20)
+    {
+        printf("   * Invalid IP header length: %u bytes\n", size_ip);
+        return;
+    }
+    tcp = (struct sniff_tcp *)(packet + SIZE_ETHERNET + size_ip);
+    size_tcp = TH_OFF(tcp) * 4;
+    if (size_tcp < 20)
+    {
+        printf("   * Invalid TCP header length: %u bytes\n", size_tcp);
+        return;
+    }
+    payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_tcp);
+
+    //reconstruct packet
+    char newPayload[packetToSend.header.caplen];
+    snprintf(newPayload, sizeof(newPayload), "%C, %C", ip., char2);
+    //convert ethernet header to ascii http://yuba.stanford.edu/~casado/pcap/section4.html
+    extern char *ether_ntoa (packetToSend.header);
+    
+    //packetforward.c https://code.google.com/archive/p/packetforward/source/default/source
+    send_packet(protocol, sport, dport, id, ttl, count, payload, size_payload);
+
+    */
+
+    struct sockaddr_in destination;
+    int s;
+    s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP));
+    destination.sin_family = AF_INET;
+    destination.sin_port = htons(PORT);
+
+    //found arg info at https://stackoverflow.com/questions/16831909/why-the-sendto-function-needs-the-third-parameter-in-socket-programming
+    sendto(s, packet, sizeof(packet), 0, &destination, sizeof(destination));
+}
+
 int main(int argc, char **argv)
 {
     int retVal = 0;
@@ -138,6 +194,7 @@ int main(int argc, char **argv)
         int packcountlim = 1;
         int timeout = 10;                        //in miliseconds
         FILE *outFile = fopen("testFile", "ab"); // append only
+        pcap_setdirection();
 
         //setup serial ports
         char *port1 = "/dev/ttyUSB0";
@@ -201,7 +258,7 @@ int main(int argc, char **argv)
         }
 
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
-	int bufferSize = 255;
+        int bufferSize = 255;
         char readBuffer[bufferSize];
         char quitInputRead;
         int bytes_read;
@@ -247,6 +304,11 @@ int main(int argc, char **argv)
             if (header.len > 0)
             {
                 printf("WIFI Packet total length %d\n", header.len);
+                //send packet down the wire
+                pcap_sendpacket(packet, ) if (pcap_sendpacket(packet, ) != 0)
+                {
+                    printf("Error sending packet. Length:  %d\n", header.len);
+                }
             }
 
         } while (1);
