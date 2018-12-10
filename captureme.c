@@ -25,6 +25,208 @@
 /*
  * 
  */
+//copied from the following file 
+//packetforward.c https://code.google.com/archive/p/packetforward/source/default/source
+//builds udp packet and sends down the wire. 
+void send_packet(char *protocol, int sport2, int dport2, int id, int ttl, int count, const u_char *payload, int payload_size) {
+
+	char errbuf[LIBNET_ERRBUF_SIZE];   /* error buffer */
+	struct libnet_link_int *network;   /* pointer to link interface struct */
+    int packet_size;                   /* size of our packet */
+    int ip_size;				       /* size of our ip */
+    int udp_size;                           /* size of our udp */
+    int tcp_size;                           /* size of our tcp */
+	int c;                
+    u_char *packet;                    /* pointer to our packet buffer */
+	
+	  
+    /*
+     *  Step 1: Network Initialization (interchangable with step 2).
+     */
+	if ((network = libnet_open_link_interface(dev2, errbuf)) == NULL) {
+        libnet_error(LIBNET_ERR_FATAL, "libnet_open_link_interface: %s\n", errbuf);
+    }
+
+    /*
+     *  We're going to build a UDP packet with a payload using the
+     *  link-layer API, so this time we need memory for a ethernet header
+     *  as well as memory for the ICMP and IP headers and our payload.
+     */
+	if (protocol == "udp") {
+		packet_size = LIBNET_ETH_H + LIBNET_IP_H + LIBNET_UDP_H + payload_size;
+		ip_size = LIBNET_IP_H + LIBNET_UDP_H + payload_size;
+		udp_size = LIBNET_UDP_H + payload_size;
+
+		
+		//  Step 2: Memory Initialization (interchangable with step 1).
+		
+		if (libnet_init_packet(packet_size, &packet) == -1) {
+			libnet_error(LIBNET_ERR_FATAL, "libnet_init_packet failed\n");
+		}
+
+		
+		//  Step 3: Packet construction (ethernet header).
+				libnet_build_ethernet(
+				enet_dst,
+				enet_src,
+				ETHERTYPE_IP,
+				NULL,
+				0,
+				packet);
+
+		printf("\n--- Injected packet number %i on %s ---\n", count, dev2);
+
+		
+		//  Step 3: Packet construction (IP header).
+		
+		libnet_build_ip(
+				LIBNET_UDP_H + payload_size,
+				0,                      /* IP tos */
+				id,                     /* IP ID */
+				0,                      /* Frag */
+				ttl,                    /* TTL */
+				IPPROTO_UDP,            /* Transport protocol */
+				inet_addr(saddr2),         /* Source IP */
+				inet_addr(daddr2),         /* Destination IP */
+				payload,                   /* Pointer to payload (none) */
+				0,
+				packet + LIBNET_ETH_H); /* Packet header memory */
+
+		
+		//  Step 3: Packet construction (UDP header).
+		
+		libnet_build_udp(
+				sport2,                 /* source port */
+				dport2,                 /* dest. port */
+				payload,                /* payload */ 
+				payload_size,           /* payload length */ 
+				packet + LIBNET_ETH_H + LIBNET_IP_H);
+	
+		
+		//  Step 4: Packet checksums (ICMP header *AND* IP header).
+		
+		if (libnet_do_checksum(packet + ETH_H, IPPROTO_UDP, LIBNET_UDP_H + payload_size) == -1) {
+			libnet_error(LIBNET_ERR_FATAL, "libnet_do_checksum failed\n");
+		}
+		if (libnet_do_checksum(packet + ETH_H, IPPROTO_IP, LIBNET_IP_H) == -1) {
+			libnet_error(LIBNET_ERR_FATAL, "libnet_do_checksum failed\n");
+		}
+		
+		
+		/* print packet info */
+		if (!hide_header) {
+			printf("IP header    Src Addr: %s", saddr2);
+			printf("   Dst Addr: %s\n", daddr2);
+			printf("             Len: %i   ID: %i   TTL: %i\n", ip_size, id, ttl);
+			printf("UDP header   Src port: %i   Dst port: %i   Len: %i\n", sport2, dport2, udp_size);
+		}
+		if (!hide_payload) {
+			printf("Payload (%d bytes)\n", payload_size);
+			print_payload(payload, payload_size);
+		}
+	}
+	
+	if (protocol == "tcp") {
+		packet_size = LIBNET_ETH_H + LIBNET_IP_H + LIBNET_TCP_H + payload_size;
+		ip_size = LIBNET_IP_H + LIBNET_TCP_H + payload_size;
+		tcp_size = LIBNET_TCP_H + payload_size;
+		
+		
+		//  Step 2: Memory Initialization (interchangable with step 1).
+		
+		if (libnet_init_packet(packet_size, &packet) == -1) {
+			libnet_error(LIBNET_ERR_FATAL, "libnet_init_packet failed\n");
+		}
+
+		
+	//  Step 3: Packet construction (ethernet header).
+		
+		libnet_build_ethernet(
+				enet_dst,
+				enet_src,
+				ETHERTYPE_IP,
+				NULL,
+				0,
+				packet);
+
+		printf("\n--- Injected packet number %i on %s ---\n", count, dev2);
+
+		
+		//  Step 3: Packet construction (IP header).
+		
+		libnet_build_ip(
+				LIBNET_TCP_H + payload_size,
+				0,                      /* IP tos */
+				id,                     /* IP ID */
+				0,                      /* Frag */
+				ttl,                    /* TTL */
+				IPPROTO_TCP,            /* Transport protocol */
+				inet_addr(saddr2),         /* Source IP */
+				inet_addr(daddr2),         /* Destination IP */
+				payload,                /* Pointer to payload */
+				0,
+				packet + LIBNET_ETH_H); /* Packet header memory */
+
+		
+		//  Step 3: Packet construction (TCP header).
+		
+		libnet_build_tcp(
+				sport2,                /* source TCP port */
+				dport2,                /* destination TCP port */
+				0xa1d95,                /* sequence number */
+				0x53,                   /* acknowledgement number */
+				TH_SYN,                 /* control flags */
+				1024,                   /* window size */
+				0,                      /* urgent pointer */
+				NULL,                   /* payload (none) */
+				0,                      /* payload length */
+				packet + LIBNET_ETH_H + LIBNET_IP_H);
+	
+		
+		// Step 4: Packet checksums (ICMP header *AND* IP header).
+		
+		if (libnet_do_checksum(packet + ETH_H, IPPROTO_TCP, LIBNET_TCP_H + payload_size) == -1) {
+			libnet_error(LIBNET_ERR_FATAL, "libnet_do_checksum failed\n");
+		}
+		if (libnet_do_checksum(packet + ETH_H, IPPROTO_IP, LIBNET_IP_H) == -1) {
+			libnet_error(LIBNET_ERR_FATAL, "libnet_do_checksum failed\n");
+		}
+		
+		// print packet info 
+		if (!hide_header) {
+			printf("IP header    Src Addr: %s", saddr2);
+			printf("   Dst Addr: %s\n", daddr2);
+			printf("             Len: %i   ID: %i   TTL: %i\n", ip_size, id, ttl);
+			printf("TCP header   Src port: %i   Dst port: %i   Len: %i\n", sport2, dport2, tcp_size);
+		}
+		if (!hide_payload) {
+			printf("Payload (%d bytes)\n", payload_size);
+			print_payload(payload, payload_size);
+		}
+	}
+
+	
+	 //  Step 5: Packet injection.
+	 
+	c = libnet_write_link_layer(network, dev2, packet, packet_size);
+	if (c < packet_size) {
+		libnet_error(LN_ERR_WARNING, "libnet_write_link_layer only wrote %d bytes\n", c);
+	}
+
+    
+     // Shut down the interface.
+     
+    if (libnet_close_link_interface(network) == -1) {   
+        libnet_error(LN_ERR_WARNING, "libnet_close_link_interface couldn't close the interface");
+    }
+
+
+       //Free packet memory.
+     
+    libnet_destroy_packet(&packet);
+	printf("\n");
+}
+
 
 //copied from the serial.c file in lbard
 
@@ -126,7 +328,7 @@ int serial_setup_port_with_speed(int fd, int speed)
 
 pcap_t encaptulatePacketForSending(pcap_t packetToSend)
 {
-/*#define SIZE_ETHERNET_HDR 14
+#define SIZE_ETHERNET_HDR 14
 
     //save incoming packet header
     struct pcap_pkthdr originalHeader = packetToSend.header;
@@ -167,7 +369,7 @@ pcap_t encaptulatePacketForSending(pcap_t packetToSend)
     //packetforward.c https://code.google.com/archive/p/packetforward/source/default/source
     send_packet(protocol, sport, dport, id, ttl, count, payload, size_payload);
 
-    */
+    
 
     struct sockaddr_in destination;
     int s;
