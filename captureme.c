@@ -20,35 +20,30 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <libnet.h>
+#include <libnet.h> //sudo apt-get install libnet1-dev
 #include <time.h>
 #define SVR_IP "192.168.2.2"
+#define CAPTURE_DEV_IP "192.168.2.1"
 /*
  * 
  */
-//copied from the following file
+//adapted from the following file
 //packetforward.c https://code.google.com/archive/p/packetforward/source/default/source
 //builds udp packet and sends down the wire.
-void send_packet(int sport2, int dport2, int id, int ttl, struct packet)
+void send_packet(int sport2, int dport2, int id, int ttl, const u_char *packet, struct pcap_pkthdr header, libnet_t *l)
 {
-
     char errbuf[LIBNET_ERRBUF_SIZE]; /* error buffer */
     struct libnet_link_int *network; /* pointer to link interface struct */
     int packet_size;                 /* size of our packet */
     int ip_size;                     /* size of our ip */
     int udp_size;                    /* size of our udp */
     int c;
-    u_char *packet = packet.pkt_data; /* pointer to our packet buffer */
-    //somehow build packet payload string from struct
-    int payload_size
-
-        //  Step 1: Network Initialization (interchangable with step 2).
-
-        if ((network = libnet_open_link_interface(dev2, errbuf)) == NULL)
-    {
-        libnet_error(LIBNET_ERR_FATAL, "libnet_open_link_interface: %s\n", errbuf);
-    }
-
+    int hide_payload = 0;      // hide payload output
+    int hide_header = 0;
+    char devOut = *"eth1";
+    //Payload is determined by the size of the packet, plus the packet's header size
+    //this is to encaptulate the entire incoming packet as a payload to send to server
+    int payload_size = sizeof(packet) + sizeof(header);
     /*
      *  We're going to build a UDP packet with a payload using the
      *  link-layer API, so this time we need memory for a ethernet header
@@ -57,67 +52,67 @@ void send_packet(int sport2, int dport2, int id, int ttl, struct packet)
     //because we are using the UDP protocol (we don't needs acks because of time constraints and serial programming constraints)
     //this was a design decision ***************************************************************************
     //must talk about this in thesis************************************************************************
-    packet_size = LIBNET_ETH_H + LIBNET_IP_H + LIBNET_UDP_H + payload_size;
-    ip_size = LIBNET_IP_H + LIBNET_UDP_H + payload_size;
+    packet_size = LIBNET_ETH_H + LIBNET_IPV4_H + LIBNET_UDP_H + payload_size;
+    ip_size = LIBNET_IPV4_H + LIBNET_UDP_H + payload_size;
     udp_size = LIBNET_UDP_H + payload_size;
 
-    //  Step 2: Memory Initialization (interchangable with step 1).
-
-    if (libnet_init_packet(packet_size, &packet) == -1)
-    {
-        libnet_error(LIBNET_ERR_FATAL, "libnet_init_packet failed\n");
+    /*
+     *  Step 1: Network Initialization (interchangable with step 2).
+     */
+	if ((network = libnet_open_link_interface(devOut, errbuf)) == NULL) {
+        printf("ERROR: libnet_open_link_interface: %s\n", errbuf);
     }
 
-    //  Step 3: Packet construction (ethernet header).
-    libnet_build_ethernet(
-        enet_dst,
-        enet_src,
-        ETHERTYPE_IP,
-        NULL,
-        0,
-        packet);
-    printf("\n--- Injected packet on %s ---\n", dev2);
+    //https://fossies.org/dox/libnet-libnet-1.2/libnet-functions_8h.html#acb97a898e200c1aaea6081545f2fcb39
 
     //  Step 3: Packet construction (IP header).
-
+    //make payload = *packet+header to get ip to and from info 
+    u_char payload = *"test";
     libnet_build_ip(
         LIBNET_UDP_H + payload_size,
-        0,                 /* IP tos */
-        id,                /* IP ID */
-        0,                 /* Frag */
-        ttl,               /* TTL */
-        IPPROTO_UDP,       /* Transport protocol */
-        inet_addr(saddr2), /* Source IP */
-        inet_addr(daddr2), /* Destination IP */
-        payload,           /* Pointer to payload (none) */
+        0,                         /* IP tos */
+        id,                        /* IP ID */
+        0,                         /* Frag */
+        ttl,                       /* TTL */
+        IPPROTO_UDP,               /* Transport protocol */
+        inet_addr(CAPTURE_DEV_IP), /* Source IP */
+        inet_addr(SVR_IP),         /* Destination IP */
+        payload,                   /* Pointer to payload  */
         0,
         packet + LIBNET_ETH_H); /* Packet header memory */
 
     //  Step 3: Packet construction (UDP header).
 
+    //******************************************** work out total length of UDP packet
     libnet_build_udp(
-        sport2,       /* source port */
-        dport2,       /* dest. port */
-        payload,      /* payload */
-        payload_size, /* payload length */
-        packet + LIBNET_ETH_H + LIBNET_IP_H);
+        sport2,         /* source port */
+        dport2,         /* dest. port */
+        packet + LIBNET_ETH_H + LIBNET_IPV4_H,   /* total length of udp packet */
+        0,              /* checksum 0 for libnet to autofill */
+        payload,        //optional payload or null
+        payload_size,
+        l,              //pointer to a libnet context        
+        0               //protocol tag to modify an existing header, 0 to build a new one
+        );
 
-    //  Step 4: Packet checksums (ICMP header *AND* IP header).
+    //  Step 3: Packet construction (ethernet header).
+    libnet_build_ethernet(
+        SVR_IP,
+        CAPTURE_DEV_IP,
+        ETHERTYPE_IP,
+        NULL,
+        0,
+        packet,
+        0);
+    printf("\n--- Injected packet on %s ---\n", devOut);
 
-    if (libnet_do_checksum(packet + ETH_H, IPPROTO_UDP, LIBNET_UDP_H + payload_size) == -1)
-    {
-        libnet_error(LIBNET_ERR_FATAL, "libnet_do_checksum failed\n");
-    }
-    if (libnet_do_checksum(packet + ETH_H, IPPROTO_IP, LIBNET_IP_H) == -1)
-    {
-        libnet_error(LIBNET_ERR_FATAL, "libnet_do_checksum failed\n");
-    }
+    //ignoring checksum check (step 4)
 
     /* print packet info */
     if (!hide_header)
     {
-        printf("IP header    Src Addr: %s", saddr2);
-        printf("   Dst Addr: %s\n", daddr2);
+        printf("IP header    Src Addr: %s", CAPTURE_DEV_IP);
+        printf("   Dst Addr: %s\n", SVR_IP);
         printf("             Len: %i   ID: %i   TTL: %i\n", ip_size, id, ttl);
         printf("UDP header   Src port: %i   Dst port: %i   Len: %i\n", sport2, dport2, udp_size);
     }
@@ -129,17 +124,17 @@ void send_packet(int sport2, int dport2, int id, int ttl, struct packet)
 
     //  Step 5: Packet injection.
 
-    c = libnet_write_link_layer(network, dev2, packet, packet_size);
+    c = libnet_write_link_layer(network, devOut, packet, packet_size);
     if (c < packet_size)
     {
-        libnet_error(LN_ERR_WARNING, "libnet_write_link_layer only wrote %d bytes\n", c);
+        printf("libnet_write_link_layer only wrote %d bytes\n", c);
     }
 
     // Shut down the interface.
 
     if (libnet_close_link_interface(network) == -1)
     {
-        libnet_error(LN_ERR_WARNING, "libnet_close_link_interface couldn't close the interface");
+        printf("libnet_close_link_interface couldn't close the interface");
     }
 
     //Free packet memory.
@@ -261,17 +256,12 @@ int main(int argc, char **argv)
         int packcountlim = 1;
         int timeout = 10;                        //in miliseconds
         FILE *outFile = fopen("testFile", "ab"); // append only
-        pcap_setdirection();
+        //https://linux.die.net/man/3/pcap_setdirection
+        pcap_setdirection(handle, PCAP_D_IN);
         time_t rawTime;
         struct tm *timeinfo;
-        //packet container
-        struct pktStruct
-        {
-            struct pcap_pkthdr pkt_header;
-            const u_char *pkt_data;
-
-            char timeInfo;
-        };
+        char libnetErrBuf;
+        libnet_t *l = libnet_init(LIBNET_RAW4, "eth1", &libnetErrBuf);
 
         //setup serial ports
         char *port1 = "/dev/ttyUSB0";
@@ -383,15 +373,11 @@ int main(int argc, char **argv)
             {
                 printf("WIFI Packet total length %d\n", header.len);
                 //send packet down the wire
-                pcap_sendpacket(packet, ) if (pcap_sendpacket(packet, ) != 0)
-                {
-                    printf("Error sending packet. Length:  %d\n", header.len);
-                    //send packet id++
-                    //ttl = 60;
-                    time(&rawtime);
-                    timeinfo = localtime(&rawtime);
-                    pktStruct.time = asctime(timeinfo);
-                }
+                time(&rawTime);
+                timeinfo = localtime(&rawTime);
+                asctime(timeinfo);
+                //sending and recieving port 80 at the moment is just a placeholder to be decided later
+                send_packet(80, 80, packetID++, 60, packet, header, l);
             }
 
         } while (1);
