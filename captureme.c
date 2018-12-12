@@ -134,6 +134,7 @@ int main(int argc, char **argv)
 
     do
     {
+	printf("Before variable decliration");
         //setup wireless capture settings
         char *dev = "mon0";
         char errbuf[PCAP_ERRBUF_SIZE];
@@ -147,17 +148,19 @@ int main(int argc, char **argv)
         time_t rawTime;
         struct tm *timeinfo;
 
+	printf("Before packet injection setup");
         //setup packet injection - source used: http://www.cs.tau.ac.il/~eddiea/samples/IOMultiplexing/TCP-client.c.html
         struct hostent *he;
         struct sockaddr_in their_addr; /* connector's address information */
 
+	printf("Before get hostaName");
         if ((he = gethostbyname(SVR_IP)) == NULL)
         { /* get the host info */
             herror("Error getting host by name");
             retVal = -1;
             return (retVal);
         }
-
+	printf("Before socket setup");
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         {
             perror("Error setting up socket");
@@ -170,6 +173,7 @@ int main(int argc, char **argv)
         their_addr.sin_addr = *((struct in_addr *)he->h_addr);
         bzero(&(their_addr.sin_zero), 8); /* zero the rest of the struct */
 
+	printf("Before connecting to host");
         if (connect(sockfd, (struct sockaddr *)&their_addr,
                     sizeof(struct sockaddr)) == -1)
         {
@@ -178,6 +182,7 @@ int main(int argc, char **argv)
             return (retVal);
         }
 
+	printf("Before serial port setup");
         //setup serial ports
         char *port1 = "/dev/ttyUSB0";
         char *port2 = "/dev/ttyUSB1";
@@ -315,7 +320,8 @@ int main(int argc, char **argv)
                 time(&rawTime);
                 timeinfo = localtime(&rawTime);
                 asctime(timeinfo);
-                //sending and recieving port 80 at the moment is just a placeholder to be decided later
+
+		printf("Before trying to send packet");
                 if (send(sockfd, packet, sizeof(packet), 0) == -1)
                 {
                     perror("Error Sending");
