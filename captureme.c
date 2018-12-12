@@ -20,130 +20,17 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <libnet.h> //sudo apt-get install libnet1-dev
 #include <time.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <string.h>
 #define SVR_IP "192.168.2.2"
 #define CAPTURE_DEV_IP "192.168.2.1"
 /*
  * 
  */
-//adapted from the following file
-//packetforward.c https://code.google.com/archive/p/packetforward/source/default/source
-//builds udp packet and sends down the wire.
-void send_packet(int sport2, int dport2, int id, int ttl, const u_char *packet, struct pcap_pkthdr header, libnet_t *l)
-{
-    char errbuf[LIBNET_ERRBUF_SIZE]; /* error buffer */
-    struct libnet_link_int *network; /* pointer to link interface struct */
-    int packet_size;                 /* size of our packet */
-    int ip_size;                     /* size of our ip */
-    int udp_size;                    /* size of our udp */
-    int c;
-    int hide_payload = 0;      // hide payload output
-    int hide_header = 0;
-    char devOut = *"eth1";
-    //Payload is determined by the size of the packet, plus the packet's header size
-    //this is to encaptulate the entire incoming packet as a payload to send to server
-    int payload_size = sizeof(packet) + sizeof(header);
-    /*
-     *  We're going to build a UDP packet with a payload using the
-     *  link-layer API, so this time we need memory for a ethernet header
-     *  as well as memory for the ICMP and IP headers and our payload.
-     */
-    //because we are using the UDP protocol (we don't needs acks because of time constraints and serial programming constraints)
-    //this was a design decision ***************************************************************************
-    //must talk about this in thesis************************************************************************
-    packet_size = LIBNET_ETH_H + LIBNET_IPV4_H + LIBNET_UDP_H + payload_size;
-    ip_size = LIBNET_IPV4_H + LIBNET_UDP_H + payload_size;
-    udp_size = LIBNET_UDP_H + payload_size;
-
-    /*
-     *  Step 1: Network Initialization (interchangable with step 2).
-     */
-	if ((network = libnet_open_link_interface(devOut, errbuf)) == NULL) {
-        printf("ERROR: libnet_open_link_interface: %s\n", errbuf);
-    }
-
-    //https://fossies.org/dox/libnet-libnet-1.2/libnet-functions_8h.html#acb97a898e200c1aaea6081545f2fcb39
-
-    //  Step 3: Packet construction (IP header).
-    //make payload = *packet+header to get ip to and from info 
-    u_char payload = *"test";
-    libnet_build_ip(
-        LIBNET_UDP_H + payload_size,
-        0,                         /* IP tos */
-        id,                        /* IP ID */
-        0,                         /* Frag */
-        ttl,                       /* TTL */
-        IPPROTO_UDP,               /* Transport protocol */
-        inet_addr(CAPTURE_DEV_IP), /* Source IP */
-        inet_addr(SVR_IP),         /* Destination IP */
-        payload,                   /* Pointer to payload  */
-        0,
-        packet + LIBNET_ETH_H); /* Packet header memory */
-
-    //  Step 3: Packet construction (UDP header).
-
-    //******************************************** work out total length of UDP packet
-    libnet_build_udp(
-        sport2,         /* source port */
-        dport2,         /* dest. port */
-        packet + LIBNET_ETH_H + LIBNET_IPV4_H,   /* total length of udp packet */
-        0,              /* checksum 0 for libnet to autofill */
-        payload,        //optional payload or null
-        payload_size,
-        l,              //pointer to a libnet context        
-        0               //protocol tag to modify an existing header, 0 to build a new one
-        );
-
-    //  Step 3: Packet construction (ethernet header).
-    libnet_build_ethernet(
-        SVR_IP,
-        CAPTURE_DEV_IP,
-        ETHERTYPE_IP,
-        NULL,
-        0,
-        packet,
-        0);
-    printf("\n--- Injected packet on %s ---\n", devOut);
-
-    //ignoring checksum check (step 4)
-
-    /* print packet info */
-    if (!hide_header)
-    {
-        printf("IP header    Src Addr: %s", CAPTURE_DEV_IP);
-        printf("   Dst Addr: %s\n", SVR_IP);
-        printf("             Len: %i   ID: %i   TTL: %i\n", ip_size, id, ttl);
-        printf("UDP header   Src port: %i   Dst port: %i   Len: %i\n", sport2, dport2, udp_size);
-    }
-    if (!hide_payload)
-    {
-        printf("Payload (%d bytes)\n", payload_size);
-        print_payload(payload, payload_size);
-    }
-
-    //  Step 5: Packet injection.
-
-    c = libnet_write_link_layer(network, devOut, packet, packet_size);
-    if (c < packet_size)
-    {
-        printf("libnet_write_link_layer only wrote %d bytes\n", c);
-    }
-
-    // Shut down the interface.
-
-    if (libnet_close_link_interface(network) == -1)
-    {
-        printf("libnet_close_link_interface couldn't close the interface");
-    }
-
-    //Free packet memory.
-
-    libnet_destroy_packet(&packet);
-    printf("\n");
-}
-
-//copied from the serial.c file in lbard
 
 int set_nonblock(int fd)
 {
@@ -253,15 +140,43 @@ int main(int argc, char **argv)
         pcap_t *handle;
         const u_char *packet;
         struct pcap_pkthdr header;
-        int packcountlim = 1;
-        int timeout = 10;                        //in miliseconds
-        FILE *outFile = fopen("testFile", "ab"); // append only
+        int packcountlim = 1, timeout = 10, sockfd; //in miliseconds
+        FILE *outFile = fopen("testFile", "ab");    // append only
         //https://linux.die.net/man/3/pcap_setdirection
         pcap_setdirection(handle, PCAP_D_IN);
         time_t rawTime;
         struct tm *timeinfo;
-        char libnetErrBuf;
-        libnet_t *l = libnet_init(LIBNET_RAW4, "eth1", &libnetErrBuf);
+
+        //setup packet injection - source used: http://www.cs.tau.ac.il/~eddiea/samples/IOMultiplexing/TCP-client.c.html
+        struct hostent *he;
+        struct sockaddr_in their_addr; /* connector's address information */
+
+        if ((he = gethostbyname(SVR_IP)) == NULL)
+        { /* get the host info */
+            herror("Error getting host by name");
+            retVal = -1;
+            return (retVal);
+        }
+
+        if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        {
+            perror("Error setting up socket");
+            retVal = -2;
+            return (retVal);
+        }
+
+        their_addr.sin_family = AF_INET;   /* host byte order */
+        their_addr.sin_port = htons(3490); /* short, network byte order */
+        their_addr.sin_addr = *((struct in_addr *)he->h_addr);
+        bzero(&(their_addr.sin_zero), 8); /* zero the rest of the struct */
+
+        if (connect(sockfd, (struct sockaddr *)&their_addr,
+                    sizeof(struct sockaddr)) == -1)
+        {
+            perror("Error connecting to host");
+            retVal = -3;
+            return (retVal);
+        }
 
         //setup serial ports
         char *port1 = "/dev/ttyUSB0";
@@ -275,7 +190,7 @@ int main(int argc, char **argv)
         if (r1 == -1)
         {
             fprintf(stderr, "Failed to open serial port '%s'\n", port1);
-            retVal = -1;
+            retVal = -3;
             break;
         }
         printf("after open %i\n", r1);
@@ -283,7 +198,7 @@ int main(int argc, char **argv)
         if (r2 == -1)
         {
             fprintf(stderr, "Failed to open serial port '%s'\n", port2);
-            retVal = -1;
+            retVal = -4;
             break;
         }
         printf("after open %i\n", r2);
@@ -291,7 +206,7 @@ int main(int argc, char **argv)
         if (s1 == -1)
         {
             fprintf(stderr, "Failed to open serial port '%s'\n", port3);
-            retVal = -1;
+            retVal = -5;
             break;
         }
         printf("after open %i\n", s1);
@@ -299,7 +214,7 @@ int main(int argc, char **argv)
         if (s2 == -1)
         {
             fprintf(stderr, "Failed to open serial port '%s'\n", port4);
-            retVal = -1;
+            retVal = -6;
             break;
         }
         printf("after open %i\n", s2);
@@ -338,6 +253,12 @@ int main(int argc, char **argv)
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
+                /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
+                {
+                    perror("Error Sending");
+                    retVal = -7;
+                    break;
+                }*/
                 fflush(outFile);
             }
 
@@ -347,6 +268,12 @@ int main(int argc, char **argv)
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
+                /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
+                {
+                    perror("Error Sending");
+                    retVal = -8;
+                    break;
+                }*/
                 fflush(outFile);
             }
 
@@ -356,6 +283,12 @@ int main(int argc, char **argv)
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
+                /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
+                {
+                    perror("Error Sending");
+                    retVal = -9;
+                    break;
+                }*/
                 fflush(outFile);
             }
 
@@ -365,6 +298,12 @@ int main(int argc, char **argv)
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
+                /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
+                {
+                    perror("Error Sending");
+                    retVal = -10;
+                    break;
+                }*/
                 fflush(outFile);
             }
 
@@ -377,7 +316,12 @@ int main(int argc, char **argv)
                 timeinfo = localtime(&rawTime);
                 asctime(timeinfo);
                 //sending and recieving port 80 at the moment is just a placeholder to be decided later
-                send_packet(80, 80, packetID++, 60, packet, header, l);
+                if (send(sockfd, packet, sizeof(packet), 0) == -1)
+                {
+                    perror("Error Sending");
+                    retVal = -11;
+                    break;
+                }
             }
 
         } while (1);
