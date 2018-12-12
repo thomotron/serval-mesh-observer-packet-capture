@@ -26,11 +26,10 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <string.h>
-#define SVR_IP "192.168.2.2"
-#define CAPTURE_DEV_IP "192.168.2.1"
 /*
  * 
  */
+#define SVR_IP "192.168.2.2"
 
 int set_nonblock(int fd)
 {
@@ -154,7 +153,7 @@ int main(int argc, char **argv)
         struct sockaddr_in their_addr; /* connector's address information */
 
 	printf("Before get hostaName");
-        if ((he = gethostbyname(SVR_IP)) == NULL)
+        if ((he = gethostbyname(*"192.168.2.2")) == NULL)
         { /* get the host info */
             herror("Error getting host by name");
             retVal = -1;
@@ -170,7 +169,7 @@ int main(int argc, char **argv)
 
         their_addr.sin_family = AF_INET;   /* host byte order */
         their_addr.sin_port = htons(3490); /* short, network byte order */
-        their_addr.sin_addr = *((struct in_addr *)he->h_addr);
+        their_addr.sin_addr = inet_addr(SVR_IP);
         bzero(&(their_addr.sin_zero), 8); /* zero the rest of the struct */
 
 	printf("Before connecting to host");
