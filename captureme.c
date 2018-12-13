@@ -29,6 +29,7 @@
 
 int set_nonblock(int fd)
 {
+    printf("find the segfault");
     int retVal = 0;
 
     do
@@ -56,6 +57,7 @@ int set_nonblock(int fd)
 
 int serial_setup_port_with_speed(int fd, int speed)
 {
+    printf("find the segfault");
     struct termios t;
 
     tcgetattr(fd, &t);
@@ -125,12 +127,12 @@ int serial_setup_port_with_speed(int fd, int speed)
 
 int main(int argc, char **argv)
 {
-    printf("find the segfault");
+    printf("find the segfault\n");
     int retVal = 0;
 
     do
-    {
-        printf("Before variable decliration");
+    { 
+        printf("Before variable decliration\n");
         //setup wireless capture settings
         char *dev = "mon0";
         char errbuf[PCAP_ERRBUF_SIZE];
@@ -138,22 +140,20 @@ int main(int argc, char **argv)
         const u_char *packet;
         struct pcap_pkthdr header;
         int packcountlim = 1, timeout = 10, sockfd; //in miliseconds
-        FILE *outFile = fopen("testFile", "ab");    // append only
-        //https://linux.die.net/man/3/pcap_setdirection
-        pcap_setdirection(handle, PCAP_D_IN);
+        FILE *outFile = fopen("testFile", "ab");    // append only        
         time_t rawTime;
         struct tm *timeinfo;
-
-        printf("Before packet injection setup");
+        
+        printf("Before packet injection setup\n");
         //setup packet injection - source used: http://www.cs.tau.ac.il/~eddiea/samples/IOMultiplexing/TCP-client.c.html
-        struct sockaddr_in sa; /* connector's address information */
+        struct sockaddr_in sa; // connector's address information 
         char hbuf[NI_MAXHOST];
-        sa.sin_family = AF_INET;   /* host byte order */
-        sa.sin_port = htons(3490); /* short, network byte order */
+        sa.sin_family = AF_INET;   // host byte order 
+        sa.sin_port = htons(3490); // short, network byte order 
         sa.sin_addr.s_addr = inet_addr(SVR_IP);
         socklen_t len = sizeof(struct sockaddr_in);
 
-        printf("Before get host by ip");
+        printf("Before get host by ip\n");
         if (getnameinfo((struct sockaddr *)&sa, len, hbuf, sizeof(hbuf),
                         NULL, 0, NI_NAMEREQD))
         {
@@ -161,27 +161,27 @@ int main(int argc, char **argv)
             retVal = -1;
             return (retVal);
         }
-        printf("Before socket setup");
+        printf("Before socket setup\n");
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         {
-            perror("Error setting up socket");
+            perror("Error setting up socket\n");
             retVal = -2;
             return (retVal);
         }
 
         
-        bzero(&(sa.sin_zero), 8); /* zero the rest of the struct */
+        bzero(&(sa.sin_zero), 8); // zero the rest of the struct 
 
-        printf("Before connecting to host");
+        printf("Before connecting to host\n");
         if (connect(sockfd, (struct sockaddr *)&sa,
                     sizeof(struct sockaddr)) == -1)
         {
-            perror("Error connecting to host");
+            perror("Error connecting to host\n");
             retVal = -3;
             return (retVal);
         }
 
-        printf("Before serial port setup");
+        printf("Before serial port setup\n");
         //setup serial ports
         char *port1 = "/dev/ttyUSB0";
         char *port2 = "/dev/ttyUSB1";
@@ -242,7 +242,9 @@ int main(int argc, char **argv)
         {
             printf("Error starting pcap device: %s\n", errbuf);
         }
-
+        //https://linux.die.net/man/3/pcap_setdirection
+        pcap_setdirection(handle, PCAP_D_IN);
+        
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
         int bufferSize = 255;
         char readBuffer[bufferSize];
@@ -320,13 +322,13 @@ int main(int argc, char **argv)
                 timeinfo = localtime(&rawTime);
                 asctime(timeinfo);
 
-                printf("Before trying to send packet");
+               /* printf("Before trying to send packet");
                 if (send(sockfd, packet, sizeof(packet), 0) == -1)
                 {
                     perror("Error Sending");
                     retVal = -11;
                     break;
-                }
+                }*/
             }
 
         } while (1);
@@ -339,6 +341,7 @@ int main(int argc, char **argv)
         printf("Serial ports closed: %s %s %s %s\n", port1, port2, port3, port4);
         //close opened file
         fclose(outFile);
+        
     } while (0);
 
     return (retVal);
