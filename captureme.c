@@ -26,6 +26,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <string.h>
+#include <arpa/inet.h>
 /*
  * 
  */
@@ -129,11 +130,12 @@ int serial_setup_port_with_speed(int fd, int speed)
 
 int main(int argc, char **argv)
 {
+    
     int retVal = 0;
 
     do
     {
-	printf("Before variable decliration");
+        printf("Before variable decliration");
         //setup wireless capture settings
         char *dev = "mon0";
         char errbuf[PCAP_ERRBUF_SIZE];
@@ -147,19 +149,24 @@ int main(int argc, char **argv)
         time_t rawTime;
         struct tm *timeinfo;
 
-	printf("Before packet injection setup");
+        printf("Before packet injection setup");
         //setup packet injection - source used: http://www.cs.tau.ac.il/~eddiea/samples/IOMultiplexing/TCP-client.c.html
-        struct hostent *he;
-        struct sockaddr_in their_addr; /* connector's address information */
+        struct sockaddr_in sa; /* connector's address information */
+        char hbuf[NI_MAXHOST];
+        sa.sin_family = AF_INET;   /* host byte order */
+        sa.sin_port = htons(3490); /* short, network byte order */
+        sa.sin_addr.s_addr = inet_addr(SVR_IP);
+        socklen_t len = sizeof(struct sockaddr_in);
 
-	printf("Before get hostaName");
-        if ((he = gethostbyname(*"192.168.2.2")) == NULL)
-        { /* get the host info */
-            herror("Error getting host by name");
+        printf("Before get host by ip");
+        if (getnameinfo((struct sockaddr *)&sa, len, hbuf, sizeof(hbuf),
+                        NULL, 0, NI_NAMEREQD))
+        {
+            printf("could not resolve hostname\n");
             retVal = -1;
             return (retVal);
         }
-	printf("Before socket setup");
+        printf("Before socket setup");
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         {
             perror("Error setting up socket");
@@ -167,13 +174,11 @@ int main(int argc, char **argv)
             return (retVal);
         }
 
-        their_addr.sin_family = AF_INET;   /* host byte order */
-        their_addr.sin_port = htons(3490); /* short, network byte order */
-        their_addr.sin_addr = inet_addr(SVR_IP);
-        bzero(&(their_addr.sin_zero), 8); /* zero the rest of the struct */
+        
+        bzero(&(sa.sin_zero), 8); /* zero the rest of the struct */
 
-	printf("Before connecting to host");
-        if (connect(sockfd, (struct sockaddr *)&their_addr,
+        printf("Before connecting to host");
+        if (connect(sockfd, (struct sockaddr *)&sa,
                     sizeof(struct sockaddr)) == -1)
         {
             perror("Error connecting to host");
@@ -181,7 +186,7 @@ int main(int argc, char **argv)
             return (retVal);
         }
 
-	printf("Before serial port setup");
+        printf("Before serial port setup");
         //setup serial ports
         char *port1 = "/dev/ttyUSB0";
         char *port2 = "/dev/ttyUSB1";
@@ -320,7 +325,7 @@ int main(int argc, char **argv)
                 timeinfo = localtime(&rawTime);
                 asctime(timeinfo);
 
-		printf("Before trying to send packet");
+                printf("Before trying to send packet");
                 if (send(sockfd, packet, sizeof(packet), 0) == -1)
                 {
                     perror("Error Sending");
