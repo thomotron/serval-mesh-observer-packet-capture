@@ -131,7 +131,7 @@ int main(int argc, char **argv)
     int retVal = 0;
 
     do
-    { 
+    {
         printf("Before variable decliration\n");
         //setup wireless capture settings
         char *dev = "mon0";
@@ -140,16 +140,16 @@ int main(int argc, char **argv)
         const u_char *packet;
         struct pcap_pkthdr header;
         int packcountlim = 1, timeout = 10, sockfd; //in miliseconds
-        FILE *outFile = fopen("testFile", "ab");    // append only        
+        FILE *outFile = fopen("testFile", "ab");    // append only
         time_t rawTime;
         struct tm *timeinfo;
-        
+
         printf("Before packet injection setup\n");
         //setup packet injection - source used: http://www.cs.tau.ac.il/~eddiea/samples/IOMultiplexing/TCP-client.c.html
-        struct sockaddr_in sa; // connector's address information 
+        struct sockaddr_in sa; // connector's address information
         char hbuf[NI_MAXHOST];
-        sa.sin_family = AF_INET;   // host byte order 
-        sa.sin_port = htons(3490); // short, network byte order 
+        sa.sin_family = AF_INET;   // host byte order
+        sa.sin_port = htons(3490); // short, network byte order
         sa.sin_addr.s_addr = inet_addr(SVR_IP);
         socklen_t len = sizeof(struct sockaddr_in);
 
@@ -169,8 +169,7 @@ int main(int argc, char **argv)
             return (retVal);
         }
 
-        
-        bzero(&(sa.sin_zero), 8); // zero the rest of the struct 
+        bzero(&(sa.sin_zero), 8); // zero the rest of the struct
 
         printf("Before connecting to host\n");
         if (connect(sockfd, (struct sockaddr *)&sa,
@@ -244,7 +243,7 @@ int main(int argc, char **argv)
         }
         //https://linux.die.net/man/3/pcap_setdirection
         pcap_setdirection(handle, PCAP_D_IN);
-        
+
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
         int bufferSize = 255;
         char readBuffer[bufferSize];
@@ -259,6 +258,7 @@ int main(int argc, char **argv)
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
+                printf("Before trying to send serial captured packet\n");
                 /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
                 {
                     perror("Error Sending");
@@ -274,6 +274,7 @@ int main(int argc, char **argv)
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
+                printf("Before trying to send serial captured packet\n");
                 /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
                 {
                     perror("Error Sending");
@@ -289,6 +290,7 @@ int main(int argc, char **argv)
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
+                printf("Before trying to send serial captured packet\n");
                 /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
                 {
                     perror("Error Sending");
@@ -304,9 +306,10 @@ int main(int argc, char **argv)
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
+                printf("Before trying to send serial captured packet\n");
                 /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
                 {
-                    perror("Error Sending");
+                    perror("Error Sending\n");
                     retVal = -10;
                     break;
                 }*/
@@ -322,13 +325,13 @@ int main(int argc, char **argv)
                 timeinfo = localtime(&rawTime);
                 asctime(timeinfo);
 
-               /* printf("Before trying to send packet");
+                printf("Before trying to send wifi captured packet\n");
                 if (send(sockfd, packet, sizeof(packet), 0) == -1)
                 {
-                    perror("Error Sending");
+                    perror("Error Sending\n");
                     retVal = -11;
                     break;
-                }*/
+                }
             }
 
         } while (1);
@@ -341,7 +344,7 @@ int main(int argc, char **argv)
         printf("Serial ports closed: %s %s %s %s\n", port1, port2, port3, port4);
         //close opened file
         fclose(outFile);
-        
+
     } while (0);
 
     return (retVal);
