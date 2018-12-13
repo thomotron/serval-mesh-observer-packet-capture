@@ -16,14 +16,9 @@
 #include <pcap.h>
 #include <unistd.h>
 #include <termios.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <errno.h>
 #include <time.h>
 #include <netdb.h>
-#include <sys/types.h>
-#include <netinet/in.h>
 #include <sys/socket.h>
 #include <string.h>
 #include <arpa/inet.h>
@@ -130,7 +125,7 @@ int serial_setup_port_with_speed(int fd, int speed)
 
 int main(int argc, char **argv)
 {
-    
+    printf("find the segfault");
     int retVal = 0;
 
     do
