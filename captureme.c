@@ -148,7 +148,7 @@ int main(int argc, char **argv)
         struct sockaddr_in sa; // connector's address information
         char node[NI_MAXHOST];
         sa.sin_family = AF_INET;   // host byte order
-        sa.sin_port = htons(3490); // short, network byte order
+        sa.sin_port = htons(3490); // short, network byte order http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/socket.html
         sa.sin_addr.s_addr = inet_addr(SVR_IP);
         inet_pton(AF_INET, SVR_IP, &sa.sin_addr);
         socklen_t len = sizeof(struct sockaddr_in);
