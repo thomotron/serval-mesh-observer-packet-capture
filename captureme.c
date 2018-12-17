@@ -127,7 +127,6 @@ int serial_setup_port_with_speed(int fd, int speed)
 
 int main(int argc, char **argv)
 {
-    printf("find the segfault\n");
     int retVal = 0;
 
     do
@@ -147,7 +146,7 @@ int main(int argc, char **argv)
         printf("Before packet injection setup\n");
         //setup packet injection - source used: http://www.cs.tau.ac.il/~eddiea/samples/IOMultiplexing/TCP-client.c.html
         struct sockaddr_in sa; // connector's address information
-        char hbuf[NI_MAXHOST];
+        char node[NI_MAXHOST];
         sa.sin_family = AF_INET;   // host byte order
         sa.sin_port = htons(3490); // short, network byte order
         sa.sin_addr.s_addr = inet_addr(SVR_IP);
@@ -155,8 +154,7 @@ int main(int argc, char **argv)
         socklen_t len = sizeof(struct sockaddr_in);
 
         printf("Before get host by ip\n");
-        if (getnameinfo((struct sockaddr *)&sa, len, SVR_IP, sizeof(SVR_IP),
-                        NULL, 0, 0))
+        if (getnameinfo((struct sockaddr*)&sa, sizeof(sa), node, sizeof(node), NULL, 0, NI_NUMERICSERV | NI_NUMERICHOST ))
         {
             printf("could not resolve hostname\n");
 
