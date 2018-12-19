@@ -57,7 +57,6 @@ int set_nonblock(int fd)
 
 int serial_setup_port_with_speed(int fd, int speed)
 {
-    printf("find the segfault");
     struct termios t;
 
     tcgetattr(fd, &t);
@@ -187,7 +186,7 @@ int main(int argc, char **argv)
         char *port3 = "/dev/ttyUSB2";
         char *port4 = "/dev/ttyUSB3";
 
-        printf("before open\n");
+        printf("before opening serial ports\n");
         //open serial ports
         int r1 = open(port1, O_RDONLY | O_NOCTTY | O_NDELAY);
         if (r1 == -1)
@@ -258,7 +257,7 @@ int main(int argc, char **argv)
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
-                printf("Before trying to send serial captured packet\n");
+                //printf("Before trying to send serial captured packet\n");
                 /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
                 {
                     perror("Error Sending");
@@ -274,7 +273,7 @@ int main(int argc, char **argv)
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
-                printf("Before trying to send serial captured packet\n");
+                //printf("Before trying to send serial captured packet\n");
                 /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
                 {
                     perror("Error Sending");
@@ -290,7 +289,7 @@ int main(int argc, char **argv)
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
-                printf("Before trying to send serial captured packet\n");
+                //printf("Before trying to send serial captured packet\n");
                 /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
                 {
                     perror("Error Sending");
@@ -306,7 +305,7 @@ int main(int argc, char **argv)
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
-                printf("Before trying to send serial captured packet\n");
+                //printf("Before trying to send serial captured packet\n");
                 /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
                 {
                     perror("Error Sending\n");
