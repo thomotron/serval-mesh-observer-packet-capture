@@ -29,7 +29,6 @@
 
 int set_nonblock(int fd)
 {
-    printf("find the segfault");
     int retVal = 0;
 
     do
