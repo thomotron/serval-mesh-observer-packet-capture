@@ -134,7 +134,7 @@ int main(int argc, char **argv)
         char *dev = "mon0";
         char errbuf[PCAP_ERRBUF_SIZE];
         pcap_t *handle;
-        const u_char *packet;
+        u_char *packet;
         struct pcap_pkthdr header;
         int packcountlim = 1, timeout = 10, sockfd; //in miliseconds
         FILE *outFile = fopen("testFile", "ab");    // append only
@@ -317,7 +317,7 @@ int main(int argc, char **argv)
             packet = pcap_next(handle, &header);
             if (header.len > 0)
             {
-                printf("WIFI Packet total length %d\n", header.len);
+                printf("WIFI Packet total length %d\n", sizeof(packet));
                 //send packet down the wire
                 time(&rawTime);
                 timeinfo = localtime(&rawTime);
