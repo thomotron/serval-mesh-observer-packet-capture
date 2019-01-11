@@ -160,7 +160,7 @@ int main(int argc, char **argv)
             return (retVal);
         }
         printf("Before socket setup\n");
-        if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
         {
             perror("Error setting up socket\n");
             retVal = -2;
