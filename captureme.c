@@ -26,6 +26,7 @@
  * 
  */
 #define SVR_IP "192.168.2.2"
+#define SVR_PORT "3490"
 
 int set_nonblock(int fd)
 {
@@ -88,16 +89,16 @@ int serial_setup_port_with_speed(int fd, int speed)
     t.c_cflag |= CLOCAL;
 
     t.c_lflag &= ~(ICANON | ISIG | IEXTEN | ECHO | ECHOE);
-    /* Noncanonical mode, disable signals, extended
+    /* Noncanonical mode, diserver_addrble signals, extended
    input processing, and software flow control and echoing */
 
     t.c_iflag &= ~(BRKINT | ICRNL | IGNBRK | IGNCR | INLCR |
                    INPCK | ISTRIP | IXON | IXOFF | IXANY | PARMRK);
-    /* Disable special handling of CR, NL, and BREAK.
+    /* Diserver_addrble special handling of CR, NL, and BREAK.
    No 8th-bit stripping or parity error handling.
-   Disable START/STOP output flow control. */
+   Diserver_addrble START/STOP output flow control. */
 
-    // Disable CTS/RTS flow control
+    // Diserver_addrble CTS/RTS flow control
 #ifndef CNEW_RTSCTS
     t.c_cflag &= ~CRTSCTS;
 #else
@@ -111,7 +112,7 @@ int serial_setup_port_with_speed(int fd, int speed)
             (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
             (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
 
-    tcsetattr(fd, TCSANOW, &t);
+    tcsetattr(fd, TCserver_addrNOW, &t);
 
     tcgetattr(fd, &t);
     fprintf(stderr, "Serial port settings after tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
@@ -134,7 +135,7 @@ int main(int argc, char **argv)
         char *dev = "mon0";
         char errbuf[PCAP_ERRBUF_SIZE];
         pcap_t *handle;
-        u_char *packet;
+        u_char *capPacket;
         struct pcap_pkthdr header;
         int packcountlim = 1, timeout = 10, sockfd; //in miliseconds
         FILE *outFile = fopen("testFile", "ab");    // append only
@@ -142,36 +143,43 @@ int main(int argc, char **argv)
         struct tm *timeinfo;
 
         printf("Before packet injection setup\n");
-        //setup packet injection - source used: http://www.cs.tau.ac.il/~eddiea/samples/IOMultiplexing/TCP-client.c.html
-        struct sockaddr_in sa; // connector's address information
+        //setup packet injection - source used: http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/client.c
+        struct sockaddr_in server_addr; // connector's address information
+        struct hostent *server;
         char node[NI_MAXHOST];
-        sa.sin_family = AF_INET;   // host byte order
-        sa.sin_port = htons(3490); // short, network byte order http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/socket.html
-        sa.sin_addr.s_addr = inet_addr(SVR_IP);
-        inet_pton(AF_INET, SVR_IP, &sa.sin_addr);
-        socklen_t len = sizeof(struct sockaddr_in);
 
-        printf("Before get host by ip\n");
-        if (getnameinfo((struct sockaddr*)&sa, sizeof(sa), node, sizeof(node), NULL, 0, NI_NUMERICSERV | NI_NUMERICHOST ))
-        {
-            printf("could not resolve hostname\n");
-
-            retVal = -1;
-            return (retVal);
-        }
         printf("Before socket setup\n");
-        if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+        sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        if (sockfd < 0)
         {
             perror("Error setting up socket\n");
             retVal = -2;
             return (retVal);
         }
 
-        bzero(&(sa.sin_zero), 8); // zero the rest of the struct
+        printf("Before get host by ip\n");
+        if (getnameinfo((struct sockaddr *)&server_addr, sizeof(server_addr), node, sizeof(node), NULL, 0, NI_NUMERICSERV | NI_NUMERICHOST))
+        {
+            printf("could not resolve hostname\n");
+
+            retVal = -1;
+            return (retVal);
+        }
+
+        //bzero(&(server_addr.sin_zero), 8); // zero the rest of the struct
+        bzero((char *)&serv_addr, sizeof(serv_addr));
+
+        //set struct variables
+        server_addr.sin_family = AF_INET; // host byte order
+        bcopy((char *)server->h_addr,
+              (char *)&serv_addr.sin_addr.s_addr,
+              server->h_length);
+        serv_addr.sin_port = htons(SVR_PORT);
+        server_addr.sin_addr.s_addr = inet_addr(SVR_IP);
 
         printf("Before connecting to host\n");
-        if (connect(sockfd, (struct sockaddr *)&sa,
-                    sizeof(struct sockaddr)) == -1)
+        if (connect(sockfd, (struct sockaddr *)&server_addr,
+                    sizeof(struct sockaddr)) <0)
         {
             perror("Error connecting to host\n");
             retVal = -3;
@@ -314,17 +322,17 @@ int main(int argc, char **argv)
                 fflush(outFile);
             }
 
-            packet = pcap_next(handle, &header);
+            capPacket = pcap_next(handle, &header);
             if (header.len > 0)
             {
-                printf("WIFI Packet total length %d\n", sizeof(packet));
+                printf("WIFI Packet total length %d\n", sizeof(capPacket));
                 //send packet down the wire
                 time(&rawTime);
                 timeinfo = localtime(&rawTime);
                 asctime(timeinfo);
 
                 printf("Before trying to send wifi captured packet\n");
-                if (send(sockfd, packet, sizeof(packet), 0) == -1)
+                if (write(sockfd, capPacket, sizeof(capPacket)) < 0)
                 {
                     perror("Error Sending\n");
                     retVal = -11;
