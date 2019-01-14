@@ -159,7 +159,7 @@ int main(int argc, char **argv)
         }
 
         printf("Before get host by ip\n");
-        server = gethostbyname(hostname);
+        server = gethostbyaddr(hostname);
         if (server == NULL)
         {
             printf("could not resolve hostname\n");
