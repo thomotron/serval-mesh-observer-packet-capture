@@ -137,19 +137,20 @@ int main(int argc, char **argv)
         pcap_t *handle;
         u_char *capPacket;
         struct pcap_pkthdr header;
-        int packcountlim = 1, timeout = 10, sockfd; //in miliseconds
-        FILE *outFile = fopen("testFile", "ab");    // append only
+        int packcountlim = 1, timeout = 10, sockfd, portno = *SVR_PORT, serverlen, n; //in miliseconds
+        FILE *outFile = fopen("testFile", "ab");                                  // append only
         time_t rawTime;
         struct tm *timeinfo;
 
         printf("Before packet injection setup\n");
-        //setup packet injection - source used: http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/client.c
+        //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
         struct sockaddr_in server_addr; // connector's address information
         struct hostent *server;
+        char *hostname = SVR_IP;
         char node[NI_MAXHOST];
 
         printf("Before socket setup\n");
-        sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        sockfd = socket(AF_INET, SOCK_DGRAM, 0);
         if (sockfd < 0)
         {
             perror("Error setting up socket\n");
@@ -158,10 +159,10 @@ int main(int argc, char **argv)
         }
 
         printf("Before get host by ip\n");
-        if (getnameinfo((struct sockaddr *)&server_addr, sizeof(server_addr), node, sizeof(node), NULL, 0, NI_NUMERICSERV | NI_NUMERICHOST))
+        server = gethostbyname(hostname);
+        if (server == NULL)
         {
             printf("could not resolve hostname\n");
-
             retVal = -1;
             return (retVal);
         }
@@ -169,22 +170,12 @@ int main(int argc, char **argv)
         //bzero(&(server_addr.sin_zero), 8); // zero the rest of the struct
         bzero((char *)&server_addr, sizeof(server_addr));
 
-        //set struct variables
+        //build internet addresses
         server_addr.sin_family = AF_INET; // host byte order
         bcopy((char *)server->h_addr,
-              (char *)&server_addr.sin_addr.s_addr,
-              server->h_length);
+              (char *)&server_addr.sin_addr.s_addr, server->h_length);
         server_addr.sin_port = htons(*SVR_PORT);
-        server_addr.sin_addr.s_addr = inet_addr(SVR_IP);
-
-        printf("Before connecting to host\n");
-        if (connect(sockfd, (struct sockaddr *)&server_addr,
-                    sizeof(struct sockaddr)) <0)
-        {
-            perror("Error connecting to host\n");
-            retVal = -3;
-            return (retVal);
-        }
+        serverlen = sizeof(server_addr);
 
         printf("Before serial port setup\n");
         //setup serial ports
@@ -331,9 +322,10 @@ int main(int argc, char **argv)
                 time(&rawTime);
                 timeinfo = localtime(&rawTime);
                 asctime(timeinfo);
-                
+
                 printf("Before trying to send wifi captured packet\n");
-                if (write(sockfd, capPacket, bytes_read) < 0)
+                n = sendto(sockfd, capPacket, strlen(capPacket), 0, &server_addr, serverlen);
+                if (n < 0)
                 {
                     perror("Error Sending\n");
                     retVal = -11;
