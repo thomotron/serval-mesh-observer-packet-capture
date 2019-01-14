@@ -146,7 +146,7 @@ int main(int argc, char **argv)
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
         struct sockaddr_in server_addr; // connector's address information
         struct hostent *server;
-        char *hostname = SVR_IP;
+        server_addr.sin_addr.s_addr = inet_addr(SVR_IP);
         char node[NI_MAXHOST];
 
         printf("Before socket setup\n");
@@ -159,7 +159,7 @@ int main(int argc, char **argv)
         }
 
         printf("Before get host by ip\n");
-        server = gethostbyaddr(hostname);
+        server = gethostbyaddr(&server_addr, sizeof(server_addr), AF_INET);
         if (server == NULL)
         {
             printf("could not resolve hostname\n");
