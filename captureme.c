@@ -89,16 +89,16 @@ int serial_setup_port_with_speed(int fd, int speed)
     t.c_cflag |= CLOCAL;
 
     t.c_lflag &= ~(ICANON | ISIG | IEXTEN | ECHO | ECHOE);
-    /* Noncanonical mode, diserver_addrble signals, extended
+    /* Noncanonical mode, disable signals, extended
    input processing, and software flow control and echoing */
 
     t.c_iflag &= ~(BRKINT | ICRNL | IGNBRK | IGNCR | INLCR |
                    INPCK | ISTRIP | IXON | IXOFF | IXANY | PARMRK);
-    /* Diserver_addrble special handling of CR, NL, and BREAK.
+    /* Disable special handling of CR, NL, and BREAK.
    No 8th-bit stripping or parity error handling.
-   Diserver_addrble START/STOP output flow control. */
+   Disable START/STOP output flow control. */
 
-    // Diserver_addrble CTS/RTS flow control
+    // Disable CTS/RTS flow control
 #ifndef CNEW_RTSCTS
     t.c_cflag &= ~CRTSCTS;
 #else
@@ -112,7 +112,7 @@ int serial_setup_port_with_speed(int fd, int speed)
             (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
             (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
 
-    tcsetattr(fd, TCserver_addrNOW, &t);
+    tcsetattr(fd, TCSANOW, &t);
 
     tcgetattr(fd, &t);
     fprintf(stderr, "Serial port settings after tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
@@ -167,14 +167,14 @@ int main(int argc, char **argv)
         }
 
         //bzero(&(server_addr.sin_zero), 8); // zero the rest of the struct
-        bzero((char *)&serv_addr, sizeof(serv_addr));
+        bzero((char *)&server_addr, sizeof(server_addr));
 
         //set struct variables
         server_addr.sin_family = AF_INET; // host byte order
         bcopy((char *)server->h_addr,
-              (char *)&serv_addr.sin_addr.s_addr,
+              (char *)&server_addr.sin_addr.s_addr,
               server->h_length);
-        serv_addr.sin_port = htons(SVR_PORT);
+        server_addr.sin_port = htons(*SVR_PORT);
         server_addr.sin_addr.s_addr = inet_addr(SVR_IP);
 
         printf("Before connecting to host\n");
@@ -325,14 +325,15 @@ int main(int argc, char **argv)
             capPacket = pcap_next(handle, &header);
             if (header.len > 0)
             {
-                printf("WIFI Packet total length %d\n", sizeof(capPacket));
+                bytes_read = sizeof(capPacket);
+                printf("WIFI Packet total length %i\n", bytes_read);
                 //send packet down the wire
                 time(&rawTime);
                 timeinfo = localtime(&rawTime);
                 asctime(timeinfo);
-
+                
                 printf("Before trying to send wifi captured packet\n");
-                if (write(sockfd, capPacket, sizeof(capPacket)) < 0)
+                if (write(sockfd, capPacket, bytes_read) < 0)
                 {
                     perror("Error Sending\n");
                     retVal = -11;
