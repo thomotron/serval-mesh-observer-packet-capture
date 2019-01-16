@@ -167,7 +167,7 @@ int main(int argc, char **argv)
 
         printf("Before get host by ip\n");
 
-        if (getnameinfo((struct sockaddr *) &server_addr, len, hbuf, sizeof(hbuf), NULL, 0, NI_NAMEREQD))
+        if (getnameinfo((struct sockaddr *) &server_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
         {
             printf("could not resolve IP\n");
             retVal = -1;
