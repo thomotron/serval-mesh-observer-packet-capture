@@ -139,8 +139,8 @@ int main(int argc, char **argv)
         pcap_t *handle;
         u_char *capPacket;
         struct pcap_pkthdr header;
-        int packcountlim = 1, timeout = 10, sockfd, n, serverlen; 
-        FILE *outFile = fopen("testFile", "ab");    // append to file only
+        int packcountlim = 1, timeout = 10, sockfd, n, serverlen;
+        FILE *outFile = fopen("testFile", "ab"); // append to file only
         time_t rawTime;
         struct tm *timeinfo;
 
@@ -148,12 +148,12 @@ int main(int argc, char **argv)
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
         struct sockaddr_in server_addr; // connector's address information
         struct hostent *server;
+        memset(&server_addr, 0, sizeof(struct sockaddr_in));
         server_addr.sin_family = AF_INET;
         server_addr.sin_addr.s_addr = inet_addr("192.168.2.2");
         server_addr.sin_port = htons(SVR_PORT);
         socklen_t len = sizeof(struct sockaddr_in);
-        
-        
+
         char hbuf[NI_MAXHOST];
 
         printf("Before socket setup\n");
@@ -166,13 +166,19 @@ int main(int argc, char **argv)
         }
 
         printf("Before get host by ip\n");
-        server = gethostbyname(SVR_IP);
+
+        if (getnameinfo((struct sockaddr *) &server_addr, len, hbuf, sizeof(hbuf), NULL, 0, NI_NAMEREQD))
         {
             printf("could not resolve IP\n");
             retVal = -1;
             return (retVal);
         }
-        bcopy((char *) server->h_addr, (char *)&server_addr.sin_addr, server->h_length);
+        else
+        {
+            printf("host=%s\n", hbuf);
+        }
+
+        bcopy((char *)server->h_addr, (char *)&server_addr.sin_addr, server->h_length);
         serverlen = sizeof(server_addr);
 
         printf("Before serial port setup\n");
