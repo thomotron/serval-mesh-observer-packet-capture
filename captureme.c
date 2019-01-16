@@ -148,7 +148,6 @@ int main(int argc, char **argv)
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
         struct sockaddr_in server_addr; // connector's address information
         struct hostent *server;
-        char host[1024];
         bzero(server_addr, sizeof(server_addr));
         server_addr.sin_family = AF_INET;
         server_addr.sin_addr.s_addr = inet_addr("192.168.2.2");
@@ -167,17 +166,13 @@ int main(int argc, char **argv)
         }
 
         printf("Before get host by ip\n");
-        int gni_err = getnameinfo((struct sockaddr *)&server_addr, sizeof(server_addr), host, sizeof host, NULL, 0, NI_NAMEREQD | NI_NOFQDN);
-        if (gni_err == 0)
-        {
-            printf("host is: %s\n", host);
-        }
-        else
+        server = gethostbyname(SVR_IP);
         {
             printf("could not resolve IP\n");
             retVal = -1;
             return (retVal);
         }
+        bcopy((char *) server->h_addr, (char *)&server_addr.sin_addr, server->h_length);
 
         printf("Before serial port setup\n");
         //setup serial ports
