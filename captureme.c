@@ -28,7 +28,7 @@
  * 
  */
 #define SVR_IP "192.168.2.2"
-#define SVR_PORT "3940"
+#define SVR_PORT 3940
 
 int set_nonblock(int fd)
 {
@@ -139,8 +139,8 @@ int main(int argc, char **argv)
         pcap_t *handle;
         u_char *capPacket;
         struct pcap_pkthdr header;
-        int packcountlim = 1, timeout = 10, sockfd, portno = *SVR_PORT, n; //in miliseconds
-        FILE *outFile = fopen("testFile", "ab");                                      // append only
+        int packcountlim = 1, timeout = 10, sockfd, n, serverlen; 
+        FILE *outFile = fopen("testFile", "ab");    // append to file only
         time_t rawTime;
         struct tm *timeinfo;
 
@@ -148,11 +148,11 @@ int main(int argc, char **argv)
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
         struct sockaddr_in server_addr; // connector's address information
         struct hostent *server;
-        bzero(server_addr, sizeof(server_addr));
         server_addr.sin_family = AF_INET;
         server_addr.sin_addr.s_addr = inet_addr("192.168.2.2");
         server_addr.sin_port = htons(SVR_PORT);
         socklen_t len = sizeof(struct sockaddr_in);
+        
         
         char hbuf[NI_MAXHOST];
 
@@ -173,6 +173,7 @@ int main(int argc, char **argv)
             return (retVal);
         }
         bcopy((char *) server->h_addr, (char *)&server_addr.sin_addr, server->h_length);
+        serverlen = sizeof(server_addr);
 
         printf("Before serial port setup\n");
         //setup serial ports
