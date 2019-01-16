@@ -167,7 +167,7 @@ int main(int argc, char **argv)
 
         printf("Before get host by ip\n");
 
-        if (getnameinfo((struct sockaddr *) &server_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
+        if (getnameinfo((struct sockaddr *)&server_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
         {
             printf("could not resolve IP\n");
             retVal = -1;
@@ -177,8 +177,6 @@ int main(int argc, char **argv)
         {
             printf("host=%s\n", hbuf);
         }
-
-        bcopy((char *)server->h_addr, (char *)&server_addr.sin_addr, server->h_length);
         serverlen = sizeof(server_addr);
 
         printf("Before serial port setup\n");
@@ -251,6 +249,18 @@ int main(int argc, char **argv)
         char quitInputRead;
         int bytes_read;
         int packetID = 0;
+
+        //sending test message to verify network stuff is working properly 
+        printf("Sending test message\n");
+        char msg[] = "hello there mr good programmer";
+        n = sendto(sockfd, msg, strlen(msg), 0, &server_addr, serverlen);
+        if (n < 0)
+        {
+            perror("Error Sending\n");
+            retVal = -11;
+            break;
+        }
+
         do
         {
             bytes_read = read(r1, &readBuffer, bufferSize);
@@ -320,7 +330,7 @@ int main(int argc, char **argv)
             capPacket = pcap_next(handle, &header);
             if (header.len > 0)
             {
-                bytes_read = sizeof(capPacket);
+               /* bytes_read = sizeof(capPacket);
                 printf("WIFI Packet total length %i\n", bytes_read);
                 //send packet down the wire
                 time(&rawTime);
@@ -334,7 +344,7 @@ int main(int argc, char **argv)
                     perror("Error Sending\n");
                     retVal = -11;
                     break;
-                }
+                }*/
             }
 
         } while (1);
