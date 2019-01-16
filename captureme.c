@@ -22,11 +22,13 @@
 #include <sys/socket.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
+
 /*
  * 
  */
 #define SVR_IP "192.168.2.2"
-#define SVR_PORT "3490"
+#define SVR_PORT "3940"
 
 int set_nonblock(int fd)
 {
@@ -137,8 +139,8 @@ int main(int argc, char **argv)
         pcap_t *handle;
         u_char *capPacket;
         struct pcap_pkthdr header;
-        int packcountlim = 1, timeout = 10, sockfd, portno = *SVR_PORT, serverlen, n; //in miliseconds
-        FILE *outFile = fopen("testFile", "ab");                                  // append only
+        int packcountlim = 1, timeout = 10, sockfd, portno = *SVR_PORT, n; //in miliseconds
+        FILE *outFile = fopen("testFile", "ab");                                      // append only
         time_t rawTime;
         struct tm *timeinfo;
 
@@ -146,8 +148,14 @@ int main(int argc, char **argv)
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
         struct sockaddr_in server_addr; // connector's address information
         struct hostent *server;
-        server_addr.sin_addr.s_addr = inet_addr(SVR_IP);
-        char node[NI_MAXHOST];
+        char host[1024];
+        bzero(server_addr, sizeof(server_addr));
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_addr.s_addr = inet_addr("192.168.2.2");
+        server_addr.sin_port = htons(SVR_PORT);
+        socklen_t len = sizeof(struct sockaddr_in);
+        
+        char hbuf[NI_MAXHOST];
 
         printf("Before socket setup\n");
         sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -159,23 +167,17 @@ int main(int argc, char **argv)
         }
 
         printf("Before get host by ip\n");
-        server = gethostbyaddr(&server_addr, sizeof(server_addr), AF_INET);
-        if (server == NULL)
+        int gni_err = getnameinfo((struct sockaddr *)&server_addr, sizeof(server_addr), host, sizeof host, NULL, 0, NI_NAMEREQD | NI_NOFQDN);
+        if (gni_err == 0)
         {
-            printf("could not resolve hostname\n");
+            printf("host is: %s\n", host);
+        }
+        else
+        {
+            printf("could not resolve IP\n");
             retVal = -1;
             return (retVal);
         }
-
-        //bzero(&(server_addr.sin_zero), 8); // zero the rest of the struct
-        bzero((char *)&server_addr, sizeof(server_addr));
-
-        //build internet addresses
-        server_addr.sin_family = AF_INET; // host byte order
-        bcopy((char *)server->h_addr,
-              (char *)&server_addr.sin_addr.s_addr, server->h_length);
-        server_addr.sin_port = htons(*SVR_PORT);
-        serverlen = sizeof(server_addr);
 
         printf("Before serial port setup\n");
         //setup serial ports
