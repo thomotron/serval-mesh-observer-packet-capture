@@ -14,15 +14,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pcap.h>
-#include <unistd.h>
 #include <termios.h>
-#include <fcntl.h>
 #include <time.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <string.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
+#include <libnet.h>
 
 /*
  * 
@@ -126,6 +120,102 @@ int serial_setup_port_with_speed(int fd, int speed)
     return 0;
 }
 
+//taken from example here: http://network-development.blogspot.com/2014/02/libnet-library-part-1-introduction-and.html
+void build_ipv4(char *addr, u_int8_t proto, u_int32_t psize, libnet_t *lnet)
+{
+    u_int32_t target, source;
+    u_int16_t id;
+    target = libnet_name2addr4(lnet, addr, LIBNET_DONT_RESOLVE);
+    source = libnet_get_ipaddr4(lnet);
+    if (source == -1)
+    {
+        printf("Error retrieving IP address: %s\n", libnet_geterror(lnet));
+        libnet_destroy(lnet);
+        exit(1);
+    }
+    libnet_seed_prand(lnet);
+    id = (u_int16_t)libnet_get_prand(LIBNET_PR16);
+    if (libnet_build_ipv4(LIBNET_IPV4_H + LIBNET_ICMPV4_ECHO_H + psize,
+                          0,
+                          id,
+                          0,
+                          64,
+                          proto,
+                          0,
+                          source,
+                          target,
+                          NULL,
+                          0,
+                          lnet,
+                          0) == -1)
+    {
+        printf("Error building IP header: %s\n", libnet_geterror(lnet));
+        libnet_destroy(lnet);
+        exit(1);
+    }
+}
+
+int write_packet(libnet_t *lnet)
+{
+    int bytes_written = libnet_write(lnet);
+    if (bytes_written != -1)
+    {
+        printf("%d bytes written to device %s.\n", bytes_written, libnet_getdevice(lnet));
+        return 1;
+    }
+    else
+    {
+        printf("Error writing packet: %s\n", libnet_geterror(lnet));
+        return 0;
+    }
+}
+
+int buildSendPcap(u_char payload)
+{
+
+    return 1;
+}
+
+int buildSendRFD900(char *payload, libnet_t *lnet)
+{
+    //code takem from this example: http://network-development.blogspot.com/2014/04/libnet-library-part-2-injecting-tcp-and.html
+    char *addr = SVR_IP;
+    int port = SVR_PORT;
+    char *interface = "eth0";
+
+    u_int16_t id, seq;
+    char errbuf[LIBNET_ERRBUF_SIZE];
+
+    /* Generating a random id */
+    libnet_seed_prand(lnet);
+    id = (u_int16_t)libnet_get_prand(LIBNET_PR16);
+
+    /* Building UDP header */
+    seq = 1;
+
+    if (libnet_build_udp(
+            libnet_get_prand(LIBNET_PRu16), //currently generating random from port
+            port,                           //destination port
+            LIBNET_UDP_H + sizeof(payload), //size of UDP header and payload
+            0,                              //autogenerate checksum flag
+            (u_int8_t*)payload,             //char payload we went to send. Casted for function
+            sizeof(payload),                // the size of the payload
+            lnet,                           //libnet context to be used with this header
+            0) == -1)                       //set to 0 to generate new header
+    {
+        printf("Error building UDP header: %s\n", libnet_geterror(lnet));
+        libnet_destroy(lnet);
+        return 0;
+    }
+
+    //generate header
+    build_ipv4(addr, IPPROTO_UDP, sizeof(payload) + LIBNET_UDP_H, lnet);
+
+    //write packet to the libner context
+    int retVal = write_packet(lnet);
+    return retVal;
+}
+
 int main(int argc, char **argv)
 {
     int retVal = 0;
@@ -153,6 +243,16 @@ int main(int argc, char **argv)
         server_addr.sin_addr.s_addr = inet_addr("192.168.2.2");
         server_addr.sin_port = htons(SVR_PORT);
         socklen_t len = sizeof(struct sockaddr_in);
+
+        //initiate libnet context
+        libnet_t *lnet;
+        char interface[4] = "eth1";
+        lnet = libnet_init(LIBNET_RAW4, interface, errbuf);
+        if (lnet == NULL)
+        {
+            printf("Error with libnet_init(): %s", errbuf);
+            return 0;
+        }
 
         char hbuf[NI_MAXHOST];
 
@@ -250,14 +350,13 @@ int main(int argc, char **argv)
         int bytes_read;
         int packetID = 0;
 
-        //sending test message to verify network stuff is working properly 
+        //sending test message to verify network stuff is working properly
         printf("Sending test message\n");
         char msg[] = "hello there mr good programmer";
-        n = sendto(sockfd, msg, strlen(msg), 0, &server_addr, serverlen);
-        if (n < 0)
+        if (!buildSendRFD900(msg, lnet))
         {
-            perror("Error Sending\n");
-            retVal = -11;
+            perror("Error Sending");
+            retVal = -100;
             break;
         }
 
@@ -270,12 +369,12 @@ int main(int argc, char **argv)
                 printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
+                if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
                 {
                     perror("Error Sending");
                     retVal = -7;
                     break;
-                }*/
+                }
                 fflush(outFile);
             }
 
@@ -286,12 +385,12 @@ int main(int argc, char **argv)
                 printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
+                if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
                 {
                     perror("Error Sending");
                     retVal = -8;
                     break;
-                }*/
+                }
                 fflush(outFile);
             }
 
@@ -302,12 +401,12 @@ int main(int argc, char **argv)
                 printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
+                if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
                 {
                     perror("Error Sending");
                     retVal = -9;
                     break;
-                }*/
+                }
                 fflush(outFile);
             }
 
@@ -318,19 +417,19 @@ int main(int argc, char **argv)
                 printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                /*if (send(sockfd, packet, sizeof(packet), 0) == -1)
+                if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
                 {
                     perror("Error Sending\n");
                     retVal = -10;
                     break;
-                }*/
+                }
                 fflush(outFile);
             }
 
-            capPacket = pcap_next(handle, &header);
+            //capPacket = pcap_next(handle, &header);
             if (header.len > 0)
             {
-               /* bytes_read = sizeof(capPacket);
+                bytes_read = sizeof(capPacket);
                 printf("WIFI Packet total length %i\n", bytes_read);
                 //send packet down the wire
                 time(&rawTime);
@@ -338,13 +437,13 @@ int main(int argc, char **argv)
                 asctime(timeinfo);
 
                 printf("Before trying to send wifi captured packet\n");
-                n = sendto(sockfd, capPacket, strlen(capPacket), 0, &server_addr, serverlen);
+                //n = sendto(sockfd, capPacket, strlen(capPacket), 0, &server_addr, serverlen);
                 if (n < 0)
                 {
                     perror("Error Sending\n");
                     retVal = -11;
                     break;
-                }*/
+                }
             }
 
         } while (1);
@@ -357,6 +456,8 @@ int main(int argc, char **argv)
         printf("Serial ports closed: %s %s %s %s\n", port1, port2, port3, port4);
         //close opened file
         fclose(outFile);
+        //free memory for libnet context
+        libnet_destroy(lnet);
 
     } while (0);
 
