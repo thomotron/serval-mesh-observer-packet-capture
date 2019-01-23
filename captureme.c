@@ -85,14 +85,14 @@ int serial_setup_port_with_speed(int fd, int speed)
     t.c_cflag |= CLOCAL;
 
     t.c_lflag &= ~(ICANON | ISIG | IEXTEN | ECHO | ECHOE);
-    /* Noncanonical mode, disable signals, extended
-   input processing, and software flow control and echoing */
+    //Noncanonical mode, disable signals, extended
+    //input processing, and software flow control and echoing 
 
     t.c_iflag &= ~(BRKINT | ICRNL | IGNBRK | IGNCR | INLCR |
                    INPCK | ISTRIP | IXON | IXOFF | IXANY | PARMRK);
-    /* Disable special handling of CR, NL, and BREAK.
-   No 8th-bit stripping or parity error handling.
-   Disable START/STOP output flow control. */
+    //Disable special handling of CR, NL, and BREAK.
+    //No 8th-bit stripping or parity error handling.
+    //Disable START/STOP output flow control. 
 
     // Disable CTS/RTS flow control
 #ifndef CNEW_RTSCTS
@@ -168,6 +168,7 @@ int write_packet(libnet_t *lnet)
         printf("Error writing packet: %s\n", libnet_geterror(lnet));
         return 0;
     }
+    return 0;
 }
 
 int buildSendPcap(u_char payload)
@@ -186,11 +187,11 @@ int buildSendRFD900(char *payload, libnet_t *lnet)
     u_int16_t id, seq;
     char errbuf[LIBNET_ERRBUF_SIZE];
 
-    /* Generating a random id */
+    // Generating a random id 
     libnet_seed_prand(lnet);
     id = (u_int16_t)libnet_get_prand(LIBNET_PR16);
 
-    /* Building UDP header */
+    // Building UDP header 
     seq = 1;
 
     if (libnet_build_udp(
@@ -213,7 +214,7 @@ int buildSendRFD900(char *payload, libnet_t *lnet)
 
     //write packet to the libner context
     int retVal = write_packet(lnet);
-    return retVal;
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -255,7 +256,7 @@ int main(int argc, char **argv)
         }
 
         char hbuf[NI_MAXHOST];
-
+        
         printf("Before socket setup\n");
         sockfd = socket(AF_INET, SOCK_DGRAM, 0);
         if (sockfd < 0)
@@ -286,7 +287,7 @@ int main(int argc, char **argv)
         char *port3 = "/dev/ttyUSB2";
         char *port4 = "/dev/ttyUSB3";
 
-        printf("before opening serial ports\n");
+       /* printf("before opening serial ports\n");
         //open serial ports
         int r1 = open(port1, O_RDONLY | O_NOCTTY | O_NDELAY);
         if (r1 == -1)
@@ -340,6 +341,7 @@ int main(int argc, char **argv)
         {
             printf("Error starting pcap device: %s\n", errbuf);
         }
+        */
         //https://linux.die.net/man/3/pcap_setdirection
         pcap_setdirection(handle, PCAP_D_IN);
 
@@ -362,7 +364,7 @@ int main(int argc, char **argv)
 
         do
         {
-            bytes_read = read(r1, &readBuffer, bufferSize);
+            /*bytes_read = read(r1, &readBuffer, bufferSize);
             if (bytes_read > 0)
             {
                 readBuffer[bytes_read] = 0;
@@ -424,7 +426,7 @@ int main(int argc, char **argv)
                     break;
                 }
                 fflush(outFile);
-            }
+            }*/
 
             //capPacket = pcap_next(handle, &header);
             if (header.len > 0)
@@ -449,17 +451,18 @@ int main(int argc, char **argv)
         } while (1);
 
         //close opened serial ports
-        close(r1);
+        /*close(r1);
         close(r2);
         close(s1);
         close(s2);
-        printf("Serial ports closed: %s %s %s %s\n", port1, port2, port3, port4);
+        printf("Serial ports closed: %s %s %s %s\n", port1, port2, port3, port4);*/
         //close opened file
         fclose(outFile);
         //free memory for libnet context
         libnet_destroy(lnet);
 
     } while (0);
+    
 
     return (retVal);
 }
