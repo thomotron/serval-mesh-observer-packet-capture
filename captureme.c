@@ -160,12 +160,12 @@ int write_packet(libnet_t *lnet)
     int bytes_written = libnet_write(lnet);
     if (bytes_written != -1)
     {
-        printf("%d bytes written to device %s.\n", bytes_written, libnet_getdevice(lnet));
+        printf("%d bytes written to device %s.\n\n", bytes_written, libnet_getdevice(lnet));
         return 1;
     }
     else
     {
-        printf("Error writing packet: %s\n", libnet_geterror(lnet));
+        printf("Error writing packet: %s\n\n", libnet_geterror(lnet));
         return 0;
     }
     return 0;
@@ -193,14 +193,18 @@ int buildSendRFD900(char *payload, libnet_t *lnet)
 
     // Building UDP header 
     seq = 1;
+    int payloadSize = strlen(payload);
 
+    printf("Before packet header build\n");
+    printf("Size: %i\n", payloadSize);
+    printf("Text: %s", payload);
     if (libnet_build_udp(
             libnet_get_prand(LIBNET_PRu16), //currently generating random from port
             port,                           //destination port
-            LIBNET_UDP_H + sizeof(payload), //size of UDP header and payload
+            LIBNET_UDP_H + payloadSize, //size of UDP header and payload
             0,                              //autogenerate checksum flag
             (u_int8_t*)payload,             //char payload we went to send. Casted for function
-            sizeof(payload),                // the size of the payload
+            payloadSize,                              // the size of the payload
             lnet,                           //libnet context to be used with this header
             0) == -1)                       //set to 0 to generate new header
     {
@@ -343,7 +347,7 @@ int main(int argc, char **argv)
             printf("Error starting pcap device: %s\n", errbuf);
         }
         
-       printf("Before pcap setup");
+       printf("Before pcap setup\n");
         //https://linux.die.net/man/3/pcap_setdirection
         pcap_setdirection(handle, PCAP_D_IN);
 
@@ -356,7 +360,8 @@ int main(int argc, char **argv)
 
         //sending test message to verify network stuff is working properly
         printf("Sending test message\n");
-        char msg[] = "hello there mr good programmer";
+        char *msg = "hello there!";
+        printf("1: %s\n",msg);
         if (buildSendRFD900(msg, lnet))
         {
             perror("Error Sending");
