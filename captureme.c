@@ -182,7 +182,7 @@ int buildSendRFD900(char *payload, libnet_t *lnet)
     //code takem from this example: http://network-development.blogspot.com/2014/04/libnet-library-part-2-injecting-tcp-and.html
     char *addr = SVR_IP;
     int port = SVR_PORT;
-    char *interface = "eth0";
+    char *interface = "eth1";
 
     u_int16_t id, seq;
     char errbuf[LIBNET_ERRBUF_SIZE];
@@ -212,9 +212,10 @@ int buildSendRFD900(char *payload, libnet_t *lnet)
     //generate header
     build_ipv4(addr, IPPROTO_UDP, sizeof(payload) + LIBNET_UDP_H, lnet);
 
+    printf("Writing packet with libnet\n");
     //write packet to the libner context
     int retVal = write_packet(lnet);
-    return 0;
+    return retVal;
 }
 
 int main(int argc, char **argv)
@@ -287,7 +288,7 @@ int main(int argc, char **argv)
         char *port3 = "/dev/ttyUSB2";
         char *port4 = "/dev/ttyUSB3";
 
-       /* printf("before opening serial ports\n");
+        printf("before opening serial ports\n");
         //open serial ports
         int r1 = open(port1, O_RDONLY | O_NOCTTY | O_NDELAY);
         if (r1 == -1)
@@ -341,7 +342,8 @@ int main(int argc, char **argv)
         {
             printf("Error starting pcap device: %s\n", errbuf);
         }
-        */
+        
+       printf("Before pcap setup");
         //https://linux.die.net/man/3/pcap_setdirection
         pcap_setdirection(handle, PCAP_D_IN);
 
@@ -355,7 +357,7 @@ int main(int argc, char **argv)
         //sending test message to verify network stuff is working properly
         printf("Sending test message\n");
         char msg[] = "hello there mr good programmer";
-        if (!buildSendRFD900(msg, lnet))
+        if (buildSendRFD900(msg, lnet))
         {
             perror("Error Sending");
             retVal = -100;
@@ -429,7 +431,7 @@ int main(int argc, char **argv)
             }*/
 
             //capPacket = pcap_next(handle, &header);
-            if (header.len > 0)
+            /*if (header.len > 0)
             {
                 bytes_read = sizeof(capPacket);
                 printf("WIFI Packet total length %i\n", bytes_read);
@@ -439,23 +441,23 @@ int main(int argc, char **argv)
                 asctime(timeinfo);
 
                 printf("Before trying to send wifi captured packet\n");
-                //n = sendto(sockfd, capPacket, strlen(capPacket), 0, &server_addr, serverlen);
+                n = sendto(sockfd, capPacket, strlen(capPacket), 0, &server_addr, serverlen);
                 if (n < 0)
                 {
                     perror("Error Sending\n");
                     retVal = -11;
                     break;
                 }
-            }
+            }*/
 
         } while (1);
 
         //close opened serial ports
-        /*close(r1);
+        close(r1);
         close(r2);
         close(s1);
         close(s2);
-        printf("Serial ports closed: %s %s %s %s\n", port1, port2, port3, port4);*/
+        printf("Serial ports closed: %s %s %s %s\n", port1, port2, port3, port4);
         //close opened file
         fclose(outFile);
         //free memory for libnet context
