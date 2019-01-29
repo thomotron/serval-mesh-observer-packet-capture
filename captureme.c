@@ -171,7 +171,7 @@ int write_packet(libnet_t *lnet)
     return 0;
 }
 
-int buildSendPcap(u_char *payload, libnet_t *lnet, int packetSize)
+int buildSendPcap(u_char *payload, libnet_t *lnet, u_long payloadSize)
 {
     //code adapted from this example: http://network-development.blogspot.com/2014/04/libnet-library-part-2-injecting-tcp-and.html
     char *addr = SVR_IP;
@@ -189,14 +189,14 @@ int buildSendPcap(u_char *payload, libnet_t *lnet, int packetSize)
     seq = 1;
 
     printf("Before packet header build\n");
-    printf("Size of payload: %i", packetSize);
+    printf("Size of payload: %i\n", payloadSize);
     if (libnet_build_udp(
             libnet_get_prand(LIBNET_PRu16), //currently generating random from port
             port,                           //destination port
-            LIBNET_UDP_H + packetSize, //size of UDP header and payload
+            LIBNET_UDP_H + payloadSize, //size of UDP header and payload
             0,                              //autogenerate checksum flag
             (u_int8_t*)payload,             //char payload we went to send. Casted for function
-            packetSize,                              // the size of the payload
+            payloadSize,                              // the size of the payload
             lnet,                           //libnet context to be used with this header
             0) == -1)                       //set to 0 to generate new header
     {
@@ -205,12 +205,15 @@ int buildSendPcap(u_char *payload, libnet_t *lnet, int packetSize)
         return 1;
     }
 
+    printf("build IPV4 header\n");
     //generate header
-    build_ipv4(addr, IPPROTO_UDP, sizeof(payload) + LIBNET_UDP_H, lnet);
+    build_ipv4(addr, IPPROTO_UDP, payloadSize + LIBNET_UDP_H, lnet);
 
     printf("Writing packet with libnet\n");
     //write packet to the libner context
     int retVal = write_packet(lnet);
+    libnet_clear_packet(lnet); //clears the packet we just created and sent in the lnet libnet context
+    //this is done because we will be building a new packet with an assumed different sized payload each time
     return retVal;
 }
 
@@ -251,11 +254,12 @@ int buildSendRFD900(char *payload, libnet_t *lnet)
     }
 
     //generate header
-    build_ipv4(addr, IPPROTO_UDP, sizeof(payload) + LIBNET_UDP_H, lnet);
+    build_ipv4(addr, IPPROTO_UDP, payloadSize + LIBNET_UDP_H, lnet);
 
     printf("Writing packet with libnet\n");
     //write packet to the libner context
     int retVal = write_packet(lnet);
+    libnet_clear_packet(lnet); // clears packet we just made so we can create a new one easily. 
     return retVal;
 }
 
@@ -464,7 +468,7 @@ int main(int argc, char **argv)
             capPacket = pcap_next(handle, &header);
             if (header.len > 0)
             {
-                printf("WIFI Packet total length %i\n", header.caplen);
+                printf("Captured WIFI packet total length %i\n", header.caplen);
                 //send packet down the wire
                 time(&rawTime);
                 timeinfo = localtime(&rawTime);
