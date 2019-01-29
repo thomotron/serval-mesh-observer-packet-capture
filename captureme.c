@@ -358,17 +358,6 @@ int main(int argc, char **argv)
         int bytes_read;
         int packetID = 0;
 
-        //sending test message to verify network stuff is working properly
-        printf("Sending test message\n");
-        char *msg = "hello there!\n";
-        printf("1: %s\n",msg);
-        if (!buildSendRFD900(msg, lnet))
-        {
-            perror("Error Sending");
-            retVal = -100;
-            break;
-        }
-
         do
         {
             /*bytes_read = read(r1, &readBuffer, bufferSize);
