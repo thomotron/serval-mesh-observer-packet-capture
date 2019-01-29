@@ -210,7 +210,7 @@ int buildSendRFD900(char *payload, libnet_t *lnet)
     {
         printf("Error building UDP header: %s\n", libnet_geterror(lnet));
         libnet_destroy(lnet);
-        return 0;
+        return 1;
     }
 
     //generate header
@@ -360,9 +360,9 @@ int main(int argc, char **argv)
 
         //sending test message to verify network stuff is working properly
         printf("Sending test message\n");
-        char *msg = "hello there!";
+        char *msg = "hello there!\n";
         printf("1: %s\n",msg);
-        if (buildSendRFD900(msg, lnet))
+        if (!buildSendRFD900(msg, lnet))
         {
             perror("Error Sending");
             retVal = -100;
