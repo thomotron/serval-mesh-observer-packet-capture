@@ -13,10 +13,17 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <pcap.h>
 #include <termios.h>
+#include <fcntl.h>
 #include <time.h>
-#include <libnet.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h> 
+#include <arpa/inet.h>
 
 /*
  * 
@@ -120,149 +127,6 @@ int serial_setup_port_with_speed(int fd, int speed)
     return 0;
 }
 
-//taken from example here: http://network-development.blogspot.com/2014/02/libnet-library-part-1-introduction-and.html
-void build_ipv4(char *addr, u_int8_t proto, u_int32_t psize, libnet_t *lnet)
-{
-    u_int32_t target, source;
-    u_int16_t id;
-    target = libnet_name2addr4(lnet, addr, LIBNET_DONT_RESOLVE);
-    source = libnet_get_ipaddr4(lnet);
-    if (source == -1)
-    {
-        printf("Error retrieving IP address: %s\n", libnet_geterror(lnet));
-        libnet_destroy(lnet);
-        exit(1);
-    }
-    libnet_seed_prand(lnet);
-    id = (u_int16_t)libnet_get_prand(LIBNET_PR16);
-    if (libnet_build_ipv4(LIBNET_IPV4_H + LIBNET_ICMPV4_ECHO_H + psize,
-                          0,
-                          id,
-                          0,
-                          64,
-                          proto,
-                          0,
-                          source,
-                          target,
-                          NULL,
-                          0,
-                          lnet,
-                          0) == -1)
-    {
-        printf("Error building IP header: %s\n", libnet_geterror(lnet));
-        libnet_destroy(lnet);
-        exit(1);
-    }
-}
-
-int write_packet(libnet_t *lnet)
-{
-    int bytes_written = libnet_write(lnet);
-    if (bytes_written != -1)
-    {
-        printf("%d bytes written to device %s.\n\n", bytes_written, libnet_getdevice(lnet));
-        return 1;
-    }
-    else
-    {
-        printf("Error writing packet: %s\n\n", libnet_geterror(lnet));
-        return 0;
-    }
-    return 0;
-}
-
-int buildSendPcap(u_char *payload, libnet_t *lnet, u_long payloadSize)
-{
-    //code adapted from this example: http://network-development.blogspot.com/2014/04/libnet-library-part-2-injecting-tcp-and.html
-    char *addr = SVR_IP;
-    int port = SVR_PORT;
-    char *interface = "eth1";
-
-    u_int16_t id, seq;
-    char errbuf[LIBNET_ERRBUF_SIZE];
-
-    // Generating a random id 
-    libnet_seed_prand(lnet);
-    id = (u_int16_t)libnet_get_prand(LIBNET_PR16);
-
-    // Building UDP header 
-    seq = 1;
-
-    printf("Before packet header build\n");
-    printf("Size of payload: %i\n", payloadSize);
-    if (libnet_build_udp(
-            libnet_get_prand(LIBNET_PRu16), //currently generating random from port
-            port,                           //destination port
-            LIBNET_UDP_H + payloadSize, //size of UDP header and payload
-            0,                              //autogenerate checksum flag
-            (u_int8_t*)payload,             //char payload we went to send. Casted for function
-            payloadSize,                              // the size of the payload
-            lnet,                           //libnet context to be used with this header
-            0) == -1)                       //set to 0 to generate new header
-    {
-        printf("Error building UDP header: %s\n", libnet_geterror(lnet));
-        libnet_destroy(lnet);
-        return 1;
-    }
-
-    printf("build IPV4 header\n");
-    //generate header
-    build_ipv4(addr, IPPROTO_UDP, payloadSize + LIBNET_UDP_H, lnet);
-
-    printf("Writing packet with libnet\n");
-    //write packet to the libner context
-    int retVal = write_packet(lnet);
-    libnet_clear_packet(lnet); //clears the packet we just created and sent in the lnet libnet context
-    //this is done because we will be building a new packet with an assumed different sized payload each time
-    return retVal;
-}
-
-int buildSendRFD900(char *payload, libnet_t *lnet)
-{
-    //code adapted from this example: http://network-development.blogspot.com/2014/04/libnet-library-part-2-injecting-tcp-and.html
-    char *addr = SVR_IP;
-    int port = SVR_PORT;
-    char *interface = "eth1";
-
-    u_int16_t id, seq;
-    char errbuf[LIBNET_ERRBUF_SIZE];
-
-    // Generating a random id 
-    libnet_seed_prand(lnet);
-    id = (u_int16_t)libnet_get_prand(LIBNET_PR16);
-
-    // Building UDP header 
-    seq = 1;
-    int payloadSize = strlen(payload);
-
-    printf("Before packet header build\n");
-    printf("Size: %i\n", payloadSize);
-    printf("Text: %s", payload);
-    if (libnet_build_udp(
-            libnet_get_prand(LIBNET_PRu16), //currently generating random from port
-            port,                           //destination port
-            LIBNET_UDP_H + payloadSize, //size of UDP header and payload
-            0,                              //autogenerate checksum flag
-            (u_int8_t*)payload,             //char payload we went to send. Casted for function
-            payloadSize,                              // the size of the payload
-            lnet,                           //libnet context to be used with this header
-            0) == -1)                       //set to 0 to generate new header
-    {
-        printf("Error building UDP header: %s\n", libnet_geterror(lnet));
-        libnet_destroy(lnet);
-        return 1;
-    }
-
-    //generate header
-    build_ipv4(addr, IPPROTO_UDP, payloadSize + LIBNET_UDP_H, lnet);
-
-    printf("Writing packet with libnet\n");
-    //write packet to the libner context
-    int retVal = write_packet(lnet);
-    libnet_clear_packet(lnet); // clears packet we just made so we can create a new one easily. 
-    return retVal;
-}
-
 int main(int argc, char **argv)
 {
     int retVal = 0;
@@ -274,35 +138,23 @@ int main(int argc, char **argv)
         char *dev = "mon0";
         char errbuf[PCAP_ERRBUF_SIZE];
         pcap_t *handle;
-        u_char *capPacket;
         struct pcap_pkthdr header;
-        int packcountlim = 1, timeout = 10, sockfd, n, serverlen;
+        int serverlen;
+        int packcountlim = 1, timeout = 10, sockfd, n;
         FILE *outFile = fopen("testFile", "ab"); // append to file only
-        time_t rawTime;
-        struct tm *timeinfo;
 
         printf("Before packet injection setup\n");
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
+        u_char *capPacket;
         struct sockaddr_in server_addr; // connector's address information
-        struct hostent *server;
         memset(&server_addr, 0, sizeof(struct sockaddr_in));
         server_addr.sin_family = AF_INET;
         server_addr.sin_addr.s_addr = inet_addr("192.168.2.2");
         server_addr.sin_port = htons(SVR_PORT);
         socklen_t len = sizeof(struct sockaddr_in);
-
-        //initiate libnet context
-        libnet_t *lnet;
-        char interface[4] = "eth1";
-        lnet = libnet_init(LIBNET_RAW4, interface, errbuf);
-        if (lnet == NULL)
-        {
-            printf("Error with libnet_init(): %s", errbuf);
-            return 0;
-        }
-
         char hbuf[NI_MAXHOST];
         
+        //setup sockets
         printf("Before socket setup\n");
         sockfd = socket(AF_INET, SOCK_DGRAM, 0);
         if (sockfd < 0)
@@ -332,7 +184,6 @@ int main(int argc, char **argv)
         char *port2 = "/dev/ttyUSB1";
         char *port3 = "/dev/ttyUSB2";
         char *port4 = "/dev/ttyUSB3";
-
         printf("before opening serial ports\n");
         //open serial ports
         int r1 = open(port1, O_RDONLY | O_NOCTTY | O_NDELAY);
@@ -393,11 +244,9 @@ int main(int argc, char **argv)
         pcap_setdirection(handle, PCAP_D_IN);
 
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
-        int bufferSize = 255;
+        int bufferSize = 8192;
         char readBuffer[bufferSize];
-        char quitInputRead;
         int bytes_read;
-        int packetID = 0;
 
         do
         {
@@ -469,13 +318,8 @@ int main(int argc, char **argv)
             if (header.len > 0)
             {
                 printf("Captured WIFI packet total length %i\n", header.caplen);
-                //send packet down the wire
-                time(&rawTime);
-                timeinfo = localtime(&rawTime);
-                asctime(timeinfo);
-
                 printf("Before trying to send wifi captured packet\n");
-                n = buildSendPcap(capPacket, lnet, header.caplen);
+                n = sendto(sockfd, capPacket, 8192, 0, &server_addr, serverlen);
                 if (n < 0)
                 {
                     perror("Error Sending\n");
@@ -493,8 +337,6 @@ int main(int argc, char **argv)
         printf("Serial ports closed: %s %s %s %s\n", port1, port2, port3, port4);
         //close opened file
         fclose(outFile);
-        //free memory for libnet context
-        libnet_destroy(lnet);
 
     } while (0);
     
