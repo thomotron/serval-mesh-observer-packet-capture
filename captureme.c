@@ -133,7 +133,7 @@ int main(int argc, char **argv)
 
     do
     {
-        printf("Before variable decliration\n");
+        printf("Before variable deration\n");
         //setup wireless capture settings
         char *dev = "mon0";
         char errbuf[PCAP_ERRBUF_SIZE];
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 
         printf("Before packet injection setup\n");
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
-        u_char *capPacket;
+        u_char capPacket;
         struct sockaddr_in server_addr; // connector's address information
         memset(&server_addr, 0, sizeof(struct sockaddr_in));
         server_addr.sin_family = AF_INET;
@@ -319,7 +319,7 @@ int main(int argc, char **argv)
             {
                 printf("Captured WIFI packet total length %i\n", header.caplen);
                 printf("Before trying to send wifi captured packet\n");
-                n = sendto(sockfd, capPacket, 8192, 0, &server_addr, serverlen);
+                n = sendto(sockfd, capPacket, header.caplen, 0, (struct sockaddr *)&server_addr, serverlen);
                 if (n < 0)
                 {
                     perror("Error Sending\n");
