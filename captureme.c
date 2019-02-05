@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 
         printf("Before packet injection setup\n");
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
-        u_char capPacket;
+        u_char *capPacket;
         struct sockaddr_in serv_addr;
         bzero((char *)&serv_addr, sizeof(serv_addr));        
         serv_addr.sin_family = AF_INET;
@@ -319,7 +319,7 @@ int main(int argc, char **argv)
                 printf("Captured WIFI packet total length %i\n", header.len);
                 printf("Captured WIFI packet total length2 %i\n", header.caplen);
                 printf("Before trying to send wifi captured packet\n");
-                n = sendto(sockfd, &capPacket, header.caplen, 0, (struct sockaddr *)&serv_addr, serverlen);
+                n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
                 if (n < 0)
                 {
