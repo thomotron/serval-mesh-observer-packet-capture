@@ -313,6 +313,8 @@ int main(int argc, char **argv)
                 }
                 fflush(outFile);
             }*/
+            header.len = 0;
+            header.caplen = 0;
             capPacket = pcap_next(handle, &header);
             if (header.len > 0)
             {
@@ -325,6 +327,7 @@ int main(int argc, char **argv)
                 {
                     perror("Error Sending\n");
                     retVal = -11;
+                    perror("Sendto: ");
                     break;
                 }
             }
