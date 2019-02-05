@@ -22,7 +22,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <netdb.h> 
+#include <netdb.h>
 #include <arpa/inet.h>
 
 /*
@@ -93,13 +93,13 @@ int serial_setup_port_with_speed(int fd, int speed)
 
     t.c_lflag &= ~(ICANON | ISIG | IEXTEN | ECHO | ECHOE);
     //Noncanonical mode, disable signals, extended
-    //input processing, and software flow control and echoing 
+    //input processing, and software flow control and echoing
 
     t.c_iflag &= ~(BRKINT | ICRNL | IGNBRK | IGNCR | INLCR |
                    INPCK | ISTRIP | IXON | IXOFF | IXANY | PARMRK);
     //Disable special handling of CR, NL, and BREAK.
     //No 8th-bit stripping or parity error handling.
-    //Disable START/STOP output flow control. 
+    //Disable START/STOP output flow control.
 
     // Disable CTS/RTS flow control
 #ifndef CNEW_RTSCTS
@@ -146,14 +146,16 @@ int main(int argc, char **argv)
         printf("Before packet injection setup\n");
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
         u_char capPacket;
-        struct sockaddr_in server_addr; // connector's address information
-        memset(&server_addr, 0, sizeof(struct sockaddr_in));
-        server_addr.sin_family = AF_INET;
-        server_addr.sin_addr.s_addr = inet_addr("192.168.2.2");
-        server_addr.sin_port = htons(SVR_PORT);
-        socklen_t len = sizeof(struct sockaddr_in);
+        struct sockaddr_in serv_addr;
+        bzero((char *)&serv_addr, sizeof(serv_addr));        
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_addr.s_addr = inet_addr(SVR_IP);
+        struct hostent *server;
+        int portno = SVR_PORT;
+        serv_addr.sin_port = htons(portno);
         char hbuf[NI_MAXHOST];
-        
+        socklen_t len = sizeof(struct sockaddr_in);
+
         //setup sockets
         printf("Before socket setup\n");
         sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -164,9 +166,7 @@ int main(int argc, char **argv)
             return (retVal);
         }
 
-        printf("Before get host by ip\n");
-
-        if (getnameinfo((struct sockaddr *)&server_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
+        if (getnameinfo((struct sockaddr *)&serv_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
         {
             printf("could not resolve IP\n");
             retVal = -1;
@@ -176,7 +176,7 @@ int main(int argc, char **argv)
         {
             printf("host=%s\n", hbuf);
         }
-        serverlen = sizeof(server_addr);
+        serverlen = sizeof(serv_addr);
 
         printf("Before serial port setup\n");
         //setup serial ports
@@ -238,8 +238,8 @@ int main(int argc, char **argv)
         {
             printf("Error starting pcap device: %s\n", errbuf);
         }
-        
-       printf("Before pcap setup\n");
+
+        printf("Before pcap setup\n");
         //https://linux.die.net/man/3/pcap_setdirection
         pcap_setdirection(handle, PCAP_D_IN);
 
@@ -313,13 +313,14 @@ int main(int argc, char **argv)
                 }
                 fflush(outFile);
             }*/
-
             capPacket = pcap_next(handle, &header);
             if (header.len > 0)
             {
-                printf("Captured WIFI packet total length %i\n", header.caplen);
+                printf("Captured WIFI packet total length %i\n", header.len);
+                printf("Captured WIFI packet total length2 %i\n", header.caplen);
                 printf("Before trying to send wifi captured packet\n");
-                n = sendto(sockfd, capPacket, header.caplen, 0, (struct sockaddr *)&server_addr, serverlen);
+                n = write(sockfd, &capPacket, header.len);
+                printf("Size Written %i\n", n);
                 if (n < 0)
                 {
                     perror("Error Sending\n");
@@ -339,7 +340,6 @@ int main(int argc, char **argv)
         fclose(outFile);
 
     } while (0);
-    
 
     return (retVal);
 }
