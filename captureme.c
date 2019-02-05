@@ -319,7 +319,7 @@ int main(int argc, char **argv)
                 printf("Captured WIFI packet total length %i\n", header.len);
                 printf("Captured WIFI packet total length2 %i\n", header.caplen);
                 printf("Before trying to send wifi captured packet\n");
-                n = write(sockfd, &capPacket, header.len);
+                n = sendto(sockfd, &capPacket, header.caplen, 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
                 if (n < 0)
                 {
