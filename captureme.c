@@ -150,7 +150,6 @@ int main(int argc, char **argv)
         bzero((char *)&serv_addr, sizeof(serv_addr));        
         serv_addr.sin_family = AF_INET;
         serv_addr.sin_addr.s_addr = inet_addr(SVR_IP);
-        struct hostent *server;
         int portno = SVR_PORT;
         serv_addr.sin_port = htons(portno);
         char hbuf[NI_MAXHOST];
@@ -247,8 +246,8 @@ int main(int argc, char **argv)
         int bufferSize = 8192;
         char readBuffer[bufferSize];
         int bytes_read;
-
-        do
+        int i;
+        for (i = 0; i < 9; i++)
         {
             /*bytes_read = read(r1, &readBuffer, bufferSize);
             if (bytes_read > 0)
@@ -331,7 +330,7 @@ int main(int argc, char **argv)
                     break;
                 }
             }
-        } while (1);
+        } 
 
         //close opened serial ports
         close(r1);
