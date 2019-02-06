@@ -259,7 +259,7 @@ int main(int argc, char **argv)
                 //printf("Before trying to send serial captured packet\n");
                 if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
                 {
-                    perror("Error Sending");
+                    perror("Error Sending 1: ");
                     retVal = -7;
                     break;
                 }
@@ -275,7 +275,7 @@ int main(int argc, char **argv)
                 //printf("Before trying to send serial captured packet\n");
                 if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
                 {
-                    perror("Error Sending");
+                    perror("Error Sending 2:");
                     retVal = -8;
                     break;
                 }
@@ -291,7 +291,7 @@ int main(int argc, char **argv)
                 //printf("Before trying to send serial captured packet\n");
                 if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
                 {
-                    perror("Error Sending");
+                    perror("Error Sending 3:");
                     retVal = -9;
                     break;
                 }
@@ -307,7 +307,7 @@ int main(int argc, char **argv)
                 //printf("Before trying to send serial captured packet\n");
                 if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
                 {
-                    perror("Error Sending\n");
+                    perror("Error Sending 4:");
                     retVal = -10;
                     break;
                 }
