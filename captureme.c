@@ -257,9 +257,11 @@ int main(int argc, char **argv)
                 printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
                 //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
+                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
+                printf("Size Written %i\n", n);
+                if (n < 0)
                 {
-                    perror("Error Sending 1: ");
+                    perror("Error Sending\n");
                     retVal = -7;
                     break;
                 }
@@ -273,10 +275,12 @@ int main(int argc, char **argv)
                 printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
                 //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
+                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
+                printf("Size Written %i\n", n);
+                if (n < 0)
                 {
-                    perror("Error Sending 2:");
-                    retVal = -8;
+                    perror("Error Sending\n");
+                    retVal = -7;
                     break;
                 }
                 //fflush(outFile);
@@ -289,10 +293,12 @@ int main(int argc, char **argv)
                 printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
                 //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
+                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
+                printf("Size Written %i\n", n);
+                if (n < 0)
                 {
-                    perror("Error Sending 3:");
-                    retVal = -9;
+                    perror("Error Sending\n");
+                    retVal = -7;
                     break;
                 }
                 //fflush(outFile);
@@ -305,10 +311,12 @@ int main(int argc, char **argv)
                 printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
                 //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
+                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
+                printf("Size Written %i\n", n);
+                if (n < 0)
                 {
-                    perror("Error Sending 4:");
-                    retVal = -10;
+                    perror("Error Sending\n");
+                    retVal = -7;
                     break;
                 }
                 //fflush(outFile);
