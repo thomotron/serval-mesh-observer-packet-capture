@@ -255,7 +255,7 @@ int main(int argc, char **argv)
             {
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
-                fprintf(outFile, "%X\n", *readBuffer);
+                //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
                 if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
                 {
@@ -263,7 +263,7 @@ int main(int argc, char **argv)
                     retVal = -7;
                     break;
                 }
-                fflush(outFile);
+                //fflush(outFile);
             }
 
             bytes_read = read(s1, &readBuffer, bufferSize);
@@ -271,7 +271,7 @@ int main(int argc, char **argv)
             {
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
-                fprintf(outFile, "%X\n", *readBuffer);
+                //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
                 if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
                 {
@@ -279,7 +279,7 @@ int main(int argc, char **argv)
                     retVal = -8;
                     break;
                 }
-                fflush(outFile);
+                //fflush(outFile);
             }
 
             bytes_read = read(r2, &readBuffer, bufferSize);
@@ -287,7 +287,7 @@ int main(int argc, char **argv)
             {
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
-                fprintf(outFile, "%X\n", *readBuffer);
+                //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
                 if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
                 {
@@ -295,7 +295,7 @@ int main(int argc, char **argv)
                     retVal = -9;
                     break;
                 }
-                fflush(outFile);
+                //fflush(outFile);
             }
 
             bytes_read = read(s2, &readBuffer, bufferSize);
@@ -303,7 +303,7 @@ int main(int argc, char **argv)
             {
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
-                fprintf(outFile, "%X\n", *readBuffer);
+                //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
                 if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
                 {
@@ -311,7 +311,7 @@ int main(int argc, char **argv)
                     retVal = -10;
                     break;
                 }
-                fflush(outFile);
+                //fflush(outFile);
             }
 
             /*
