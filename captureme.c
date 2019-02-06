@@ -257,7 +257,7 @@ int main(int argc, char **argv)
                 printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
                 //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
+                n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
                 if (n < 0)
                 {
@@ -275,7 +275,7 @@ int main(int argc, char **argv)
                 printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
                 //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
+                n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
                 if (n < 0)
                 {
@@ -293,7 +293,7 @@ int main(int argc, char **argv)
                 printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
                 //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
+                n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
                 if (n < 0)
                 {
@@ -311,7 +311,7 @@ int main(int argc, char **argv)
                 printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
                 //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
+                n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
                 if (n < 0)
                 {
