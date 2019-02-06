@@ -249,22 +249,22 @@ int main(int argc, char **argv)
         printf("Before loop\n");
         do
         {
-            /*bytes_read = read(r1, &readBuffer, bufferSize);
+            bytes_read = read(r1, &readBuffer, bufferSize);
             if (bytes_read > 0)
             {
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
-                fprintf(outFile, "%X\n", *readBuffer);
+                //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
-                printf("Size Sent %i\n", n);
+                n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
+                printf("Size Written %i\n", n);
                 if (n < 0)
                 {
                     perror("Error Sending\n");
                     retVal = -7;
                     break;
                 }
-                fflush(outFile);
+                //fflush(outFile);
             }
 
             bytes_read = read(s1, &readBuffer, bufferSize);
@@ -272,17 +272,17 @@ int main(int argc, char **argv)
             {
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
-                fprintf(outFile, "%X\n", *readBuffer);
+                //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
-                printf("Size Sent %i\n", n);
+                n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
+                printf("Size Written %i\n", n);
                 if (n < 0)
                 {
                     perror("Error Sending\n");
-                    retVal = -7
+                    retVal = -7;
                     break;
                 }
-                fflush(outFile);
+                //fflush(outFile);
             }
 
             bytes_read = read(r2, &readBuffer, bufferSize);
@@ -290,17 +290,17 @@ int main(int argc, char **argv)
             {
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
-                fprintf(outFile, "%X\n", *readBuffer);
+                //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
-                printf("Size Sent %i\n", n);
+                n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
+                printf("Size Written %i\n", n);
                 if (n < 0)
                 {
                     perror("Error Sending\n");
                     retVal = -7;
                     break;
                 }
-                fflush(outFile);
+                //fflush(outFile);
             }
 
             bytes_read = read(s2, &readBuffer, bufferSize);
@@ -308,19 +308,20 @@ int main(int argc, char **argv)
             {
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
-                fprintf(outFile, "%X\n", *readBuffer);
+                //fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
-                printf("Size Sent %i\n", n);
+                n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
+                printf("Size Written %i\n", n);
                 if (n < 0)
                 {
                     perror("Error Sending\n");
                     retVal = -7;
                     break;
                 }
-                fflush(outFile);
-            }*/
-            
+                //fflush(outFile);
+            }
+
+            /*
             header.len = 0;
             header.caplen = 0;
             capPacket = pcap_next(handle, &header);
@@ -338,7 +339,7 @@ int main(int argc, char **argv)
                     perror("Sendto: ");
                     break;
                 }
-            }
+            }*/
         } while (1);
 
         //close opened serial ports
