@@ -250,7 +250,7 @@ int main(int argc, char **argv)
 
         do
         {
-            /*bytes_read = read(r1, &readBuffer, bufferSize);
+            bytes_read = read(r1, &readBuffer, bufferSize);
             if (bytes_read > 0)
             {
                 readBuffer[bytes_read] = 0;
@@ -312,7 +312,9 @@ int main(int argc, char **argv)
                     break;
                 }
                 fflush(outFile);
-            }*/
+            }
+
+            /*
             header.len = 0;
             header.caplen = 0;
             capPacket = pcap_next(handle, &header);
@@ -330,7 +332,7 @@ int main(int argc, char **argv)
                     perror("Sendto: ");
                     break;
                 }
-            }
+            }*/
         } while (1);
 
         //close opened serial ports
