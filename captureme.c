@@ -232,22 +232,22 @@ int main(int argc, char **argv)
         printf("after serial setup\n");
 
         //open handle for wireless device
-        handle = pcap_open_live(dev, BUFSIZ, packcountlim, timeout, errbuf);
+        /*handle = pcap_open_live(dev, BUFSIZ, packcountlim, timeout, errbuf);
         if (handle == NULL)
         {
             printf("Error starting pcap device: %s\n", errbuf);
-        }
+        }*/
 
         printf("Before pcap setup\n");
         //https://linux.die.net/man/3/pcap_setdirection
-        pcap_setdirection(handle, PCAP_D_IN);
+        //pcap_setdirection(handle, PCAP_D_IN);
 
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
         int bufferSize = 8192;
         char readBuffer[bufferSize];
         int bytes_read;
-        int i;
-        for (i = 0; i < 9; i++)
+        printf("Before loop\n");
+        do
         {
             /*bytes_read = read(r1, &readBuffer, bufferSize);
             if (bytes_read > 0)
@@ -256,9 +256,11 @@ int main(int argc, char **argv)
                 printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
+                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
+                printf("Size Sent %i\n", n);
+                if (n < 0)
                 {
-                    perror("Error Sending");
+                    perror("Error Sending\n");
                     retVal = -7;
                     break;
                 }
@@ -272,10 +274,12 @@ int main(int argc, char **argv)
                 printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
+                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
+                printf("Size Sent %i\n", n);
+                if (n < 0)
                 {
-                    perror("Error Sending");
-                    retVal = -8;
+                    perror("Error Sending\n");
+                    retVal = -7
                     break;
                 }
                 fflush(outFile);
@@ -288,10 +292,12 @@ int main(int argc, char **argv)
                 printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
+                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
+                printf("Size Sent %i\n", n);
+                if (n < 0)
                 {
-                    perror("Error Sending");
-                    retVal = -9;
+                    perror("Error Sending\n");
+                    retVal = -7;
                     break;
                 }
                 fflush(outFile);
@@ -304,14 +310,17 @@ int main(int argc, char **argv)
                 printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
                 fprintf(outFile, "%X\n", *readBuffer);
                 //printf("Before trying to send serial captured packet\n");
-                if (send(sockfd, readBuffer, sizeof(readBuffer), 0) == -1)
+                n = sendto(sockfd, readBuffer, bufferSize, 0, (struct sockaddr *)&serv_addr, serverlen);
+                printf("Size Sent %i\n", n);
+                if (n < 0)
                 {
                     perror("Error Sending\n");
-                    retVal = -10;
+                    retVal = -7;
                     break;
                 }
                 fflush(outFile);
             }*/
+            
             header.len = 0;
             header.caplen = 0;
             capPacket = pcap_next(handle, &header);
@@ -330,7 +339,7 @@ int main(int argc, char **argv)
                     break;
                 }
             }
-        } 
+        } while (1);
 
         //close opened serial ports
         close(r1);
