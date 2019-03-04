@@ -251,13 +251,13 @@ int main(int argc, char **argv)
         do
         {
             printf("Before header\n");
-            readBuffer[0] = 'L';
+            /*readBuffer[0] = 'L';
             readBuffer[1] = 'B';
             readBuffer[2] = 'A';
             readBuffer[3] = 'R';
-            readBuffer[4] = 'D';
+            readBuffer[4] = 'D';*/
             printf("Before read\n");
-            bytes_read = read(r1, &readBuffer[offset], bufferSize-offset);
+            bytes_read = read(r1, &readBuffer, bufferSize-offset);
             if (bytes_read > 0)
             {
                 readBuffer[bytes_read] = 0;
