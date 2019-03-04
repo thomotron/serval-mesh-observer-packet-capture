@@ -147,7 +147,7 @@ int main(int argc, char **argv)
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
         u_char *capPacket;
         struct sockaddr_in serv_addr;
-        bzero((char *)&serv_addr, sizeof(serv_addr));        
+        bzero((char *)&serv_addr, sizeof(serv_addr));
         serv_addr.sin_family = AF_INET;
         serv_addr.sin_addr.s_addr = inet_addr(SVR_IP);
         int portno = SVR_PORT;
@@ -246,10 +246,18 @@ int main(int argc, char **argv)
         int bufferSize = 8192;
         char readBuffer[bufferSize];
         int bytes_read;
+        int offset = 5;
         printf("Before loop\n");
         do
         {
-            bytes_read = read(r1, &readBuffer, bufferSize);
+            printf("Before header\n");
+            readBuffer[0] = 'L';
+            readBuffer[1] = 'B';
+            readBuffer[2] = 'A';
+            readBuffer[3] = 'R';
+            readBuffer[4] = 'D';
+            printf("Before read\n");
+            bytes_read = read(r1, &readBuffer[offset], bufferSize-offset);
             if (bytes_read > 0)
             {
                 readBuffer[bytes_read] = 0;
@@ -267,7 +275,7 @@ int main(int argc, char **argv)
                 //fflush(outFile);
             }
 
-            bytes_read = read(s1, &readBuffer, bufferSize);
+            /*bytes_read = read(s1, &readBuffer, bufferSize);
             if (bytes_read > 0)
             {
                 readBuffer[bytes_read] = 0;
