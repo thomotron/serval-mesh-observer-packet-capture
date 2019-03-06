@@ -250,20 +250,16 @@ int main(int argc, char **argv)
         printf("Before loop\n");
         do
         {
-            printf("Before header\n");
-            /*readBuffer[0] = 'L';
+            readBuffer[0] = 'L';
             readBuffer[1] = 'B';
             readBuffer[2] = 'A';
             readBuffer[3] = 'R';
-            readBuffer[4] = 'D';*/
-            printf("Before read\n");
-            bytes_read = read(r1, &readBuffer, bufferSize-offset);
-            if (bytes_read > 0)
+            readBuffer[4] = 'D';
+            bytes_read = read(r1, &readBuffer[offset], bufferSize - offset);
+            if (bytes_read > 4)
             {
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
-                //fprintf(outFile, "%X\n", *readBuffer);
-                //printf("Before trying to send serial captured packet\n");
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
                 if (n < 0)
@@ -274,14 +270,12 @@ int main(int argc, char **argv)
                 }
                 //fflush(outFile);
             }
-
-            /*bytes_read = read(s1, &readBuffer, bufferSize);
-            if (bytes_read > 0)
+ 
+            bytes_read = read(s1, &readBuffer[offset], bufferSize - offset);
+            if (bytes_read > 4)
             {
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
-                //fprintf(outFile, "%X\n", *readBuffer);
-                //printf("Before trying to send serial captured packet\n");
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
                 if (n < 0)
@@ -292,14 +286,12 @@ int main(int argc, char **argv)
                 }
                 //fflush(outFile);
             }
-
-            bytes_read = read(r2, &readBuffer, bufferSize);
-            if (bytes_read > 0)
+ 
+            bytes_read = read(r2, &readBuffer[offset], bufferSize - offset);
+            if (bytes_read > 4)
             {
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
-                //fprintf(outFile, "%X\n", *readBuffer);
-                //printf("Before trying to send serial captured packet\n");
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
                 if (n < 0)
@@ -310,14 +302,12 @@ int main(int argc, char **argv)
                 }
                 //fflush(outFile);
             }
-
-            bytes_read = read(s2, &readBuffer, bufferSize);
-            if (bytes_read > 0)
+ 
+            bytes_read = read(s2, &readBuffer[offset], bufferSize - offset);
+            if (bytes_read > 4)
             {
                 readBuffer[bytes_read] = 0;
                 printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
-                //fprintf(outFile, "%X\n", *readBuffer);
-                //printf("Before trying to send serial captured packet\n");
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
                 if (n < 0)
@@ -328,6 +318,7 @@ int main(int argc, char **argv)
                 }
                 //fflush(outFile);
             }
+            memset(readBuffer, 0, sizeof(readBuffer)); // must be zeroed to avoid strange string results
 
             /*
             header.len = 0;
