@@ -258,7 +258,6 @@ int main(int argc, char **argv)
             bytes_read = read(r1, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 4)
             {
-                readBuffer[bytes_read] = 0;
                 printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
@@ -274,7 +273,6 @@ int main(int argc, char **argv)
             bytes_read = read(s1, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 4)
             {
-                readBuffer[bytes_read] = 0;
                 printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
@@ -290,7 +288,6 @@ int main(int argc, char **argv)
             bytes_read = read(r2, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 4)
             {
-                readBuffer[bytes_read] = 0;
                 printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
@@ -306,7 +303,6 @@ int main(int argc, char **argv)
             bytes_read = read(s2, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 4)
             {
-                readBuffer[bytes_read] = 0;
                 printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
