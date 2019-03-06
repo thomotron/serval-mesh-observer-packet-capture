@@ -218,7 +218,7 @@ int main(int argc, char **argv)
         }
         printf("after open %i\n", s2);
 
-        //set non blocking for the serial ports
+        //set non blocking for the serial ports for continous loop
         set_nonblock(r1);
         set_nonblock(r2);
         set_nonblock(s1);
@@ -232,15 +232,15 @@ int main(int argc, char **argv)
         printf("after serial setup\n");
 
         //open handle for wireless device
-        /*handle = pcap_open_live(dev, BUFSIZ, packcountlim, timeout, errbuf);
+        handle = pcap_open_live(dev, BUFSIZ, packcountlim, timeout, errbuf);
         if (handle == NULL)
         {
             printf("Error starting pcap device: %s\n", errbuf);
-        }*/
+        }
 
         printf("Before pcap setup\n");
         //https://linux.die.net/man/3/pcap_setdirection
-        //pcap_setdirection(handle, PCAP_D_IN);
+        pcap_setdirection(handle, PCAP_D_IN);
 
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
         int bufferSize = 8192;
@@ -320,14 +320,12 @@ int main(int argc, char **argv)
             }
             memset(readBuffer, 0, sizeof(readBuffer)); // must be zeroed to avoid strange string results
 
-            /*
             header.len = 0;
             header.caplen = 0;
             capPacket = pcap_next(handle, &header);
             if (header.len > 0)
-            {
+            {                
                 printf("Captured WIFI packet total length %i\n", header.len);
-                printf("Captured WIFI packet total length2 %i\n", header.caplen);
                 printf("Before trying to send wifi captured packet\n");
                 n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
@@ -338,7 +336,7 @@ int main(int argc, char **argv)
                     perror("Sendto: ");
                     break;
                 }
-            }*/
+            }
         } while (1);
 
         //close opened serial ports
