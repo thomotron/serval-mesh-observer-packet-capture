@@ -239,8 +239,6 @@ int main(int argc, char **argv)
         }
 
         printf("Before pcap setup\n");
-        //https://linux.die.net/man/3/pcap_setdirection
-        pcap_setdirection(handle, PCAP_D_IN);
 
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
         int bufferSize = 8192;
