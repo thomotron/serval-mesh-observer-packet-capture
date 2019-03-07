@@ -140,7 +140,7 @@ int main(int argc, char **argv)
         pcap_t *handle;
         struct pcap_pkthdr header;
         int serverlen;
-        int packcountlim = 1, timeout = 10, sockfd, n;
+        int timeout = 10, sockfd, n;
         FILE *outFile = fopen("testFile", "ab"); // append to file only
 
         printf("Before packet injection setup\n");
@@ -232,7 +232,7 @@ int main(int argc, char **argv)
         printf("after serial setup\n");
 
         //open handle for wireless device
-        handle = pcap_open_live(dev, BUFSIZ, packcountlim, timeout, errbuf);
+        handle = pcap_open_live(dev, BUFSIZ, 1, timeout, errbuf);
         if (handle == NULL)
         {
             printf("Error starting pcap device: %s\n", errbuf);
@@ -258,7 +258,7 @@ int main(int argc, char **argv)
             bytes_read = read(r1, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 4)
             {
-                printf("Read %d from (r1): %s\n", bytes_read, readBuffer);
+                printf("Read %i from (r1): %s\n", bytes_read, readBuffer);
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
                 if (n < 0)
@@ -273,7 +273,7 @@ int main(int argc, char **argv)
             bytes_read = read(s1, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 4)
             {
-                printf("Read %d from (s1): %s\n", bytes_read, readBuffer);
+                printf("Read %i from (s1): %s\n", bytes_read, readBuffer);
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
                 if (n < 0)
@@ -288,7 +288,7 @@ int main(int argc, char **argv)
             bytes_read = read(r2, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 4)
             {
-                printf("Read %d from (r2): %s\n", bytes_read, readBuffer);
+                printf("Read %i from (r2): %s\n", bytes_read, readBuffer);
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
                 if (n < 0)
@@ -303,7 +303,7 @@ int main(int argc, char **argv)
             bytes_read = read(s2, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 4)
             {
-                printf("Read %d from (s2): %s\n", bytes_read, readBuffer);
+                printf("Read %i from (s2): %s\n", bytes_read, readBuffer);
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
                 if (n < 0)
@@ -322,7 +322,6 @@ int main(int argc, char **argv)
             if (header.len > 0)
             {                
                 printf("Captured WIFI packet total length %i\n", header.len);
-                printf("Before trying to send wifi captured packet\n");
                 n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
                 if (n < 0)
