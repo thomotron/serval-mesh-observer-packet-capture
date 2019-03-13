@@ -31,6 +31,27 @@
 #define SVR_IP "192.168.2.2"
 #define SVR_PORT 3940
 
+void dump_packet(char *msg, unsigned char *b, int n)
+{
+  printf("%s: Displaying %d bytes.\n", msg, n);
+  int i;
+  for (i = 0; i < n; i += 16)
+  {
+    int j;
+    printf("%08X : ", i);
+    for (j = 0; j < 16 && (i + j) < n; j++)
+      printf("%02X ", b[i + j]);
+    for (; j < 16; j++)
+      printf("   ");
+    for (j = 0; j < 16 && (i + j) < n; j++)
+      if (b[i + j] >= ' ' && b[i + j] < 0x7f)
+        printf("%c", b[i + j]);
+      else
+        printf(".");
+    printf("\n");
+  }
+}
+
 int set_nonblock(int fd)
 {
     int retVal = 0;
@@ -248,7 +269,7 @@ int main(int argc, char **argv)
         printf("Before loop\n");
         do
         {
-            readBuffer[0] = 'L';
+            /*readBuffer[0] = 'L';
             readBuffer[1] = 'B';
             readBuffer[2] = 'A';
             readBuffer[3] = 'R';
@@ -312,7 +333,7 @@ int main(int argc, char **argv)
                 }
                 //fflush(outFile);
             }
-            memset(readBuffer, 0, sizeof(readBuffer)); // must be zeroed to avoid strange string results
+            memset(readBuffer, 0, sizeof(readBuffer)); // must be zeroed to avoid strange string results*/
 
             header.len = 0;
             header.caplen = 0;
@@ -321,6 +342,7 @@ int main(int argc, char **argv)
             {                
                 printf("Captured WIFI packet total length %i\n", header.len);
                 n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, serverlen);
+                //dump_packet("Captured Packet", capPacket, n);
                 printf("Size Written %i\n", n);
                 if (n < 0)
                 {
