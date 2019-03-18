@@ -33,23 +33,23 @@
 
 void dump_packet(char *msg, unsigned char *b, int n)
 {
-  printf("%s: Displaying %d bytes.\n", msg, n);
-  int i;
-  for (i = 0; i < n; i += 16)
-  {
-    int j;
-    printf("%08X : ", i);
-    for (j = 0; j < 16 && (i + j) < n; j++)
-      printf("%02X ", b[i + j]);
-    for (; j < 16; j++)
-      printf("   ");
-    for (j = 0; j < 16 && (i + j) < n; j++)
-      if (b[i + j] >= ' ' && b[i + j] < 0x7f)
-        printf("%c", b[i + j]);
-      else
-        printf(".");
-    printf("\n");
-  }
+    printf("%s: Displaying %d bytes.\n", msg, n);
+    int i;
+    for (i = 0; i < n; i += 16)
+    {
+        int j;
+        printf("%08X : ", i);
+        for (j = 0; j < 16 && (i + j) < n; j++)
+            printf("%02X ", b[i + j]);
+        for (; j < 16; j++)
+            printf("   ");
+        for (j = 0; j < 16 && (i + j) < n; j++)
+            if (b[i + j] >= ' ' && b[i + j] < 0x7f)
+                printf("%c", b[i + j]);
+            else
+                printf(".");
+        printf("\n");
+    }
 }
 
 int set_nonblock(int fd)
@@ -158,11 +158,16 @@ int main(int argc, char **argv)
         //setup wireless capture settings
         char *dev = "mon0";
         char errbuf[PCAP_ERRBUF_SIZE];
+        struct bpf_program fp; // hold compiled libpcap filter program
         pcap_t *handle;
         struct pcap_pkthdr header;
         int serverlen;
         int timeout = 10, sockfd, n;
         FILE *outFile = fopen("testFile", "ab"); // append to file only
+        bpf_u_int32 maskp;                      // subnet mask 
+        bpf_u_int32 ip;                       //ip
+
+        char pcapFilterString[] = "ether host E2:95:6E:4C:A8:D7";
 
         printf("Before packet injection setup\n");
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
@@ -252,6 +257,10 @@ int main(int argc, char **argv)
         serial_setup_port_with_speed(s2, 230400);
         printf("after serial setup\n");
 
+        printf("Before pcap setup\n");
+
+        pcap_lookupnet(dev, &ip, &maskp, errbuf);
+
         //open handle for wireless device
         handle = pcap_open_live(dev, BUFSIZ, 1, timeout, errbuf);
         if (handle == NULL)
@@ -259,13 +268,26 @@ int main(int argc, char **argv)
             printf("Error starting pcap device: %s\n", errbuf);
         }
 
-        printf("Before pcap setup\n");
+        if (pcap_compile(handle, &fp, pcapFilterString, 0, ip) == -1)
+        {
+            printf("Bad filter - %s\n", pcap_geterr(handle));
+            retVal = -8;
+            break;
+        }
+
+        if (pcap_setfilter(handle, &fp) == -1)
+        {
+            fprintf(stderr, "Error setting filter\n");
+            retVal = -8;
+            break;
+        }
 
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
         int bufferSize = 8192;
         char readBuffer[bufferSize];
         int bytes_read;
         int offset = 5;
+
         printf("Before loop\n");
         do
         {
@@ -339,7 +361,7 @@ int main(int argc, char **argv)
             header.caplen = 0;
             capPacket = pcap_next(handle, &header);
             if (header.len > 0)
-            {                
+            {
                 printf("Captured WIFI packet total length %i\n", header.len);
                 n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, serverlen);
                 //dump_packet("Captured Packet", capPacket, n);
