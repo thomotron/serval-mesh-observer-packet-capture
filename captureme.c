@@ -291,7 +291,7 @@ int main(int argc, char **argv)
         printf("Before loop\n");
         do
         {
-            /*readBuffer[0] = 'L';
+            readBuffer[0] = 'L';
             readBuffer[1] = 'B';
             readBuffer[2] = 'A';
             readBuffer[3] = 'R';
@@ -299,9 +299,9 @@ int main(int argc, char **argv)
             bytes_read = read(r1, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 4)
             {
-                printf("Read %i from (r1): %s\n", bytes_read, readBuffer);
+                dump_packet("LBARD Packet: ",readBuffer, bytes_read);              
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
-                printf("Size Written %i\n", n);
+                printf("Size Written %i using %s\n", n, "r1");
                 if (n < 0)
                 {
                     perror("Error Sending\n");
@@ -314,9 +314,10 @@ int main(int argc, char **argv)
             bytes_read = read(s1, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 4)
             {
-                printf("Read %i from (s1): %s\n", bytes_read, readBuffer);
+                dump_packet("LBARD Packet: ",readBuffer, bytes_read);
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i\n", n);
+                printf("Size Written %i using %s\n", n, "s1");
                 if (n < 0)
                 {
                     perror("Error Sending\n");
@@ -329,9 +330,9 @@ int main(int argc, char **argv)
             bytes_read = read(r2, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 4)
             {
-                printf("Read %i from (r2): %s\n", bytes_read, readBuffer);
+                dump_packet("LBARD Packet: ",readBuffer, bytes_read);
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
-                printf("Size Written %i\n", n);
+                printf("Size Written %i using %s\n", n, "r2");
                 if (n < 0)
                 {
                     perror("Error Sending\n");
@@ -344,9 +345,9 @@ int main(int argc, char **argv)
             bytes_read = read(s2, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 4)
             {
-                printf("Read %i from (s2): %s\n", bytes_read, readBuffer);
+                dump_packet("LBARD Packet: ",readBuffer, bytes_read);               
                 n = sendto(sockfd, readBuffer, strlen(readBuffer), 0, (struct sockaddr *)&serv_addr, serverlen);
-                printf("Size Written %i\n", n);
+                printf("Size Written %i using %s\n", n, "S2");
                 if (n < 0)
                 {
                     perror("Error Sending\n");
@@ -355,9 +356,9 @@ int main(int argc, char **argv)
                 }
                 //fflush(outFile);
             }
-            memset(readBuffer, 0, sizeof(readBuffer)); // must be zeroed to avoid strange string results*/
+            memset(readBuffer, 0, sizeof(readBuffer)); // must be zeroed to avoid strange string results
 
-            header.len = 0;
+            /*header.len = 0;
             header.caplen = 0;
             capPacket = pcap_next(handle, &header);
             if (header.len > 0)
@@ -373,7 +374,7 @@ int main(int argc, char **argv)
                     perror("Sendto: ");
                     break;
                 }
-            }
+            }*/
         } while (1);
 
         //close opened serial ports
