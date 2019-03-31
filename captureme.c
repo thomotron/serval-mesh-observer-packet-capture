@@ -299,7 +299,11 @@ int main(int argc, char **argv)
             bytes_read = read(r1, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 0)
             {
-                dump_packet("LBARD Packet: ",&readBuffer[5], bytes_read);              
+                while (readBuffer[offset+bytes_read-1] != '!')
+                {
+                    bytes_read += read(r1, &readBuffer[offset + bytes_read], bufferSize - offset);
+                }
+                dump_packet("LBARD    ",&readBuffer[5], bytes_read);              
                 n = sendto(sockfd, readBuffer, offset+bytes_read, 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i using %s\n", n, "r1");
                 if (n < 0)
@@ -309,15 +313,15 @@ int main(int argc, char **argv)
                     break;
                 }
                 //fflush(outFile);
+                printf("\n");
             }
  
-            bytes_read = read(s1, &readBuffer[offset], bufferSize - offset);
+            /*bytes_read = read(s1, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 0)
             {
-                dump_packet("LBARD Packet: ",&readBuffer[5], bytes_read);
+                dump_packet("LBARD    ",&readBuffer[5], bytes_read); 
                 n = sendto(sockfd, readBuffer, offset+bytes_read, 0, (struct sockaddr *)&serv_addr, serverlen);
-                printf("Size Written %i\n", n);
-                printf("Size Written %i using %s\n", n, "s1");
+                printf("Size Written %i using %s\n\n", n, "s1");
                 if (n < 0)
                 {
                     perror("Error Sending\n");
@@ -325,14 +329,15 @@ int main(int argc, char **argv)
                     break;
                 }
                 //fflush(outFile);
+                printf("\n");
             }
  
             bytes_read = read(r2, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 0)
             {
-                dump_packet("LBARD Packet: ",&readBuffer[offset], bytes_read);
+                dump_packet("LBARD    ",&readBuffer[5], bytes_read); 
                 n = sendto(sockfd, readBuffer, offset+bytes_read, 0, (struct sockaddr *)&serv_addr, serverlen);
-                printf("Size Written %i using %s\n", n, "r2");
+                printf("Size Written %i using %s\n\n", n, "r2");
                 if (n < 0)
                 {
                     perror("Error Sending\n");
@@ -340,14 +345,15 @@ int main(int argc, char **argv)
                     break;
                 }
                 //fflush(outFile);
+                printf("\n");
             }
  
             bytes_read = read(s2, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 0)
             {
-                dump_packet("LBARD Packet: ",&readBuffer[offset], bytes_read);               
+                dump_packet("LBARD    ",&readBuffer[5], bytes_read);               
                 n = sendto(sockfd, readBuffer, offset+bytes_read, 0, (struct sockaddr *)&serv_addr, serverlen);
-                printf("Size Written %i using %s\n", n, "S2");
+                printf("Size Written %i using %s\n\n", n, "S2");
                 if (n < 0)
                 {
                     perror("Error Sending\n");
@@ -355,6 +361,7 @@ int main(int argc, char **argv)
                     break;
                 }
                 //fflush(outFile);
+                printf("\n");
             }
             memset(readBuffer, 0, sizeof(readBuffer)); // must be zeroed to avoid strange string results
 
