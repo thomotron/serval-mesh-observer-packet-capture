@@ -291,19 +291,26 @@ int main(int argc, char **argv)
         printf("Before loop\n");
         do
         {
+            printf("Before inserting LBARD\n");
             readBuffer[0] = 'L';
             readBuffer[1] = 'B';
             readBuffer[2] = 'A';
             readBuffer[3] = 'R';
             readBuffer[4] = 'D';
+            printf("Before first read\n");
             bytes_read = read(r1, &readBuffer[offset], bufferSize - offset);
             if (bytes_read > 0)
             {
+                printf("Before while\n");
                 while (readBuffer[offset+bytes_read-1] != '!')
                 {
+                    printf("In while\n");
                     bytes_read += read(r1, &readBuffer[offset + bytes_read], bufferSize - offset);
+                    dump_packet("LBARD    ",&readBuffer[5], bytes_read);  
                 }
-                dump_packet("LBARD    ",&readBuffer[5], bytes_read);              
+                printf("After while\n");
+                dump_packet("LBARD    ",&readBuffer[5], bytes_read);  
+                printf("Before sendto\n");            
                 n = sendto(sockfd, readBuffer, offset+bytes_read, 0, (struct sockaddr *)&serv_addr, serverlen);
                 printf("Size Written %i using %s\n", n, "r1");
                 if (n < 0)
