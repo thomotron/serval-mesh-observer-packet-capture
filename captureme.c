@@ -291,7 +291,6 @@ int main(int argc, char **argv)
         printf("Before loop\n");
         do
         {
-            printf("Before inserting LBARD\n");
             readBuffer[0] = 'L';
             readBuffer[1] = 'B';
             readBuffer[2] = 'A';
@@ -299,9 +298,10 @@ int main(int argc, char **argv)
             readBuffer[4] = 'D';
             printf("Before first read\n");
             bytes_read = read(r1, &readBuffer[offset], bufferSize - offset);
+            printf("Read Size: %i", bytes_read);
             if (bytes_read > 0)
             {
-                printf("Before while\n");
+                printf("Buffer Char: %c\n", readBuffer[offset+bytes_read-1]);
                 while (readBuffer[offset+bytes_read-1] != '!')
                 {
                     printf("In while\n");
@@ -319,6 +319,7 @@ int main(int argc, char **argv)
                     retVal = -7;
                     break;
                 }
+                sleep(2);
                 //fflush(outFile);
                 printf("\n");
             }
