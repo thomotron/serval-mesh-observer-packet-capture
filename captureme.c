@@ -25,32 +25,16 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
+struct sockaddr_in serv_addr;
+int serversock=-1;
+
+void dump_packet(char *msg, unsigned char *b, int n);
+
 /*
  * 
  */
 #define SVR_IP "192.168.2.2"
 #define SVR_PORT 3940
-
-void dump_packet(char *msg, unsigned char *b, int n)
-{
-    printf("%s: Displaying %d bytes.\n", msg, n);
-    int i;
-    for (i = 0; i < n; i += 16)
-    {
-        int j;
-        printf("%08X : ", i);
-        for (j = 0; j < 16 && (i + j) < n; j++)
-            printf("%02X ", b[i + j]);
-        for (; j < 16; j++)
-            printf("   ");
-        for (j = 0; j < 16 && (i + j) < n; j++)
-            if (b[i + j] >= ' ' && b[i + j] < 0x7f)
-                printf("%c", b[i + j]);
-            else
-                printf(".");
-        printf("\n");
-    }
-}
 
 int set_nonblock(int fd)
 {
@@ -148,10 +132,126 @@ int serial_setup_port_with_speed(int fd, int speed)
     return 0;
 }
 
+
+
+struct serial_port {
+  int fd;
+  int rfd900_tx_count;
+  int rfd900_rx_count;
+};
+
+#define MAX_PORTS 16
+struct serial_port serial_ports[MAX_PORTS];
+int serial_port_count=0;
+
+int setup_monitor_port(char *path,int speed)
+{
+  int retVal=0;
+
+  do {
+    if (serial_port_count>=MAX_PORTS) {
+      fprintf(stderr, "Too many serial ports. (Increase MAX_PORTS?)\n");
+      retVal = -3; break;
+    }
+    
+    //open serial port
+    int r1 = open(path, O_RDONLY | O_NOCTTY | O_NDELAY);
+    if (r1 == -1)
+      {
+	fprintf(stderr, "Failed to open serial port '%s'\n", path);
+	retVal = -3;
+	break;
+      }
+
+    serial_ports[serial_port_count].fd=r1;
+    serial_ports[serial_port_count].rfd900_tx_count=0;
+    serial_ports[serial_port_count].rfd900_rx_count=0;
+
+    //set non blocking for the serial ports for continous loop
+    set_nonblock(r1);
+
+    //set serial port speeds
+    serial_setup_port_with_speed(r1, speed);
+    
+    printf("Initialised '%s' as serial port %d\n",path,serial_port_count);
+
+    serial_port_count++;
+   
+  } while(0);
+  return retVal; 
+}
+
+int process_serial_port(struct serial_port *sp)
+{
+  int retVal=0;
+  do {
+    int bufferSize = 8192;
+    unsigned char readBuffer[bufferSize];
+    int bytes_read;
+    int offset = 5;
+    readBuffer[0] = 'L';
+    readBuffer[1] = 'B';
+    readBuffer[2] = 'A';
+    readBuffer[3] = 'R';
+    readBuffer[4] = 'D';
+    printf("Before first read\n");
+    bytes_read = read(sp->fd, &readBuffer[offset], bufferSize - offset);
+    printf("Read Size: %i", bytes_read);
+    if (bytes_read > 0)
+      {
+	printf("Buffer Char: %c\n", readBuffer[offset+bytes_read-1]);
+	while (readBuffer[offset+bytes_read-1] != '!')
+	  {
+	    printf("In while\n");
+	    bytes_read += read(sp->fd, &readBuffer[offset + bytes_read], bufferSize - offset);
+	    dump_packet("LBARD    ",&readBuffer[5], bytes_read);  
+	  }
+	printf("After while\n");
+	dump_packet("LBARD    ",&readBuffer[5], bytes_read);  
+	printf("Before sendto\n");            
+	int n = sendto(serversock, readBuffer, offset+bytes_read, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+	printf("Size Written %i using %p\n", n,sp);
+	if (n < 0)
+	  {
+	    perror("Error Sending\n");
+	    retVal = -7;
+	    break;
+	  }
+	sleep(2);
+	//fflush(outFile);
+	printf("\n");
+      }
+  } while(0);
+  
+  return retVal;
+}
+
+
+void dump_packet(char *msg, unsigned char *b, int n)
+{
+    printf("%s: Displaying %d bytes.\n", msg, n);
+    int i;
+    for (i = 0; i < n; i += 16)
+    {
+        int j;
+        printf("%08X : ", i);
+        for (j = 0; j < 16 && (i + j) < n; j++)
+            printf("%02X ", b[i + j]);
+        for (; j < 16; j++)
+            printf("   ");
+        for (j = 0; j < 16 && (i + j) < n; j++)
+            if (b[i + j] >= ' ' && b[i + j] < 0x7f)
+                printf("%c", b[i + j]);
+            else
+                printf(".");
+        printf("\n");
+    }
+}
+
 int main(int argc, char **argv)
 {
     int retVal = 0;
-
+    
     do
     {
         printf("Before variable deration\n");
@@ -172,7 +272,6 @@ int main(int argc, char **argv)
         printf("Before packet injection setup\n");
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
         u_char *capPacket;
-        struct sockaddr_in serv_addr;
         bzero((char *)&serv_addr, sizeof(serv_addr));
         serv_addr.sin_family = AF_INET;
         serv_addr.sin_addr.s_addr = inet_addr(SVR_IP);
@@ -191,6 +290,8 @@ int main(int argc, char **argv)
             return (retVal);
         }
 
+	serversock=sockfd;
+
         if (getnameinfo((struct sockaddr *)&serv_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
         {
             printf("could not resolve IP\n");
@@ -204,58 +305,13 @@ int main(int argc, char **argv)
         serverlen = sizeof(serv_addr);
 
         printf("Before serial port setup\n");
+	
         //setup serial ports
-        char *port1 = "/dev/ttyUSB0";
-        char *port2 = "/dev/ttyUSB1";
-        char *port3 = "/dev/ttyUSB2";
-        char *port4 = "/dev/ttyUSB3";
-        printf("before opening serial ports\n");
-        //open serial ports
-        int r1 = open(port1, O_RDONLY | O_NOCTTY | O_NDELAY);
-        if (r1 == -1)
-        {
-            fprintf(stderr, "Failed to open serial port '%s'\n", port1);
-            retVal = -3;
-            break;
-        }
-        printf("after open %i\n", r1);
-        int r2 = open(port2, O_RDONLY | O_NOCTTY | O_NDELAY);
-        if (r2 == -1)
-        {
-            fprintf(stderr, "Failed to open serial port '%s'\n", port2);
-            retVal = -4;
-            break;
-        }
-        printf("after open %i\n", r2);
-        int s1 = open(port3, O_RDONLY | O_NOCTTY | O_NDELAY);
-        if (s1 == -1)
-        {
-            fprintf(stderr, "Failed to open serial port '%s'\n", port3);
-            retVal = -5;
-            break;
-        }
-        printf("after open %i\n", s1);
-        int s2 = open(port4, O_RDONLY | O_NOCTTY | O_NDELAY);
-        if (s2 == -1)
-        {
-            fprintf(stderr, "Failed to open serial port '%s'\n", port4);
-            retVal = -6;
-            break;
-        }
-        printf("after open %i\n", s2);
+	setup_monitor_port("/dev/ttyUSB0",115200);
+	setup_monitor_port("/dev/ttyUSB1",230400);
+	setup_monitor_port("/dev/ttyUSB2",115200);
+	setup_monitor_port("/dev/ttyUSB3",230400);
 
-        //set non blocking for the serial ports for continous loop
-        set_nonblock(r1);
-        set_nonblock(r2);
-        set_nonblock(s1);
-        set_nonblock(s2);
-
-        //set serial port speeds
-        serial_setup_port_with_speed(r1, 115200);
-        serial_setup_port_with_speed(r2, 230400);
-        serial_setup_port_with_speed(s1, 115200);
-        serial_setup_port_with_speed(s2, 230400);
-        printf("after serial setup\n");
 
         printf("Before pcap setup\n");
 
@@ -283,95 +339,12 @@ int main(int argc, char **argv)
         }
 
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
-        int bufferSize = 8192;
-        char readBuffer[bufferSize];
-        int bytes_read;
-        int offset = 5;
 
         printf("Before loop\n");
         do
         {
-            readBuffer[0] = 'L';
-            readBuffer[1] = 'B';
-            readBuffer[2] = 'A';
-            readBuffer[3] = 'R';
-            readBuffer[4] = 'D';
-            printf("Before first read\n");
-            bytes_read = read(r1, &readBuffer[offset], bufferSize - offset);
-            printf("Read Size: %i", bytes_read);
-            if (bytes_read > 0)
-            {
-                printf("Buffer Char: %c\n", readBuffer[offset+bytes_read-1]);
-                while (readBuffer[offset+bytes_read-1] != '!')
-                {
-                    printf("In while\n");
-                    bytes_read += read(r1, &readBuffer[offset + bytes_read], bufferSize - offset);
-                    dump_packet("LBARD    ",&readBuffer[5], bytes_read);  
-                }
-                printf("After while\n");
-                dump_packet("LBARD    ",&readBuffer[5], bytes_read);  
-                printf("Before sendto\n");            
-                n = sendto(sockfd, readBuffer, offset+bytes_read, 0, (struct sockaddr *)&serv_addr, serverlen);
-                printf("Size Written %i using %s\n", n, "r1");
-                if (n < 0)
-                {
-                    perror("Error Sending\n");
-                    retVal = -7;
-                    break;
-                }
-                sleep(2);
-                //fflush(outFile);
-                printf("\n");
-            }
- 
-            /*bytes_read = read(s1, &readBuffer[offset], bufferSize - offset);
-            if (bytes_read > 0)
-            {
-                dump_packet("LBARD    ",&readBuffer[5], bytes_read); 
-                n = sendto(sockfd, readBuffer, offset+bytes_read, 0, (struct sockaddr *)&serv_addr, serverlen);
-                printf("Size Written %i using %s\n\n", n, "s1");
-                if (n < 0)
-                {
-                    perror("Error Sending\n");
-                    retVal = -7;
-                    break;
-                }
-                //fflush(outFile);
-                printf("\n");
-            }
- 
-            bytes_read = read(r2, &readBuffer[offset], bufferSize - offset);
-            if (bytes_read > 0)
-            {
-                dump_packet("LBARD    ",&readBuffer[5], bytes_read); 
-                n = sendto(sockfd, readBuffer, offset+bytes_read, 0, (struct sockaddr *)&serv_addr, serverlen);
-                printf("Size Written %i using %s\n\n", n, "r2");
-                if (n < 0)
-                {
-                    perror("Error Sending\n");
-                    retVal = -7;
-                    break;
-                }
-                //fflush(outFile);
-                printf("\n");
-            }
- 
-            bytes_read = read(s2, &readBuffer[offset], bufferSize - offset);
-            if (bytes_read > 0)
-            {
-                dump_packet("LBARD    ",&readBuffer[5], bytes_read);               
-                n = sendto(sockfd, readBuffer, offset+bytes_read, 0, (struct sockaddr *)&serv_addr, serverlen);
-                printf("Size Written %i using %s\n\n", n, "S2");
-                if (n < 0)
-                {
-                    perror("Error Sending\n");
-                    retVal = -7;
-                    break;
-                }
-                //fflush(outFile);
-                printf("\n");
-            }
-            memset(readBuffer, 0, sizeof(readBuffer)); // must be zeroed to avoid strange string results
+	  for(int i=0;i<serial_port_count;i++)
+	    process_serial_port(&serial_ports[i]);
 
             /*header.len = 0;
             header.caplen = 0;
@@ -392,12 +365,7 @@ int main(int argc, char **argv)
             }*/
         } while (1);
 
-        //close opened serial ports
-        close(r1);
-        close(r2);
-        close(s1);
-        close(s2);
-        printf("Serial ports closed: %s %s %s %s\n", port1, port2, port3, port4);
+	printf("Closing output file.\n");
         //close opened file
         fclose(outFile);
 
