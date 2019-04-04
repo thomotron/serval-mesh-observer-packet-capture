@@ -36,6 +36,28 @@ void dump_packet(char *msg, unsigned char *b, int n);
 #define SVR_IP "192.168.2.2"
 #define SVR_PORT 3940
 
+struct serial_port {
+  int fd;
+  int rfd900_tx_count;
+  int rfd900_rx_count;
+
+  char *port;
+  int id;
+  
+  // For !! tx mode, here is the accumulated transmitted packet
+  unsigned char tx_buff[1024];
+  int tx_bytes;
+  int tx_state;
+
+  // For RX mode, we look for the envelope our RFD900 firmware puts following a received packet
+  // XXX
+  
+};
+
+#define MAX_PORTS 16
+struct serial_port serial_ports[MAX_PORTS];
+int serial_port_count=0;
+
 int set_nonblock(int fd)
 {
     int retVal = 0;
@@ -132,17 +154,33 @@ int serial_setup_port_with_speed(int fd, int speed)
     return 0;
 }
 
+int record_rfd900_tx_event(struct serial_port *sp)
+{
+  int retVal=0;
 
-
-struct serial_port {
-  int fd;
-  int rfd900_tx_count;
-  int rfd900_rx_count;
-};
-
-#define MAX_PORTS 16
-struct serial_port serial_ports[MAX_PORTS];
-int serial_port_count=0;
+  do {   
+    char message[1024]="LBARD:RFD900:TX:";
+    
+    int offset=strlen(message);
+    memcpy(&message[offset],sp->tx_buff,sp->tx_bytes);
+    offset+=sp->tx_bytes;
+    message[offset++]='\n';
+    
+    printf("Before sendto\n");            
+    int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    printf("Size Written %i using %p\n", offset,sp);
+    if (n < 0)
+      {
+	perror("Error Sending\n");
+	retVal = -7;
+	break;
+      }
+    //fflush(outFile);
+    printf("Send to server socket\n");
+  } while(0);
+    
+  return retVal;
+}
 
 int setup_monitor_port(char *path,int speed)
 {
@@ -164,8 +202,12 @@ int setup_monitor_port(char *path,int speed)
       }
 
     serial_ports[serial_port_count].fd=r1;
+    serial_ports[serial_port_count].port=strdup(path);
+    serial_ports[serial_port_count].id=serial_port_count;
     serial_ports[serial_port_count].rfd900_tx_count=0;
     serial_ports[serial_port_count].rfd900_rx_count=0;
+    serial_ports[serial_port_count].tx_state=0;
+    serial_ports[serial_port_count].tx_bytes=0;
 
     //set non blocking for the serial ports for continous loop
     set_nonblock(r1);
@@ -181,45 +223,59 @@ int setup_monitor_port(char *path,int speed)
   return retVal; 
 }
 
+int process_serial_char(struct serial_port *sp,unsigned char c)
+{
+  int retVal=0;
+
+  do {  
+    if (sp->tx_state==0) {
+      // Not in ! escape mode
+      if (c=='!') sp->tx_state=1;
+      else {
+	if (sp->tx_bytes<1024) sp->tx_buff[sp->tx_bytes++]=c;
+      }
+    } else {
+      switch (c) {
+      case '!':
+	// Double ! = TX packet
+	printf("Recognised TX of %d byte packet.\n",sp->tx_bytes);
+	dump_packet("sent packet",sp->tx_buff,sp->tx_bytes);
+	
+	record_rfd900_tx_event(sp);
+	
+	sp->rfd900_tx_count++;
+	sp->tx_bytes=0;
+	break;
+      case '.':
+	// Escaped !
+	if (sp->tx_bytes<1024) sp->tx_buff[sp->tx_bytes++]='!';
+	break;
+      case 'c': case 'C':
+	// Flush TX buffer
+	sp->tx_bytes=0;
+	break;
+      default:
+	// Some other character we don't know what to do with
+	break;
+      }
+      sp->tx_state=0;
+    }
+  } while(0);
+
+  return retVal;
+}
+
+
 int process_serial_port(struct serial_port *sp)
 {
   int retVal=0;
   do {
-    int bufferSize = 8192;
-    unsigned char readBuffer[bufferSize];
-    int bytes_read;
-    int offset = 5;
-    readBuffer[0] = 'L';
-    readBuffer[1] = 'B';
-    readBuffer[2] = 'A';
-    readBuffer[3] = 'R';
-    readBuffer[4] = 'D';
-    printf("Before first read\n");
-    bytes_read = read(sp->fd, &readBuffer[offset], bufferSize - offset);
+    unsigned char buffer[128]; // small buffer, so we round-robin among the ports more often
+    int bytes_read = read(sp->fd, buffer, sizeof(buffer));
     printf("Read Size: %i", bytes_read);
     if (bytes_read > 0)
       {
-	printf("Buffer Char: %c\n", readBuffer[offset+bytes_read-1]);
-	while (readBuffer[offset+bytes_read-1] != '!')
-	  {
-	    printf("In while\n");
-	    bytes_read += read(sp->fd, &readBuffer[offset + bytes_read], bufferSize - offset);
-	    dump_packet("LBARD    ",&readBuffer[5], bytes_read);  
-	  }
-	printf("After while\n");
-	dump_packet("LBARD    ",&readBuffer[5], bytes_read);  
-	printf("Before sendto\n");            
-	int n = sendto(serversock, readBuffer, offset+bytes_read, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-	printf("Size Written %i using %p\n", n,sp);
-	if (n < 0)
-	  {
-	    perror("Error Sending\n");
-	    retVal = -7;
-	    break;
-	  }
-	sleep(2);
-	//fflush(outFile);
-	printf("\n");
+	for(int i=0;i<bytes_read;i++) process_serial_char(sp,buffer[i]);
       }
   } while(0);
   
@@ -311,7 +367,6 @@ int main(int argc, char **argv)
 	setup_monitor_port("/dev/ttyUSB1",230400);
 	setup_monitor_port("/dev/ttyUSB2",115200);
 	setup_monitor_port("/dev/ttyUSB3",230400);
-
 
         printf("Before pcap setup\n");
 
