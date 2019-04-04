@@ -369,10 +369,11 @@ int main(int argc, char **argv)
 	setup_monitor_port("/dev/ttyUSB2",115200);
 	setup_monitor_port("/dev/ttyUSB3",230400);
 
+#ifdef WITH_PCAP
         printf("Before pcap setup\n");
-
+	
         pcap_lookupnet(dev, &ip, &maskp, errbuf);
-
+	
         //open handle for wireless device
         handle = pcap_open_live(dev, BUFSIZ, 1, timeout, errbuf);
         if (handle == NULL)
@@ -393,7 +394,7 @@ int main(int argc, char **argv)
             retVal = -8;
             break;
         }
-
+#endif
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
 
         printf("Before loop\n");
