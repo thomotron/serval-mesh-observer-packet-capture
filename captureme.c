@@ -268,6 +268,7 @@ int process_serial_char(struct serial_port *sp,unsigned char c)
 
 int process_serial_port(struct serial_port *sp)
 {
+  int i;
   int retVal=0;
   do {
     unsigned char buffer[128]; // small buffer, so we round-robin among the ports more often
@@ -275,7 +276,7 @@ int process_serial_port(struct serial_port *sp)
     printf("Read Size: %i", bytes_read);
     if (bytes_read > 0)
       {
-	for(int i=0;i<bytes_read;i++) process_serial_char(sp,buffer[i]);
+	for(i=0;i<bytes_read;i++) process_serial_char(sp,buffer[i]);
       }
   } while(0);
   
@@ -398,7 +399,8 @@ int main(int argc, char **argv)
         printf("Before loop\n");
         do
         {
-	  for(int i=0;i<serial_port_count;i++)
+	  int i;
+	  for(i=0;i<serial_port_count;i++)
 	    process_serial_port(&serial_ports[i]);
 
             /*header.len = 0;
