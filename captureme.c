@@ -176,7 +176,7 @@ int record_rfd900_tx_event(struct serial_port *sp)
 	break;
       }
     //fflush(outFile);
-    printf("Send to server socket\n");
+    printf("Send to server socket\n\n");
   } while(0);
     
   return retVal;
@@ -270,12 +270,15 @@ int process_serial_port(struct serial_port *sp)
 {
   int i;
   int retVal=0;
-  do {
-    unsigned char buffer[128]; // small buffer, so we round-robin among the ports more often
-    int bytes_read = read(sp->fd, buffer, sizeof(buffer));
-    printf("Read Size: %i", bytes_read);
+  int bytes_read;
+  unsigned char buffer[128]; // small buffer, so we round-robin among the ports more often
+  do {   
+    bytes_read = read(sp->fd, buffer, sizeof(buffer));
+    
     if (bytes_read > 0)
       {
+          dump_packet("read",buffer,bytes_read);
+          printf("Read Size: %i\n", bytes_read);
 	for(i=0;i<bytes_read;i++) process_serial_char(sp,buffer[i]);
       }
   } while(0);
