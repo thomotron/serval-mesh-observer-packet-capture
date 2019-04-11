@@ -28,6 +28,8 @@
 struct sockaddr_in serv_addr;
 int serversock=-1;
 
+//#define test 1
+
 void dump_packet(char *msg, unsigned char *b, int n);
 
 /*
@@ -353,6 +355,7 @@ int main(int argc, char **argv)
 
 	serversock=sockfd;
 
+        #ifdef test
         if (getnameinfo((struct sockaddr *)&serv_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
         {
             printf("could not resolve IP\n");
@@ -364,6 +367,7 @@ int main(int argc, char **argv)
             printf("host=%s\n", hbuf);
         }
         serverlen = sizeof(serv_addr);
+        #endif
 
         printf("Before serial port setup\n");
 	
