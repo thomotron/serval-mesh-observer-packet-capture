@@ -177,6 +177,7 @@ int record_rfd900_tx_event(struct serial_port *sp)
       }
     //fflush(outFile);
     printf("Send to server socket\n\n");
+    message[0] = '\0'; // set the string to a zero length
   } while(0);
     
   return retVal;
