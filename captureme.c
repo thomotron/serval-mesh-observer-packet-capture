@@ -24,6 +24,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <errno.h>
 
 struct sockaddr_in serv_addr;
 int serversock=-1;
@@ -35,7 +36,7 @@ void dump_packet(char *msg, unsigned char *b, int n);
 /*
  * 
  */
-#define SVR_IP "192.168.2.2"
+#define SVR_IP "127.0.0.1"
 #define SVR_PORT 3940
 
 struct serial_port {
@@ -168,12 +169,13 @@ int record_rfd900_tx_event(struct serial_port *sp)
     offset+=sp->tx_bytes;
     message[offset++]='\n';
     
-    printf("Before sendto\n");            
+    printf("Before sendto\n");  
+    errno=0;          
     int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     printf("Size Written %i using %p\n", offset,sp);
     if (n < 0)
       {
-	perror("Error Sending\n");
+	perror("Error Sending");
 	retVal = -7;
 	break;
       }
