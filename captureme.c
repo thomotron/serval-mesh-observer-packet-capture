@@ -38,6 +38,8 @@ void dump_packet(char *msg, unsigned char *b, int n);
  */
 #define SVR_IP "127.0.0.1"
 #define SVR_PORT 3940
+#define WITH_PCAP
+//#define WITH_SERIAL
 
 struct serial_port {
   int fd;
@@ -93,10 +95,6 @@ int serial_setup_port_with_speed(int fd, int speed)
     struct termios t;
 
     tcgetattr(fd, &t);
-    fprintf(stderr, "Serial port settings before tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
-            (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
-            (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
-
     speed_t baud_rate;
     switch (speed)
     {
@@ -141,17 +139,13 @@ int serial_setup_port_with_speed(int fd, int speed)
     // no output processing
     t.c_oflag &= ~OPOST;
 
-    fprintf(stderr, "Serial port settings attempting ot be set: c=%08x, i=%08x, o=%08x, l=%08x\n",
+    /*fprintf(stderr, "Serial port settings attempting ot be set: c=%08x, i=%08x, o=%08x, l=%08x\n",
             (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
-            (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
+            (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);*/
 
     tcsetattr(fd, TCSANOW, &t);
 
     tcgetattr(fd, &t);
-    fprintf(stderr, "Serial port settings after tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
-            (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
-            (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
-
     set_nonblock(fd);
 
     return 0;
@@ -332,7 +326,8 @@ int main(int argc, char **argv)
         bpf_u_int32 maskp;                      // subnet mask 
         bpf_u_int32 ip;                       //ip
 
-        char pcapFilterString[] = "ether host E2:95:6E:4C:A8:D7";
+        //libpcap filter expression 
+        char pcapFilterString[20];// = "wlan src E2:95:6E:4C:A8:D7 or wlan dst E2:95:6E:4C:A8:D7";
 
         printf("Before packet injection setup\n");
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
@@ -374,10 +369,12 @@ int main(int argc, char **argv)
         printf("Before serial port setup\n");
 	
         //setup serial ports
+        #ifdef WITH_SERIAL
 	setup_monitor_port("/dev/ttyUSB0",115200);
 	setup_monitor_port("/dev/ttyUSB1",230400);
 	setup_monitor_port("/dev/ttyUSB2",115200);
 	setup_monitor_port("/dev/ttyUSB3",230400);
+    #endif
 
 #ifdef WITH_PCAP
         printf("Before pcap setup\n");
@@ -390,6 +387,8 @@ int main(int argc, char **argv)
         {
             printf("Error starting pcap device: %s\n", errbuf);
         }
+
+        //make pcap filter to only mesh extender related wifi traffic
 
         if (pcap_compile(handle, &fp, pcapFilterString, 0, ip) == -1)
         {
@@ -412,11 +411,14 @@ int main(int argc, char **argv)
         {
 	  int i;
 	  for(i=0;i<serial_port_count;i++)
+      #ifdef WITH_SERIAL
 	    process_serial_port(&serial_ports[i]);
+        #endif
+        #ifdef WITH_PCAP
+        header.len = 0;
+        capPacket = pcap_next(handle, &header);
+               
 
-            /*header.len = 0;
-            header.caplen = 0;
-            capPacket = pcap_next(handle, &header);
             if (header.len > 0)
             {
                 printf("Captured WIFI packet total length %i\n", header.len);
@@ -430,8 +432,9 @@ int main(int argc, char **argv)
                     perror("Sendto: ");
                     break;
                 }
-            }*/
+            }
         } while (1);
+        #endif
 
 	printf("Closing output file.\n");
         //close opened file
