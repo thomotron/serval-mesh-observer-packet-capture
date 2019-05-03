@@ -339,7 +339,7 @@ int main(int argc, char **argv)
         bpf_u_int32 ip;                          //ip
 
         //libpcap filter expression
-        char pcapFilterString[20]; // = "wlan src E2:95:6E:4C:A8:D7 or wlan dst E2:95:6E:4C:A8:D7";
+        char pcapFilterString[20] = "src host 192.168.8.1";
 
         printf("Before packet injection setup\n");
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
