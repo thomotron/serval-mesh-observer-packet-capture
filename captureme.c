@@ -418,20 +418,24 @@ int main(int argc, char **argv)
         int capNum = 10;
         do
         {
-            int i;
 #ifdef WITH_SERIAL
-            for (i = 0; i < serial_port_count; i++)
+            for (int i = 0; i < serial_port_count; i++)
+            {
                 process_serial_port(&serial_ports[i]);
+            }
 #endif
 #ifdef WITH_PCAP
+            printf("Before header len\n");
             header.len = 0;
             header.caplen = 0;
+            printf("Before pcap_next\n");
             capPacket = pcap_next(handle, &header);
             if (header.len > 0)
             {
                 printf("Captured WIFI packet total length %i\n", header.len);
                 n = sendto(serversock, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
                 //dump_packet("Captured Packet", capPacket, n);
+                printf("Before capNum\n");
                 capNum--;
                 printf("Size Written %i\n", n);
                 if (n < 0)
@@ -442,7 +446,6 @@ int main(int argc, char **argv)
                     break;
                 }
             }
-            capPacket[0] = '\0';    //reset u_char length to 0, otherwise we will be adding to it
         } while (capNum != 0);
 #endif
 
