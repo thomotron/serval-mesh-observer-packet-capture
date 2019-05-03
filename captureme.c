@@ -36,7 +36,7 @@ void dump_packet(char *msg, unsigned char *b, int n);
 /*
  * 
  */
-#define SVR_IP "127.0.0.1"
+#define SVR_IP "192.168.2.2"
 #define SVR_PORT 3940
 #define WITH_PCAP
 //#define WITH_SERIAL
@@ -164,7 +164,6 @@ int record_rfd900_tx_event(struct serial_port *sp)
         offset += sp->tx_bytes;
         message[offset++] = '\n';
 
-        printf("Before sendto\n");
         errno = 0;
         int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
         printf("Size Written %i using %p\n", offset, sp);
@@ -334,8 +333,7 @@ int main(int argc, char **argv)
         struct bpf_program fp; // hold compiled libpcap filter program
         pcap_t *handle;
         struct pcap_pkthdr header;
-        int serverlen;
-        int timeout = 10, sockfd, n;
+        int timeout = 10, serversock, n;
         FILE *outFile = fopen("testFile", "ab"); // append to file only
         bpf_u_int32 maskp;                       // subnet mask
         bpf_u_int32 ip;                          //ip
@@ -351,20 +349,16 @@ int main(int argc, char **argv)
         serv_addr.sin_addr.s_addr = inet_addr(SVR_IP);
         int portno = SVR_PORT;
         serv_addr.sin_port = htons(portno);
-        char hbuf[NI_MAXHOST];
-        socklen_t len = sizeof(struct sockaddr_in);
 
         //setup sockets
         printf("Before socket setup\n");
-        sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-        if (sockfd < 0)
+        serversock = socket(AF_INET, SOCK_DGRAM, 0);
+        if (serversock < 0)
         {
             perror("Error setting up socket\n");
             retVal = -2;
             return (retVal);
         }
-
-        serversock = sockfd;
 
 #ifdef test
         if (getnameinfo((struct sockaddr *)&serv_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
@@ -421,21 +415,24 @@ int main(int argc, char **argv)
         //while loop that serialy searches for a packet to be captured by all devices (round robin)
 
         printf("Before loop\n");
+        int capNum = 10;
         do
         {
             int i;
-            for (i = 0; i < serial_port_count; i++)
 #ifdef WITH_SERIAL
+            for (i = 0; i < serial_port_count; i++)
                 process_serial_port(&serial_ports[i]);
 #endif
 #ifdef WITH_PCAP
             header.len = 0;
+            header.caplen = 0;
             capPacket = pcap_next(handle, &header);
             if (header.len > 0)
             {
                 printf("Captured WIFI packet total length %i\n", header.len);
-                n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, serverlen);
+                n = sendto(serversock, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
                 //dump_packet("Captured Packet", capPacket, n);
+                capNum--;
                 printf("Size Written %i\n", n);
                 if (n < 0)
                 {
@@ -445,7 +442,8 @@ int main(int argc, char **argv)
                     break;
                 }
             }
-        } while (1);
+            capPacket[0] = '\0';    //reset u_char length to 0, otherwise we will be adding to it
+        } while (capNum != 0);
 #endif
 
         printf("Closing output file.\n");
