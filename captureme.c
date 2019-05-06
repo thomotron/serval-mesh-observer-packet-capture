@@ -349,6 +349,7 @@ int main(int argc, char **argv)
         int portno = SVR_PORT;
         serv_addr.sin_port = htons(portno);
         char hbuf[NI_MAXHOST];
+        socklen_t len = sizeof(struct sockaddr_in);
 
         //setup sockets
         printf("Before socket setup\n");
@@ -360,7 +361,7 @@ int main(int argc, char **argv)
             return (retVal);
         }
 
-        if (getnameinfo((struct sockaddr *)&serv_addr, sizeof(serv_addr), hbuf, sizeof(hbuf), NULL, 0, 0))
+        if (getnameinfo((struct sockaddr *)&serv_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
         {
             printf("could not resolve IP\n");
             retVal = -1;
@@ -429,8 +430,8 @@ int main(int argc, char **argv)
             capPacket = pcap_next(handle, &header);
             if (header.len > 0)
             {
-                printf("Captured WIFI packet total length %i\n", header.len);
-                n = sendto(serversock, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+                printf("Captured WIFI packet total length %i\n", header.len);                     
+                n = sendto(serversock, capPacket, 0, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
                 //dump_packet("Captured Packet", capPacket, n);
                 printf("Before capNum\n");
                 capNum--;
@@ -445,7 +446,6 @@ int main(int argc, char **argv)
             }
 #endif
         } while (capNum != 0);
-
 
         printf("Closing output file.\n");
         //close opened file
