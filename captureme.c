@@ -36,10 +36,10 @@ void dump_packet(char *msg, unsigned char *b, int n);
 /*
  * 
  */
-#define SVR_IP "192.168.2.2"
+#define SVR_IP "127.0.0.1"
 #define SVR_PORT 3940
-#define WITH_PCAP
-//#define WITH_SERIAL
+//#define WITH_PCAP
+#define WITH_SERIAL
 
 struct serial_port
 {
@@ -154,7 +154,6 @@ int serial_setup_port_with_speed(int fd, int speed)
 int record_rfd900_tx_event(struct serial_port *sp)
 {
     int retVal = 0;
-
     do
     {
         char message[1024] = "LBARD:RFD900:TX:";
@@ -339,7 +338,7 @@ int main(int argc, char **argv)
         bpf_u_int32 ip;                          //ip
 
         //libpcap filter expression
-        char pcapFilterString[20] = "src host 192.168.8.1";
+        char pcapFilterString[20] = "host 192.168.8.1";
 
         printf("Before packet injection setup\n");
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
@@ -349,6 +348,7 @@ int main(int argc, char **argv)
         serv_addr.sin_addr.s_addr = inet_addr(SVR_IP);
         int portno = SVR_PORT;
         serv_addr.sin_port = htons(portno);
+        char hbuf[NI_MAXHOST];
 
         //setup sockets
         printf("Before socket setup\n");
@@ -360,8 +360,7 @@ int main(int argc, char **argv)
             return (retVal);
         }
 
-#ifdef test
-        if (getnameinfo((struct sockaddr *)&serv_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
+        if (getnameinfo((struct sockaddr *)&serv_addr, sizeof(serv_addr), hbuf, sizeof(hbuf), NULL, 0, 0))
         {
             printf("could not resolve IP\n");
             retVal = -1;
@@ -371,8 +370,6 @@ int main(int argc, char **argv)
         {
             printf("host=%s\n", hbuf);
         }
-        serverlen = sizeof(serv_addr);
-#endif
 
         printf("Before serial port setup\n");
 
@@ -446,8 +443,9 @@ int main(int argc, char **argv)
                     break;
                 }
             }
-        } while (capNum != 0);
 #endif
+        } while (capNum != 0);
+
 
         printf("Closing output file.\n");
         //close opened file
