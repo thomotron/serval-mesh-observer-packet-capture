@@ -154,6 +154,7 @@ int serial_setup_port_with_speed(int fd, int speed)
 int record_rfd900_tx_event(struct serial_port *sp)
 {
     int retVal = 0;
+    int n=0;
     do
     {
         char message[1024] = "LBARD:RFD900:TX:";
@@ -164,7 +165,8 @@ int record_rfd900_tx_event(struct serial_port *sp)
         message[offset++] = '\n';
 
         errno = 0;
-        int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+        n=0;
+        n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
         printf("Size Written %i using %p\n", offset, sp);
         if (n < 0)
         {
