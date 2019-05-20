@@ -364,7 +364,7 @@ int main(int argc, char **argv)
             return (retVal);
         }
 
-        if (getnameinfo((struct sockaddr *)&serv_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
+        if (getnameinfo((struct sockaddr *)&serv_addr, sizeof(serv_addr), hbuf, sizeof(hbuf), NULL, 0, 0))
         {
             printf("could not resolve IP\n");
             retVal = -1;
