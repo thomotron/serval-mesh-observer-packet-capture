@@ -1,5 +1,5 @@
 typedef int (*message_handler)(struct peer_state *,char *,
-                               char *, char *,unsigned char *,int);  
+                               char *, char *,unsigned char *,int, char *);  
 extern message_handler message_handlers[257];
 
 int message_parser_41(struct peer_state *,char *, char *, char *,unsigned char *,int, char *);

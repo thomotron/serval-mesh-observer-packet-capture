@@ -185,7 +185,7 @@ struct recent_bundle {
 };
 
 typedef int (*message_handler)(struct peer_state *,char *,
-			       char *, char *,unsigned char *,int);  
+			       char *, char *,unsigned char *,int, char *);  
 extern message_handler message_handlers[257];
 
 extern int txpower;
