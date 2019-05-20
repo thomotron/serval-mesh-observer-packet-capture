@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
 	int retVal;
 	//int fd = fileno(stdin);
 
-	do
+	do	
 	{
 		//set up file for writing captured packet info
 
@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
 		char lbardResult[500];
 		char wifiPacketInfo;
 
-		for (i = 0; i < 10000;)
+		for (i = 0; i < 10; i++)
 		{
 			//memset(&buffer, 0, 500);
 			//printf("Waiting for packet to read\n");
@@ -298,7 +298,9 @@ int main(int argc, char *argv[])
 					//dump_packet("received packet", &pcapPacket[5], n); //offset of 5 because of the lbard packet header type
 					decode_lbard(&pcapPacket[16], n - 16, lbardResult, sizeof(lbardResult)); //16 byte offset before analysis to remove packet header
 					printf("\n%s\n", lbardResult);
+					strcat(lbardResult, "\n");
 					fprintf(outFile, lbardResult);
+					//break;
 					lbardResult[0] = '\0';
 				}
 			}
@@ -313,7 +315,7 @@ int main(int argc, char *argv[])
 		}
 
 		//add final line to file
-		fprintf(outFile, "@enduml");
+		fprintf(outFile, "\n@enduml");
 
 		//run the program to create the graph
 		//change the arguments to where file location is ect
