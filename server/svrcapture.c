@@ -51,7 +51,7 @@ void dump_packet(char *msg, unsigned char *b, int n)
 	}
 }
 
-char decode_wifi(unsigned char *pcapPacket, int len)
+char decode_wifi(unsigned char *packet, int len)
 {
 	char decodedString[15];
 	uint16_t frame_control;
@@ -64,16 +64,16 @@ char decode_wifi(unsigned char *pcapPacket, int len)
 	//check if big or little endin
 
 	printf("Before bit shift\n");
-	frame_control = (pcapPacket[0] >> 4) & 0x03; //bit shift to get the bits we want
+	frame_control = (packet[0] >> 4) & 0x03; //bit shift to get the bits we want
 
 	//copy in mac addresses	
 	for (int i = 0; i < 6; i++)
 	{
-		srcMac[i] = pcapPacket[i + 4];
-		dstMac[i] = pcapPacket[i + 10];
+		srcMac[i] = packet[i + 4];
+		dstMac[i] = packet[i + 10];
 	}
 
-	dump_packet("Packet contents", pcapPacket, len);
+	dump_packet("Packet contents", packet, len);
 
 	printf("src MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", srcMac[0], srcMac[1], srcMac[2], srcMac[3], srcMac[4], srcMac[5]);
 	printf("dst MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", dstMac[0], dstMac[1], dstMac[2], dstMac[3], dstMac[4], dstMac[5]);
@@ -88,7 +88,7 @@ char decode_wifi(unsigned char *pcapPacket, int len)
 	return decodedString;
 }
 
-int decode_lbard(unsigned char *msg, int len, char returnString[8000], int lbardRSize)
+int decode_lbard(unsigned char *msg, int len, char *returnString)
 {
 	int offset = 8;
 	int peer_index = -1;
@@ -154,11 +154,13 @@ int decode_lbard(unsigned char *msg, int len, char returnString[8000], int lbard
 			
 			if (message_handlers[msg[offset]])
 			{
+				char message_description[8192];
 				printf("Calling message handler for type 0x%02x @ offset 0x%x\n",
 					   msg[offset], offset);
 				advance = message_handlers[msg[offset]](p, peer_prefix, NULL, NULL,
-														&msg[offset], len - offset, returnString);
-				snprintf(returnString, lbardRSize, "%s -> BROADCAST: %c \n", peer_prefix, msg[offset]);
+														&msg[offset], len - offset, message_description);
+				snprintf(returnString, 8000, "%s -> BROADCAST: %c : %s\n", peer_prefix, 
+				         msg[offset],message_description);
 				printf("CURRENT STRING:: %s", returnString);
 				if (advance < 1)
 				{
@@ -244,11 +246,10 @@ int main(int argc, char *argv[])
 		}
 
 		//make variables for reading in packets
-		u_char pcapPacket[8192];
+		u_char packet[8192];
 
 		//main while loop to accept packet
 		int i;
-		char lbardResult[8000];
 		char wifiPacketInfo;
 
 		for (i = 0; i < 10; i++)
@@ -260,7 +261,7 @@ int main(int argc, char *argv[])
 			n = 0;
 			while (!n)
 			{
-				n = recvfrom(sockfd, pcapPacket, 8192, MSG_DONTWAIT, (struct sockaddr *)&cliaddr, &len);
+				n = recvfrom(sockfd, packet, 8192, MSG_DONTWAIT, (struct sockaddr *)&cliaddr, &len);
 				if (!n)
 				{
 					usleep(100000);
@@ -285,16 +286,17 @@ int main(int argc, char *argv[])
 				break;
 			}
 			//decide if Wi-Fi packet or LABRD packet
-			if (pcapPacket[0] == 'L' &&
-				pcapPacket[1] == 'B' &&
-				pcapPacket[2] == 'A' &&
-				pcapPacket[3] == 'R' &&
-				pcapPacket[4] == 'D')
+			if (packet[0] == 'L' &&
+				packet[1] == 'B' &&
+				packet[2] == 'A' &&
+				packet[3] == 'R' &&
+				packet[4] == 'D')
 			{
-				if (sizeof(pcapPacket) > 5)
+				if (sizeof(packet) > 5)
 				{
 					//dump_packet("received packet", &pcapPacket[5], n); //offset of 5 because of the lbard packet header type
-					decode_lbard(&pcapPacket[16], n - 16, lbardResult, sizeof(lbardResult)); //16 byte offset before analysis to remove packet header
+					char lbardResult[8192];
+					decode_lbard(&packet[16], n - 16, lbardResult); //16 byte offset before analysis to remove packet header
 					printf("\n%s\n", lbardResult);
 					fprintf(outFile, lbardResult);
 					//break;
@@ -304,11 +306,11 @@ int main(int argc, char *argv[])
 			else //if not lbard packet, is wifi packet
 			{
 				//decode wifi packet and put returned string into NTD text file
-				wifiPacketInfo = decode_wifi(&pcapPacket,n);
+				wifiPacketInfo = decode_wifi(&packet, n);
 				fprintf(outFile, wifiPacketInfo);
 				wifiPacketInfo = '\0';
 			}
-			pcapPacket[0] = '\0'; // set the string to a zero length
+			packet[0] = '\0'; // set the string to a zero length
 		}
 
 		//add final line to file
