@@ -88,7 +88,7 @@ char decode_wifi(unsigned char *pcapPacket, int len)
 	return decodedString;
 }
 
-int decode_lbard(unsigned char *msg, int len, char returnString[500], int lbardRSize)
+int decode_lbard(unsigned char *msg, int len, char returnString[8000], int lbardRSize)
 {
 	int offset = 8;
 	int peer_index = -1;
@@ -157,7 +157,7 @@ int decode_lbard(unsigned char *msg, int len, char returnString[500], int lbardR
 				printf("Calling message handler for type 0x%02x @ offset 0x%x\n",
 					   msg[offset], offset);
 				advance = message_handlers[msg[offset]](p, peer_prefix, NULL, NULL,
-														&msg[offset], len - offset);
+														&msg[offset], len - offset, returnString);
 				snprintf(returnString, lbardRSize, "%s -> BROADCAST: %c \n", peer_prefix, msg[offset]);
 				printf("CURRENT STRING:: %s", returnString);
 				if (advance < 1)
@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
 
 		//main while loop to accept packet
 		int i;
-		char lbardResult[500];
+		char lbardResult[8000];
 		char wifiPacketInfo;
 
 		for (i = 0; i < 10; i++)
