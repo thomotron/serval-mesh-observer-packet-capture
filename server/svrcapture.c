@@ -214,8 +214,11 @@ int main(int argc, char *argv[])
 		time[strlen(time) - 1] = 0; //remove the new line at end of time
 		snprintf(timingDiagramFileName, bufferSize, "timingDiagram: %s.txt", time);
 
-		FILE *outFile = fopen(timingDiagramFileName, "wb"); //open file to write to
-		fprintf(outFile, "@startuml\n");					//write first line of uml file
+		FILE *outFile;
+		outFile = fopen(timingDiagramFileName, "w"); //open file to write to
+		fprintf(outFile, "@startuml\n");	//write first line of uml file
+
+		
 
 		//init socket variables
 		int sockfd, portno = 3940;
