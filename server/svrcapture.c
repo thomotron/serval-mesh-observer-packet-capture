@@ -154,13 +154,11 @@ int decode_lbard(unsigned char *msg, int len, char returnString[500], int lbardR
 			
 			if (message_handlers[msg[offset]])
 			{
-				snprintf(returnString, sizeof(returnString), " Message Type %c", msg[offset]);
-				printf("\nBuilt String: %s\n", returnString);
 				printf("Calling message handler for type 0x%02x @ offset 0x%x\n",
 					   msg[offset], offset);
 				advance = message_handlers[msg[offset]](p, peer_prefix, NULL, NULL,
 														&msg[offset], len - offset);
-				snprintf(returnString, lbardRSize, "%s -> BROADCAST: %c ", peer_prefix, msg[offset]);
+				snprintf(returnString, lbardRSize, "%s -> BROADCAST: %c \n", peer_prefix, msg[offset]);
 				printf("CURRENT STRING:: %s", returnString);
 				if (advance < 1)
 				{
@@ -298,7 +296,6 @@ int main(int argc, char *argv[])
 					//dump_packet("received packet", &pcapPacket[5], n); //offset of 5 because of the lbard packet header type
 					decode_lbard(&pcapPacket[16], n - 16, lbardResult, sizeof(lbardResult)); //16 byte offset before analysis to remove packet header
 					printf("\n%s\n", lbardResult);
-					strcat(lbardResult, "\n");
 					fprintf(outFile, lbardResult);
 					//break;
 					lbardResult[0] = '\0';
