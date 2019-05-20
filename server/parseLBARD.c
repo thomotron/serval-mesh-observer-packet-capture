@@ -517,7 +517,7 @@ int lookup_bundle_by_prefix(const unsigned char *prefix, int len)
 
 int message_parser_42(struct peer_state *sender, char *prefix,
                       char *servald_server, char *credential,
-                      unsigned char *msg, int length)
+                      unsigned char *msg, int length, char *message_description)
 {
     int offset = 0;
     if (length - offset < BAR_LENGTH)
@@ -589,7 +589,7 @@ int message_parser_42(struct peer_state *sender, char *prefix,
 
 int message_parser_47(struct peer_state *sender, char *sender_prefix,
                       char *servald_server, char *credential,
-                      unsigned char *msg, int length)
+                      unsigned char *msg, int length, char *message_description)
 {
     // Get instance ID of peer. We use this to note if a peer's lbard has restarted
     int offset = 0;
@@ -637,7 +637,7 @@ int message_parser_47(struct peer_state *sender, char *sender_prefix,
 
 int message_parser_4C(struct peer_state *sender, char *sender_prefix,
                       char *servald_server, char *credential,
-                      unsigned char *msg, int length)
+                      unsigned char *msg, int length, char *message_description)
 {
     // Get instance ID of peer. We use this to note if a peer's lbard has restarted
     int offset = 0;
@@ -687,7 +687,7 @@ int message_parser_4C(struct peer_state *sender, char *sender_prefix,
 
 int message_parser_4D(struct peer_state *p, char *sender_prefix,
                       char *servald_server, char *credential,
-                      unsigned char *msg_in, int length)
+                      unsigned char *msg_in, int length, char *message_description)
 {
     int offset = 0;
     // XXX copy in or replace body of this function with this one
@@ -758,7 +758,7 @@ int message_parser_4D(struct peer_state *p, char *sender_prefix,
 
 int message_parser_52(struct peer_state *sender, char *sender_prefix,
                       char *servald_server, char *credential,
-                      unsigned char *msg, int length)
+                      unsigned char *msg, int length, char *message_description)
 {
     int offset = 0;
     // Request for a segment
@@ -863,7 +863,7 @@ int message_parser_52(struct peer_state *sender, char *sender_prefix,
 
 int message_parser_53(struct peer_state *sender, char *sender_prefix,
                       char *ignore1, char *ignore2,
-                      unsigned char *msg, int length)
+                      unsigned char *msg, int length, char *message_description)
 {
     int offset = 0;
     // Sync-tree synchronisation message
@@ -890,13 +890,14 @@ int message_parser_53(struct peer_state *sender, char *sender_prefix,
         }
         return -1;
     }
+    message_description = "SYNC Message";
 
     return offset;
 }
 
 int message_parser_54(struct peer_state *sender, char *sender_prefix,
                       char *servald_server, char *credential,
-                      unsigned char *msg, int length)
+                      unsigned char *msg, int length, char *message_description)
 {
     int offset = 0;
     {
@@ -966,7 +967,7 @@ int message_parser_54(struct peer_state *sender, char *sender_prefix,
 
 int message_parser_41(struct peer_state *sender, char *sid_prefix_hex,
                       char *servald_server, char *credential,
-                      unsigned char *msg, int length)
+                      unsigned char *msg, int length, char *message_description)
 {
     // Get fields
 
@@ -1113,7 +1114,7 @@ int message_parser_41(struct peer_state *sender, char *sid_prefix_hex,
 
 int message_parser_50(struct peer_state *sender, char *sender_prefix,
                       char *servald_server, char *credential,
-                      unsigned char *msg, int length)
+                      unsigned char *msg, int length, char *message_description)
 {
     int offset = 0;
 

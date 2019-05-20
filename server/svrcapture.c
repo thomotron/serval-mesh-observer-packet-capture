@@ -66,7 +66,7 @@ char decode_wifi(unsigned char *packet, int len)
 	printf("Before bit shift\n");
 	frame_control = (packet[0] >> 4) & 0x03; //bit shift to get the bits we want
 
-	//copy in mac addresses	
+	//copy in mac addresses
 	for (int i = 0; i < 6; i++)
 	{
 		srcMac[i] = packet[i + 4];
@@ -84,7 +84,7 @@ char decode_wifi(unsigned char *packet, int len)
 	//ARP has mac address destination of 00:00:00:00:00:00
 
 	char test[] = "this is a test";
-	printf("%s",test);
+	printf("%s", test);
 	return decodedString;
 }
 
@@ -151,7 +151,7 @@ int decode_lbard(unsigned char *msg, int len, char *returnString)
 			printf("Offset: %i, len %i\n", offset, len);
 			dump_packet("Packet offset", msg, len);
 			printf("Message Type: %c - 0x%02X\n", msg[offset], msg[offset]);
-			
+
 			if (message_handlers[msg[offset]])
 			{
 				char message_description[8192];
@@ -159,8 +159,17 @@ int decode_lbard(unsigned char *msg, int len, char *returnString)
 					   msg[offset], offset);
 				advance = message_handlers[msg[offset]](p, peer_prefix, NULL, NULL,
 														&msg[offset], len - offset, message_description);
-				snprintf(returnString, 8000, "%s -> BROADCAST: %c : %s\n", peer_prefix, 
-				         msg[offset],message_description);
+				printf("Message description: %s\n", message_description);
+				if (strstr(message_description, "Illegal message") != NULL)
+				{
+					snprintf(returnString, 8000, "%s -> BROADCAST: %c : %s\n", peer_prefix,
+							 msg[offset], "Error parsing rest of message");
+				}
+				else
+				{
+					snprintf(returnString, 8000, "%s -> BROADCAST: %c : %s\n", peer_prefix,
+							 msg[offset], message_description);
+				}
 				printf("CURRENT STRING:: %s", returnString);
 				if (advance < 1)
 				{
@@ -199,7 +208,7 @@ int main(int argc, char *argv[])
 	int retVal;
 	//int fd = fileno(stdin);
 
-	do	
+	do
 	{
 		//set up file for writing captured packet info
 
@@ -216,9 +225,7 @@ int main(int argc, char *argv[])
 
 		FILE *outFile;
 		outFile = fopen(timingDiagramFileName, "w"); //open file to write to
-		fprintf(outFile, "@startuml\n");	//write first line of uml file
-
-		
+		fprintf(outFile, "@startuml\n");			 //write first line of uml file
 
 		//init socket variables
 		int sockfd, portno = 3940;
