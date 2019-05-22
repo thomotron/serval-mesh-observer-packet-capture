@@ -325,20 +325,11 @@ int main(int argc, char *argv[])
 
 		//run the program to create the graph
 		//change the arguments to where file location is ect
-		char cwd[PATH_MAX];
-		if (getcwd(cwd, sizeof(cwd)) != NULL)
-		{
-			printf("Current working dir: %s\n", cwd);
-		}
-		else
-		{
-			perror("getcwd() error");
-			return 1;
-		}
-		char *location;
-		snprintf(location, 8000, "%s/%s\n", cwd, "/plantuml.jar");
+		char *location = "/home/honours/Desktop/MeshObserver-Packet-Capture/server/plantuml.jar";
 		//get current working directory as this is where the generated textural file will be saved
+		char cwd[PATH_MAX];
 		char command[256];
+		getcwd(cwd, sizeof(cwd));
 
 		//wait to finish writing file
 		printf("writing diagram text file\n");
