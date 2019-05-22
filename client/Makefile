@@ -1,7 +1,7 @@
 COPT=	-Wall -g
 
-all:	cap
+all:	capture
 
-cap:	captureme.c Makefile
+capture:	captureme.c Makefile
 	$(CC) $(COPT) -o capture captureme.c -lpcap $(LOPT)
 	
