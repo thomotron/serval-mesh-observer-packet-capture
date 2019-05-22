@@ -29,6 +29,8 @@
 #define MAX_PACKET_SIZE 255
 #define RADIO_RXBUFFER_SIZE 64 + MAX_PACKET_SIZE
 
+long long start_time = 0;
+
 void dump_packet(char *msg, unsigned char *b, int n)
 {
 	printf("%s: Displaying %d bytes.\n", msg, n);
@@ -301,11 +303,13 @@ int main(int argc, char *argv[])
 			{
 				if (sizeof(packet) > 5)
 				{
+					long long relative_time_ms;
+					relative_time_ms = gettime_ms() - start_time;
 					//dump_packet("received packet", &pcapPacket[5], n); //offset of 5 because of the lbard packet header type
 					char lbardResult[8192];
 					decode_lbard(&packet[16], n - 16, lbardResult); //16 byte offset before analysis to remove packet header
 					printf("\n%s\n", lbardResult);
-					fprintf(outFile, lbardResult);
+					fprintf(outFile, "T+%lldms : %s", relative_time_ms, lbardResult);
 					//break;
 					lbardResult[0] = '\0';
 				}
