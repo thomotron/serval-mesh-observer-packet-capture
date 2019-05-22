@@ -1114,73 +1114,74 @@ int message_parser_41(struct peer_state *sender, char *sid_prefix_hex,
             fprintf(stderr, "                 TX BID/version = %s/%lld\n",
                     bundles[sender->tx_bundle].bid_hex, bundles[sender->tx_bundle].version);
         }
-
-        return 17;
     }
 
-    int message_parser_50(struct peer_state * sender, char *sender_prefix,
-                          char *servald_server, char *credential,
-                          unsigned char *msg, int length, char *message_description)
-    {
-        int offset = 0;
+    return 17;
+}
 
-        char bid_prefix[8 * 2 + 1];
-        long long version;
-        unsigned int offset_compound;
-        long long piece_offset;
-        int piece_bytes;
-        int piece_is_manifest;
-        int above_1mb = 0;
-        int is_end_piece = 0;
+int message_parser_50(struct peer_state *sender, char *sender_prefix,
+                      char *servald_server, char *credential,
+                      unsigned char *msg, int length, char *message_description)
+{
+    int offset = 0;
 
-        // Skip header character
-        if (!(msg[offset] & 0x20))
-            above_1mb = 1;
-        if (!(msg[offset] & 0x01))
-            is_end_piece = 1;
-        offset++;
+    char bid_prefix[8 * 2 + 1];
+    long long version;
+    unsigned int offset_compound;
+    long long piece_offset;
+    int piece_bytes;
+    int piece_is_manifest;
+    int above_1mb = 0;
+    int is_end_piece = 0;
 
+    // Skip header character
+    if (!(msg[offset] & 0x20))
+        above_1mb = 1;
+    if (!(msg[offset] & 0x01))
+        is_end_piece = 1;
+    offset++;
+
+    offset += 2;
+
+    if (length - offset < (1 + 8 + 8 + 4 + 1))
+        return -3;
+    snprintf(bid_prefix, 8 * 2 + 1, "%02x%02x%02x%02x%02x%02x%02x%02x",
+             msg[offset + 0], msg[offset + 1], msg[offset + 2], msg[offset + 3],
+             msg[offset + 4], msg[offset + 5], msg[offset + 6], msg[offset + 7]);
+    offset += 8;
+    version = 0;
+    for (int i = 0; i < 8; i++)
+        version |= ((long long)msg[offset + i]) << (i * 8LL);
+    offset += 8;
+    offset_compound = 0;
+    for (int i = 0; i < 6; i++)
+        offset_compound |= ((long long)msg[offset + i]) << (i * 8LL);
+    offset += 4;
+    if (above_1mb)
         offset += 2;
+    else
+        offset_compound &= 0xffffffff;
+    piece_offset = (offset_compound & 0xfffff) | ((offset_compound >> 12LL) & 0xfff00000LL);
+    piece_bytes = (offset_compound >> 20) & 0x7ff;
+    piece_is_manifest = offset_compound & 0x80000000;
 
-        if (length - offset < (1 + 8 + 8 + 4 + 1))
-            return -3;
-        snprintf(bid_prefix, 8 * 2 + 1, "%02x%02x%02x%02x%02x%02x%02x%02x",
-                 msg[offset + 0], msg[offset + 1], msg[offset + 2], msg[offset + 3],
-                 msg[offset + 4], msg[offset + 5], msg[offset + 6], msg[offset + 7]);
-        offset += 8;
-        version = 0;
-        for (int i = 0; i < 8; i++)
-            version |= ((long long)msg[offset + i]) << (i * 8LL);
-        offset += 8;
-        offset_compound = 0;
-        for (int i = 0; i < 6; i++)
-            offset_compound |= ((long long)msg[offset + i]) << (i * 8LL);
-        offset += 4;
-        if (above_1mb)
-            offset += 2;
-        else
-            offset_compound &= 0xffffffff;
-        piece_offset = (offset_compound & 0xfffff) | ((offset_compound >> 12LL) & 0xfff00000LL);
-        piece_bytes = (offset_compound >> 20) & 0x7ff;
-        piece_is_manifest = offset_compound & 0x80000000;
+    {
+        char sender_prefix[128];
+        char monitor_log_buf[1024];
+        sprintf(sender_prefix, "%s*", sender->sid_prefix);
+        snprintf(monitor_log_buf, sizeof(monitor_log_buf),
+                 "Piece of bundle: BID=%s*, [%lld--%lld) of %s.%s",
+                 bid_prefix,
+                 piece_offset, piece_offset + piece_bytes - 1,
+                 piece_is_manifest ? "manifest" : "payload",
+                 is_end_piece ? " This is the last piece of that." : "");
+        message_description = monitor_log_buf;
 
-        {
-            char sender_prefix[128];
-            char monitor_log_buf[1024];
-            sprintf(sender_prefix, "%s*", sender->sid_prefix);
-            snprintf(monitor_log_buf, sizeof(monitor_log_buf),
-                     "Piece of bundle: BID=%s*, [%lld--%lld) of %s.%s",
-                     bid_prefix,
-                     piece_offset, piece_offset + piece_bytes - 1,
-                     piece_is_manifest ? "manifest" : "payload",
-                     is_end_piece ? " This is the last piece of that." : "");
-            message_description = monitor_log_buf;
-
-            //    monitor_log(sender_prefix,NULL,monitor_log_buf);
-        }
-
-        if (piece_bytes > 0)
-            offset += piece_bytes;
-
-        return offset;
+        //    monitor_log(sender_prefix,NULL,monitor_log_buf);
     }
+
+    if (piece_bytes > 0)
+        offset += piece_bytes;
+
+    return offset;
+}

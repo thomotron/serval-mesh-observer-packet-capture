@@ -160,12 +160,12 @@ int decode_lbard(unsigned char *msg, int len, char *returnString)
 				advance = message_handlers[msg[offset]](p, peer_prefix, NULL, NULL,
 														&msg[offset], len - offset, message_description);
 				printf("Message description: %s\n", message_description);
-				if (strstr(message_description, "Illegal message") != NULL)
+				/*if (strstr(message_description, "Illegal message") != NULL)
 				{
 					snprintf(returnString, 8000, "%s -> BROADCAST: %c : %s\n", peer_prefix,
 							 msg[offset], "Error parsing rest of message");
 				}
-				else
+				else*/
 				{
 					snprintf(returnString, 8000, "%s -> BROADCAST: %c : %s\n", peer_prefix,
 							 msg[offset], message_description);
@@ -191,10 +191,10 @@ int decode_lbard(unsigned char *msg, int len, char *returnString)
 				char monitor_log_buf[1024];
 				sprintf(sender_prefix, "%s*", p->sid_prefix);
 
-				snprintf(monitor_log_buf, sizeof(monitor_log_buf),
+				/*snprintf(monitor_log_buf, sizeof(monitor_log_buf),
 						 "Illegal message field 0x%02X at radio packet offset %d",
 						 msg[offset], offset);
-				fprintf(stderr, "Illegal message type 0x%02x at offset %d\n", msg[offset], offset);
+				fprintf(stderr, "Illegal message type 0x%02x at offset %d\n", msg[offset], offset);*/
 
 				return -1;
 			}
