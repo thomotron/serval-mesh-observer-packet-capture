@@ -169,7 +169,7 @@ int serial_setup_port_with_speed(int fd, int speed)
   // no output processing
   t.c_oflag &= ~OPOST;
 
-  fprintf(stderr, "Serial port settings attempting ot be set: c=%08x, i=%08x, o=%08x, l=%08x\n",
+  fprintf(stderr, "Serial port settings attempting to be set: c=%08x, i=%08x, o=%08x, l=%08x\n",
           (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
           (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
 

@@ -864,14 +864,15 @@ int message_parser_53(struct peer_state *sender, char *sender_prefix,
             snprintf(monitor_log_buf, sizeof(monitor_log_buf),
                      "S field with zero length at radio packet offset %d",
                      offset);
+            sprintf(message_description, "%s", message_description);
 
             //	monitor_log(sender_prefix,NULL,monitor_log_buf);
         }
         return -1;
     }
     
-    message_description = "SYNC Message";
-    printf("Before return message description:%s", message_description);
+    sprintf(message_description, "SYNC Message");
+        printf("Before return message description:%s\n", message_description);
 
     return offset;
 }
