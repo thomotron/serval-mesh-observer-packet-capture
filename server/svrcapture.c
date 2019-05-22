@@ -196,10 +196,13 @@ int decode_lbard(unsigned char *msg, int len, char *returnString)
 				}
 				else*/
 				{
-					snprintf(returnString, 8000, "%s -> BROADCAST: %c : %s\n", peer_prefix,
-							 msg[offset], message_description);
+					long long relative_time_ms;
+					relative_time_ms = gettime_ms() - start_time;
+
+					snprintf(returnString, 8190, "%s -> BROADCAST: T+%lldms %c - %s\n", peer_prefix,
+							relative_time_ms, msg[offset], message_description);
 				}
-				printf("CURRENT STRING:: %s", returnString);
+				printf("CURRENT STRING: %s", returnString);
 				if (advance < 1)
 				{
 					fprintf(stderr,
@@ -330,13 +333,10 @@ int main(int argc, char *argv[])
 			{
 				if (sizeof(packet) > 5)
 				{
-					long long relative_time_ms;
-					relative_time_ms = gettime_ms() - start_time;
-					//dump_packet("received packet", &pcapPacket[5], n); //offset of 5 because of the lbard packet header type
 					char lbardResult[8192];
 					decode_lbard(&packet[16], n - 16, lbardResult); //16 byte offset before analysis to remove packet header
-					printf("\nT+&lldms %s\n", relative_time_ms, lbardResult);
-					fprintf(outFile, "T+%lldms : %s", relative_time_ms, lbardResult);
+					printf("\n%s\n", lbardResult);
+					fprintf(outFile, "%s", lbardResult);
 					//break;
 					lbardResult[0] = '\0';
 				}
@@ -352,7 +352,7 @@ int main(int argc, char *argv[])
 		}
 
 		//add final line to file
-		fprintf(outFile, "\n@enduml");
+		fprintf(outFile, "@enduml");
 
 		//run the program to create the graph
 		//change the arguments to where file location is ect
