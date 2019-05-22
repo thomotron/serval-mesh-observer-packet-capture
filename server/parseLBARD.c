@@ -742,7 +742,7 @@ int message_parser_4D(struct peer_state *p, char *sender_prefix,
                body_offset,
                msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7], msg[8]);
     //assign message description
-    snprintf(message_description, ">>> %s BITMAP ACK: %s* is informing everyone to send from m=%d (%02x%02x), p=%d of"
+    snprintf(message_description,8000, ">>> %s BITMAP ACK: %s* is informing everyone to send from m=%d (%02x%02x), p=%d of"
                                   " %02x%02x%02x%02x%02x%02x%02x%02x:  ",
              timestamp_str(),
              p ? p->sid_prefix : "<null>",
@@ -798,7 +798,7 @@ int message_parser_52(struct peer_state *sender, char *sender_prefix,
             printf("Saw request from SID=%s* BID=%s @ %c%d addressed to SID=%s*\n",
                    sender_prefix, bid_prefix, is_manifest ? 'M' : 'B', bundle_offset,
                    target_sid);
-            snprintf(message_description, "Saw request from SID=%s* BID=%s @ %c%d addressed to SID=%s*\n",
+            snprintf(message_description, 8000, "Saw request from SID=%s* BID=%s @ %c%d addressed to SID=%s*\n",
                      sender_prefix, bid_prefix, is_manifest ? 'M' : 'B', bundle_offset,
                      target_sid);
         }
@@ -1034,7 +1034,7 @@ int message_parser_41(struct peer_state *sender, char *sid_prefix_hex,
              msg[15], msg[16],
              manifest_offset, body_offset,
              msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7], msg[8],
-             bundle, bundle_count);)
+             bundle, bundle_count);
 
         if (!for_me) return 17;
 
