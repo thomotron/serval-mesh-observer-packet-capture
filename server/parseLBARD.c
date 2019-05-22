@@ -26,7 +26,6 @@ int debug_bitmap = 0;
 int cached_body_len = 0;
 int cached_manifest_encoded_len = 0;
 unsigned char my_sid[32];
-long long start_time = 0;
 int bundle_count;
 unsigned int option_flags = 0;
 int debug_ack = 0;
@@ -168,33 +167,6 @@ struct bundle_record
 };
 struct bundle_record bundles[MAX_BUNDLES];
 
-long long gettime_ms()
-{
-    long long retVal = -1;
-
-    do
-    {
-        struct timeval nowtv;
-
-        // If gettimeofday() fails or returns an invalid value, all else is lost!
-        if (gettimeofday(&nowtv, NULL) == -1)
-        {
-            perror("gettimeofday returned -1");
-            break;
-        }
-
-        if (nowtv.tv_sec < 0 || nowtv.tv_usec < 0 || nowtv.tv_usec >= 1000000)
-        {
-            perror("gettimeofday returned invalid value");
-            break;
-        }
-
-        retVal = nowtv.tv_sec * 1000LL + nowtv.tv_usec / 1000;
-    } while (0);
-
-    return retVal;
-}
-
 int free_peer(struct peer_state *p)
 {
     if (p->sid_prefix)
@@ -222,20 +194,6 @@ int free_peer(struct peer_state *p)
     // sync_free_peer_state(sync_state, p);
     free(p);
     return 0;
-}
-
-char *timestamp_str(void)
-{
-
-    struct tm tm;
-    time_t now = time(0);
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    localtime_r(&now, &tm);
-    snprintf(timestamp_str_out, 1024, "[%02d:%02d.%02d.%03d]",
-             tm.tm_hour, tm.tm_min, tm.tm_sec, (int)tv.tv_usec / 1000);
-
-    return timestamp_str_out;
 }
 
 int prime_bundle_cache(int bundle_number, char *sid_prefix_hex,
@@ -276,7 +234,6 @@ int prime_bundle_cache(int bundle_number, char *sid_prefix_hex,
         snprintf(path, 8192, "/restful/rhizome/%s.rhm",
                  bundles[bundle_number].bid_hex);
 
-        long long t1 = gettime_ms();
 
         char pathbuf[1024];
         snprintf(filename, 1024, "%s/%d.%s.manifest", getcwd(pathbuf, 1024), getpid(),
@@ -292,7 +249,6 @@ int prime_bundle_cache(int bundle_number, char *sid_prefix_hex,
         }
 
         fclose(f);
-        long long t2 = gettime_ms();
         f = fopen(filename, "r");
         if (!f)
         {
@@ -337,11 +293,6 @@ int prime_bundle_cache(int bundle_number, char *sid_prefix_hex,
         }
         fclose(f);
         f = NULL;
-        long long t3 = gettime_ms();
-
-        if (0)
-            fprintf(stderr, "  HTTP pre-fetching of next bundle to send took %lldms + %lldms\n",
-                    t2 - t1, t3 - t2);
 
         // XXX - This transport only allows bundles upto 5MB!
         // (and that is probably pushing it a bit for a mesh extender with only 32MB RAM
@@ -733,18 +684,16 @@ int message_parser_4D(struct peer_state *p, char *sender_prefix,
     }
 
     if (debug_bitmap)
-        printf(">>> %s BITMAP ACK: %s* is informing everyone to send from m=%d (%02x%02x), p=%d of"
+        printf(">>> BITMAP ACK: %s* is informing everyone to send from m=%d (%02x%02x), p=%d of"
                " %02x%02x%02x%02x%02x%02x%02x%02x:  ",
-               timestamp_str(),
                p ? p->sid_prefix : "<null>",
                manifest_offset,
                p->request_manifest_bitmap[0], p->request_manifest_bitmap[1],
                body_offset,
                msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7], msg[8]);
     //assign message description
-    snprintf(message_description, 8000, ">>> %s BITMAP ACK: %s* is informing everyone to send from m=%d (%02x%02x), p=%d of"
+    snprintf(message_description, 8000, ">>> BITMAP ACK: %s* is informing everyone to send from m=%d (%02x%02x), p=%d of"
                                         " %02x%02x%02x%02x%02x%02x%02x%02x:  ",
-             timestamp_str(),
              p ? p->sid_prefix : "<null>",
              manifest_offset,
              p->request_manifest_bitmap[0], p->request_manifest_bitmap[1],
@@ -1014,9 +963,8 @@ int message_parser_41(struct peer_state *sender, char *sid_prefix_hex,
 
     int bundle = lookup_bundle_by_prefix(bid_prefix, 8);
 
-    fprintf(stderr, "T+%lldms : SYNC ACK: '%c' %s* is asking for %s (%02X%02X) to send from m=%d, p=%d of"
+    fprintf(stderr, "SYNC ACK: '%c' %s* is asking for %s (%02X%02X) to send from m=%d, p=%d of"
                     " %02x%02x%02x%02x%02x%02x%02x%02x (bundle #%d/%d)\n",
-            gettime_ms() - start_time,
             msg[0],
             sender ? sender->sid_prefix : "<null>",
             for_me ? "us" : "someone else",
@@ -1025,9 +973,8 @@ int message_parser_41(struct peer_state *sender, char *sid_prefix_hex,
             msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7], msg[8],
             bundle, bundle_count);
 
-    snprintf(message_description, 8000, "T+%lldms : SYNC ACK: '%c' %s* is asking for %s (%02X%02X) to send from m=%d, p=%d of"
+    snprintf(message_description, 8000, "SYNC ACK: '%c' %s* is asking for %s (%02X%02X) to send from m=%d, p=%d of"
                                         " %02x%02x%02x%02x%02x%02x%02x%02x (bundle #%d/%d)\n",
-             gettime_ms() - start_time,
              msg[0],
              sender ? sender->sid_prefix : "<null>",
              for_me ? "us" : "someone else",

@@ -31,6 +31,33 @@
 
 long long start_time = 0;
 
+long long gettime_ms()
+{
+	long long retVal = -1;
+
+	do
+	{
+		struct timeval nowtv;
+
+		// If gettimeofday() fails or returns an invalid value, all else is lost!
+		if (gettimeofday(&nowtv, NULL) == -1)
+		{
+			perror("gettimeofday returned -1");
+			break;
+		}
+
+		if (nowtv.tv_sec < 0 || nowtv.tv_usec < 0 || nowtv.tv_usec >= 1000000)
+		{
+			perror("gettimeofday returned invalid value");
+			break;
+		}
+
+		retVal = nowtv.tv_sec * 1000LL + nowtv.tv_usec / 1000;
+	} while (0);
+
+	return retVal;
+}
+
 void dump_packet(char *msg, unsigned char *b, int n)
 {
 	printf("%s: Displaying %d bytes.\n", msg, n);
