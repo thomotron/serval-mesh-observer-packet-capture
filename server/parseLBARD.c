@@ -869,7 +869,9 @@ int message_parser_53(struct peer_state *sender, char *sender_prefix,
         }
         return -1;
     }
+    
     message_description = "SYNC Message";
+    printf("Before return message description:%s", message_description);
 
     return offset;
 }
