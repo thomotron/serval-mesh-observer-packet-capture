@@ -798,12 +798,16 @@ int message_parser_52(struct peer_state *sender, char *sender_prefix,
             printf("Saw request from SID=%s* BID=%s @ %c%d addressed to SID=%s*\n",
                    sender_prefix, bid_prefix, is_manifest ? 'M' : 'B', bundle_offset,
                    target_sid);
+            snprintf(message_description, "Saw request from SID=%s* BID=%s @ %c%d addressed to SID=%s*\n",
+                     sender_prefix, bid_prefix, is_manifest ? 'M' : 'B', bundle_offset,
+                     target_sid);
         }
         {
             char status_msg[1024];
             snprintf(status_msg, 1024, "Saw request from SID=%s* BID=%s @ %c%d addressed to SID=%s*\n",
                      sender_prefix, bid_prefix, is_manifest ? 'M' : 'B', bundle_offset,
                      target_sid);
+            message_description = status_msg;
             //     status_log(status_msg);
         }
 
@@ -814,6 +818,7 @@ int message_parser_52(struct peer_state *sender, char *sender_prefix,
             snprintf(monitor_log_buf, sizeof(monitor_log_buf),
                      "Request for BID=%s*, beginning at offset %d of %s.",
                      bid_prefix, bundle_offset, is_manifest ? "manifest" : "payload");
+            message_description = monitor_log_buf;
 
             // monitor_log(sender_prefix,NULL,monitor_log_buf);
         }
@@ -972,6 +977,7 @@ int message_parser_54(struct peer_state *sender, char *sender_prefix,
             sender->last_timestamp_received = now;
         }
     }
+    message_description = "Time correction";
 
     return offset;
 }
@@ -1019,8 +1025,18 @@ int message_parser_41(struct peer_state *sender, char *sid_prefix_hex,
             msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7], msg[8],
             bundle, bundle_count);
 
-    if (!for_me)
-        return 17;
+    snprintf(message_description, 8000, "T+%lldms : SYNC ACK: '%c' %s* is asking for %s (%02X%02X) to send from m=%d, p=%d of"
+                                        " %02x%02x%02x%02x%02x%02x%02x%02x (bundle #%d/%d)\n",
+             gettime_ms() - start_time,
+             msg[0],
+             sender ? sender->sid_prefix : "<null>",
+             for_me ? "us" : "someone else",
+             msg[15], msg[16],
+             manifest_offset, body_offset,
+             msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7], msg[8],
+             bundle, bundle_count);)
+
+        if (!for_me) return 17;
 
     // Sanity check inputs, so that we don't mishandle memory.
     if (manifest_offset < 0)
@@ -1103,11 +1119,17 @@ int message_parser_41(struct peer_state *sender, char *sid_prefix_hex,
                 }
                 fprintf(stderr, "SYNC ACK: %s* is redirected us to a random location. Sending from m=%d, p=%d\n",
                         sender->sid_prefix, manifest_offset, body_offset);
+
+                snprintf(message_description, 8000, "SYNC ACK: %s* is redirected us to a random location. Sending from m=%d, p=%d\n",
+                         sender->sid_prefix, manifest_offset, body_offset);
             }
         }
         else
             fprintf(stderr, "SYNC ACK: %s* is asking for us to send from m=%d, p=%d\n",
                     sender->sid_prefix, manifest_offset, body_offset);
+
+        snprintf(message_description, 8000, "SYNC ACK: %s* is asking for us to send from m=%d, p=%d\n",
+                 sender->sid_prefix, manifest_offset, body_offset);
         sender->tx_bundle_manifest_offset = manifest_offset;
         sender->tx_bundle_body_offset = body_offset;
     }
@@ -1116,6 +1138,7 @@ int message_parser_41(struct peer_state *sender, char *sid_prefix_hex,
         fprintf(stderr, "SYNC ACK: Ignoring, because we are sending bundle #%d, and request is for bundle #%d\n", sender->tx_bundle, bundle);
         fprintf(stderr, "          Requested BID/version = %s/%lld\n",
                 bundles[bundle].bid_hex, bundles[bundle].version);
+        snprintf(message_description, 8000, "SYNC ACK: Ignoring, because we are sending bundle #%d, and request is for bundle #%d\n", sender->tx_bundle, bundle);
         fprintf(stderr, "                 TX BID/version = %s/%lld\n",
                 bundles[sender->tx_bundle].bid_hex, bundles[sender->tx_bundle].version);
     }
@@ -1179,6 +1202,7 @@ int message_parser_50(struct peer_state *sender, char *sender_prefix,
                  piece_offset, piece_offset + piece_bytes - 1,
                  piece_is_manifest ? "manifest" : "payload",
                  is_end_piece ? " This is the last piece of that." : "");
+        message_description = monitor_log_buf;
 
         //    monitor_log(sender_prefix,NULL,monitor_log_buf);
     }
