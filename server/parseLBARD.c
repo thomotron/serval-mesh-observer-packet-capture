@@ -1095,36 +1095,8 @@ int message_parser_41(struct peer_state *sender, char *sid_prefix_hex,
         }
         if (randomJump)
         {
-            // Jump to a random position somewhere after the provided points.
-            if (!prime_bundle_cache(bundle,
-                                    sid_prefix_hex, servald_server, credential))
-            {
-                if (manifest_offset < cached_manifest_encoded_len)
-                {
-                    if (!(option_flags & FLAG_NO_RANDOMIZE_REDIRECT_OFFSET))
-                    {
-                        if (cached_manifest_encoded_len - manifest_offset)
-                            manifest_offset += random() % (cached_manifest_encoded_len - manifest_offset);
-                        manifest_offset &= 0xffffff00;
-                    }
-                }
-                if (body_offset < cached_body_len)
-                {
-                    if (!(option_flags & FLAG_NO_RANDOMIZE_REDIRECT_OFFSET))
-                    {
-                        if (cached_body_len - body_offset)
-                            body_offset += random() % (cached_body_len - body_offset);
-                        body_offset &= 0xffffff00;
-                    }
-                }
-                fprintf(stderr, "SYNC ACK: %s* is redirected us to a random location. Sending from m=%d, p=%d\n",
-                        sender->sid_prefix, manifest_offset, body_offset);
-
-                snprintf(message_description, 8000, "SYNC ACK: %s* is redirected us to a random location. Sending from m=%d, p=%d\n",
-                         sender->sid_prefix, manifest_offset, body_offset);
-            }
-        }
-        else
+            
+      
             fprintf(stderr, "SYNC ACK: %s* is asking for us to send from m=%d, p=%d\n",
                     sender->sid_prefix, manifest_offset, body_offset);
 
