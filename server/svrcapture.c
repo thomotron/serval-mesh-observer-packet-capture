@@ -308,7 +308,7 @@ int main(int argc, char *argv[])
 					//dump_packet("received packet", &pcapPacket[5], n); //offset of 5 because of the lbard packet header type
 					char lbardResult[8192];
 					decode_lbard(&packet[16], n - 16, lbardResult); //16 byte offset before analysis to remove packet header
-					printf("\n%s\n", lbardResult);
+					printf("\nT+&lldms %s\n", relative_time_ms, lbardResult);
 					fprintf(outFile, "T+%lldms : %s", relative_time_ms, lbardResult);
 					//break;
 					lbardResult[0] = '\0';
