@@ -57,6 +57,35 @@ struct serial_port {
   
 };
 
+long long start_time=0;
+long long gettime_ms()
+{
+        long long retVal = -1;
+
+        do
+        {
+                struct timeval nowtv;
+
+                // If gettimeofday() fails or returns an invalid value, all else is lost!
+                if (gettimeofday(&nowtv, NULL) == -1)
+                {
+                        perror("gettimeofday returned -1");
+                        break;
+                }
+
+                if (nowtv.tv_sec < 0 || nowtv.tv_usec < 0 || nowtv.tv_usec >= 1000000)
+                {
+                        perror("gettimeofday returned invalid value");
+                        break;
+                }
+
+                retVal = nowtv.tv_sec * 1000LL + nowtv.tv_usec / 1000;
+        } while (0);
+
+        return retVal;
+}
+
+
 #define MAX_PORTS 16
 struct serial_port serial_ports[MAX_PORTS];
 int serial_port_count=0;
@@ -168,8 +197,9 @@ int record_rfd900_tx_event(struct serial_port *sp)
     memcpy(&message[offset],sp->tx_buff,sp->tx_bytes);
     offset+=sp->tx_bytes;
     message[offset++]='\n';
-    
-    printf("Before sendto\n");  
+   
+    if (!start_time) start_time=gettime_ms(); 
+    printf("T+%lldms: Before sendto of RFD900 packet\n",gettime_ms()-start_time);  
     errno=0;          
     int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     printf("Size Written %i using %p\n", offset,sp);

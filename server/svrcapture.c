@@ -316,6 +316,7 @@ int main(int argc, char *argv[])
 					errno = 0;
 				}
 			}
+			printf("Received %d bytes\n",n);
 			if (n < 0)
 			{
 				perror("ERROR in recieving packet\n");
