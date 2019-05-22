@@ -676,6 +676,8 @@ int message_parser_4C(struct peer_state *sender, char *sender_prefix,
         snprintf(monitor_log_buf, sizeof(monitor_log_buf),
                  "Payload length: BID=%s*, version 0x%010llx, length = %lld bytes",
                  bid_prefix, version, offset_compound);
+        //assign to message description
+        message_description = monitor_log_buf;
 
         //    monitor_log(sender_prefix,NULL,monitor_log_buf);
     }
@@ -739,6 +741,15 @@ int message_parser_4D(struct peer_state *p, char *sender_prefix,
                p->request_manifest_bitmap[0], p->request_manifest_bitmap[1],
                body_offset,
                msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7], msg[8]);
+    //assign message description
+    snprintf(message_description, ">>> %s BITMAP ACK: %s* is informing everyone to send from m=%d (%02x%02x), p=%d of"
+                                  " %02x%02x%02x%02x%02x%02x%02x%02x:  ",
+             timestamp_str(),
+             p ? p->sid_prefix : "<null>",
+             manifest_offset,
+             p->request_manifest_bitmap[0], p->request_manifest_bitmap[1],
+             body_offset,
+             msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7], msg[8]);
 
     int max_block = 256;
     if (bundle > -1)
@@ -1019,7 +1030,7 @@ int message_parser_41(struct peer_state *sender, char *sid_prefix_hex,
 
     if (bundle < 0)
         return 17;
-        //return correct length so handler knows how far to advance in packet
+    //return correct length so handler knows how far to advance in packet
 
     if (bundle == sender->request_bitmap_bundle)
     {
@@ -1137,7 +1148,7 @@ int message_parser_50(struct peer_state *sender, char *sender_prefix,
     offset += 2;
 
     if (length - offset < (1 + 8 + 8 + 4 + 1))
-        return -3; 
+        return -3;
     snprintf(bid_prefix, 8 * 2 + 1, "%02x%02x%02x%02x%02x%02x%02x%02x",
              msg[offset + 0], msg[offset + 1], msg[offset + 2], msg[offset + 3],
              msg[offset + 4], msg[offset + 5], msg[offset + 6], msg[offset + 7]);
