@@ -119,9 +119,10 @@ char decode_wifi(unsigned char *packet, int len)
 
 int decode_lbard(unsigned char *msg, int len, char *returnString)
 {
+	int iterationTest = 1;
 	int offset = 8;
 	int peer_index = -1;
-	while (offset < len)
+	//while (offset < len)
 	{
 		/*
     Parse message and act on it.    
@@ -149,7 +150,7 @@ int decode_lbard(unsigned char *msg, int len, char *returnString)
 		}
 
 		strcat(returnString, peer_prefix);
-		printf("\nBuilt String: %s\n", returnString);
+		printf("\nT+%lldms: Built String: %s\n", gettime_ms()-start_time, returnString);
 
 		if (!p)
 		{
@@ -179,6 +180,8 @@ int decode_lbard(unsigned char *msg, int len, char *returnString)
 		{
 			printf("Offset: %i, len %i\n", offset, len);
 			dump_packet("Packet offset", msg, len);
+
+			iterationTest ++;
 			printf("Message Type: %c - 0x%02X\n", msg[offset], msg[offset]);
 
 			if (message_handlers[msg[offset]])
@@ -189,19 +192,13 @@ int decode_lbard(unsigned char *msg, int len, char *returnString)
 				advance = message_handlers[msg[offset]](p, peer_prefix, NULL, NULL,
 														&msg[offset], len - offset, message_description);
 				printf("Message description: %s\n", message_description);
-				/*if (strstr(message_description, "Illegal message") != NULL)
-				{
-					snprintf(returnString, 8000, "%s -> BROADCAST: %c : %s\n", peer_prefix,
-							 msg[offset], "Error parsing rest of message");
-				}
-				else*/
-				{
-					long long relative_time_ms;
-					relative_time_ms = gettime_ms() - start_time;
 
-					snprintf(returnString, 8190, "%s -> BROADCAST: T+%lldms %c - %s\n", peer_prefix,
-							relative_time_ms, msg[offset], message_description);
-				}
+				long long relative_time_ms;
+				relative_time_ms = gettime_ms() - start_time;
+
+				snprintf(returnString, 8190, "%s -> BROADCAST: T+%lldms %c - %s\n", peer_prefix,
+						 relative_time_ms, msg[offset], message_description);
+
 				printf("CURRENT STRING: %s", returnString);
 				if (advance < 1)
 				{
@@ -242,8 +239,6 @@ int main(int argc, char *argv[])
 
 	do
 	{
-		//set up file for writing captured packet info
-
 		//get time to write to file name
 		time_t rawTime;
 		int bufferSize = 100;
@@ -290,6 +285,8 @@ int main(int argc, char *argv[])
 		//main while loop to accept packet
 		int i;
 		char wifiPacketInfo;
+		//set starting time
+		start_time = gettime_ms();
 
 		for (i = 0; i < 10; i++)
 		{
@@ -300,6 +297,7 @@ int main(int argc, char *argv[])
 			n = 0;
 			while (!n)
 			{
+				packet[0]=0;
 				n = recvfrom(sockfd, packet, 8192, MSG_DONTWAIT, (struct sockaddr *)&cliaddr, &len);
 				if (!n)
 				{
@@ -333,8 +331,12 @@ int main(int argc, char *argv[])
 			{
 				if (sizeof(packet) > 5)
 				{
+					printf("About to call decode_lbard()\n");
 					char lbardResult[8192];
-					decode_lbard(&packet[16], n - 16, lbardResult); //16 byte offset before analysis to remove packet header
+ //16 byte offset before analysis to remove packet header
+// 32 bytes of Reed-Solomon error correction trimmed from the end
+// 1 byte of new line character that is an artifact of data collection removed. from the end also
+					decode_lbard(&packet[16], n - 16 - 32 -1, lbardResult);
 					printf("\n%s\n", lbardResult);
 					fprintf(outFile, "%s", lbardResult);
 					//break;
