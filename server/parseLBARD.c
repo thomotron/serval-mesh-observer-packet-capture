@@ -196,6 +196,20 @@ int free_peer(struct peer_state *p)
     return 0;
 }
 
+char *timestamp_str(void)
+{
+
+    struct tm tm;
+    time_t now = time(0);
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    localtime_r(&now, &tm);
+    snprintf(timestamp_str_out, 1024, "[%02d:%02d.%02d.%03d]",
+             tm.tm_hour, tm.tm_min, tm.tm_sec, (int)tv.tv_usec / 1000);
+
+    return timestamp_str_out;
+}
+
 int prime_bundle_cache(int bundle_number, char *sid_prefix_hex,
                        char *servald_server, char *credential)
 {
