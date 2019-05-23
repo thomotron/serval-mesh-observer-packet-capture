@@ -44,6 +44,7 @@ struct serial_port
   int fd;
   int rfd900_tx_count;
   int rfd900_rx_count;
+  int isRecv = 0;
 
   char *port;
   int id;
