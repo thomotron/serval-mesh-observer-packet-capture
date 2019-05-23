@@ -943,7 +943,7 @@ int message_parser_54(struct peer_state *sender, char *sender_prefix,
             sender->last_timestamp_received = now;
         }
     }
-    message_description = "Time correction";
+    snprintf(message_description, 8000, "Time Correction");
 
     return offset;
 }
