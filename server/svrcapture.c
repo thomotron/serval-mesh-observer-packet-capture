@@ -28,6 +28,7 @@
 
 #define MAX_PACKET_SIZE 255
 #define RADIO_RXBUFFER_SIZE 64 + MAX_PACKET_SIZE
+#define MY_ID = "6abe0326e806"
 
 long long start_time = 0;
 
@@ -119,6 +120,7 @@ char decode_wifi(unsigned char *packet, int len)
 
 int decode_lbard(unsigned char *msg, int len, char *returnString)
 {
+	int areWeSending=1; //use this to see if we are sending or recieving
 	int iterationTest = 1;
 	int offset = 8;
 	int peer_index = -1;
@@ -136,6 +138,12 @@ int decode_lbard(unsigned char *msg, int len, char *returnString)
 				 msg[0], msg[1], msg[2], msg[3], msg[4], msg[5]);
 		int msg_number = msg[6] + 256 * (msg[7] & 0x7f);
 		int is_retransmission = msg[7] & 0x80;
+		if (peer_prefix == MY_ID)
+		{
+			//if the peer_previx of the packet is the same as the known ID of the mesh
+			//extender that we have defined above, then we must be recieving
+			areWeSending = 0;
+		}
 
 		// Find or create peer structure for this.
 		struct peer_state *p = NULL;
@@ -196,8 +204,16 @@ int decode_lbard(unsigned char *msg, int len, char *returnString)
 				long long relative_time_ms;
 				relative_time_ms = gettime_ms() - start_time;
 
-				snprintf(returnString, 8190, "%s -> BROADCAST: T+%lldms %c - %s\n", peer_prefix,
-						 relative_time_ms, msg[offset], message_description);
+				if (areWeSending)
+				{
+					snprintf(returnString, 8190, "%s -> BROADCAST: T+%lldms %c - %s\n", peer_prefix,
+							 relative_time_ms, msg[offset], message_description);
+				} else 
+				{
+					snprintf(returnString, 8190, "BROADCAST -> %s: T+%lldms %c - %s\n", peer_prefix,
+							 relative_time_ms, msg[offset], message_description);
+				}
+				
 
 				printf("CURRENT STRING: %s", returnString);
 				if (advance < 1)
