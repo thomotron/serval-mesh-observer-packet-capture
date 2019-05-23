@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
 		char timingDiagramFileName[bufferSize];
 		char *time = asctime(timeInfo);
 		time[strlen(time) - 1] = 0; //remove the new line at end of time
-		snprintf(timingDiagramFileName, bufferSize, "timingDiagram: %s.txt", time);
+		snprintf(timingDiagramFileName, bufferSize, "timingDiagram_%s.txt", time);
 
 		FILE *outFile;
 		outFile = fopen(timingDiagramFileName, "w"); //open file to write to
@@ -288,7 +288,7 @@ int main(int argc, char *argv[])
 		//set starting time
 		start_time = gettime_ms();
 
-		for (i = 0; i < 10; i++)
+		for (i = 0; i < 30; i++)
 		{
 			//memset(&buffer, 0, 500);
 			//printf("Waiting for packet to read\n");
