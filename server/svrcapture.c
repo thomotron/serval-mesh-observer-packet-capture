@@ -283,12 +283,11 @@ int main(int argc, char *argv[])
 		u_char packet[8192];
 
 		//main while loop to accept packet
-		int i;
 		char wifiPacketInfo;
 		//set starting time
 		start_time = gettime_ms();
 
-		for (i = 0; i < 30; i++)
+		for (int i = 0; i < 30; i++)
 		{
 			//memset(&buffer, 0, 500);
 			//printf("Waiting for packet to read\n");
@@ -372,7 +371,7 @@ int main(int argc, char *argv[])
 		//call program to make graph
 		printf("Making diagram in: %s", cwd);
 		snprintf(command, 256, "java -jar \'%s\' \'%s/%s\'", location, cwd, timingDiagramFileName);
-		printf("Running following command to make graph\n %s\nPlease wait - Program will finish when diagram is made\n\n", command);
+		//printf("Running following command to make graph\n %s\nPlease wait - Program will finish when diagram is made\n\n", command);
 		system(command);
 
 	} while (0);
