@@ -198,8 +198,9 @@ int record_rfd900_tx_event(struct serial_port *sp)
     offset += sp->tx_bytes;
     message[offset++] = '\n';
 
-    if (!start_time)
+    if (!start_time){
       start_time = gettime_ms();
+    }
     printf("T+%lldms: Before sendto of RFD900 packet\n", gettime_ms() - start_time);
     errno = 0;
     int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
@@ -231,8 +232,9 @@ int record_rfd900_rx_event(struct serial_port *sp)
     offset += sp->tx_bytes;
     message[offset++] = '\n';
 
-    if (!start_time)
+    if (!start_time){
       start_time = gettime_ms();
+    }
     printf("T+%lldms: Before sendto of RFD900 packet\n", gettime_ms() - start_time);
     errno = 0;
     int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
