@@ -548,8 +548,8 @@ int main(int argc, char **argv)
       int i;
       for (i = 0; i < serial_port_count; i++)
         process_serial_port(&serial_ports[i]);
-
-      /*header.len = 0;
+#ifdef WITH_PCAP
+      header.len = 0;
             header.caplen = 0;
             capPacket = pcap_next(handle, &header);
             if (header.len > 0)
@@ -565,7 +565,8 @@ int main(int argc, char **argv)
                     perror("Sendto: ");
                     break;
                 }
-            }*/
+            }
+#endif
     } while (1);
 
     printf("Closing output file.\n");
