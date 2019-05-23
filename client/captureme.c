@@ -44,7 +44,6 @@ struct serial_port
   int fd;
   int rfd900_tx_count;
   int rfd900_rx_count;
-  int isRecv = 0;
 
   char *port;
   int id;
@@ -193,41 +192,6 @@ int record_rfd900_tx_event(struct serial_port *sp)
   do
   {
     char message[1024] = "LBARD:RFD900:TX:";
-
-    int offset = strlen(message);
-    memcpy(&message[offset], sp->tx_buff, sp->tx_bytes);
-    offset += sp->tx_bytes;
-    message[offset++] = '\n';
-
-    if (!start_time)
-    {
-      start_time = gettime_ms();
-    }
-    printf("T+%lldms: Before sendto of RFD900 packet\n", gettime_ms() - start_time);
-    errno = 0;
-    int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-    printf("Size Written %i using %p\n", offset, sp);
-    if (n < 0)
-    {
-      perror("Error Sending");
-      retVal = -7;
-      break;
-    }
-    //fflush(outFile);
-    printf("Send to server socket\n\n");
-    message[0] = '\0'; // set the string to a zero length
-  } while (0);
-
-  return retVal;
-}
-
-int record_rfd900_rx_event(struct serial_port *sp)
-{
-  int retVal = 0;
-
-  do
-  {
-    char message[1024] = "LBARD:RFD900:RX:";
 
     int offset = strlen(message);
     memcpy(&message[offset], sp->tx_buff, sp->tx_bytes);
