@@ -385,7 +385,7 @@ int main(int argc, char *argv[])
 		fclose(outFile);
 
 		//call program to make graph
-		printf("Making diagram in: %s", cwd);
+		printf("Making diagram in: %s\n", cwd);
 		snprintf(command, 256, "java -jar \'%s\' \'%s/%s\'", location, cwd, timingDiagramFileName);
 		//printf("Running following command to make graph\n %s\nPlease wait - Program will finish when diagram is made\n\n", command);
 		system(command);
