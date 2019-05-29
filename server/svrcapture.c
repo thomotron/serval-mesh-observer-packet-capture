@@ -303,7 +303,7 @@ int main(int argc, char *argv[])
 		//set starting time
 		start_time = gettime_ms();
 
-		for (int i = 0; i < 500; i++)
+		for (int i = 0; i < 20; i++)
 		{
 			//memset(&buffer, 0, 500);
 			//printf("Waiting for packet to read\n");

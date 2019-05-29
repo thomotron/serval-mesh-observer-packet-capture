@@ -199,9 +199,7 @@ int record_rfd900_tx_event(struct serial_port *sp)
     message[offset++] = '\n';
 
     if (!start_time)
-    {
       start_time = gettime_ms();
-    }
     printf("T+%lldms: Before sendto of RFD900 packet\n", gettime_ms() - start_time);
     errno = 0;
     int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
@@ -514,25 +512,24 @@ int main(int argc, char **argv)
       int i;
       for (i = 0; i < serial_port_count; i++)
         process_serial_port(&serial_ports[i]);
-#ifdef WITH_PCAP
-      header.len = 0;
-      header.caplen = 0;
-      capPacket = pcap_next(handle, &header);
-      if (header.len > 0)
-      {
-        printf("Captured WIFI packet total length %i\n", header.len);
-        n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, serverlen);
-        //dump_packet("Captured Packet", capPacket, n);
-        printf("Size Written %i\n", n);
-        if (n < 0)
-        {
-          perror("Error Sending\n");
-          retVal = -11;
-          perror("Sendto: ");
-          break;
-        }
-      }
-#endif
+
+      /*header.len = 0;
+            header.caplen = 0;
+            capPacket = pcap_next(handle, &header);
+            if (header.len > 0)
+            {
+                printf("Captured WIFI packet total length %i\n", header.len);
+                n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, serverlen);
+                //dump_packet("Captured Packet", capPacket, n);
+                printf("Size Written %i\n", n);
+                if (n < 0)
+                {
+                    perror("Error Sending\n");
+                    retVal = -11;
+                    perror("Sendto: ");
+                    break;
+                }
+            }*/
     } while (1);
 
     printf("Closing output file.\n");
