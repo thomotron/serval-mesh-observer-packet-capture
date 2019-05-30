@@ -28,6 +28,7 @@
 
 struct sockaddr_in serv_addr;
 int serversock = -1;
+#define MY_ID "6abe0326e806"
 
 //#define test 1
 
@@ -201,6 +202,13 @@ int record_rfd900_tx_event(struct serial_port *sp)
     if (!start_time)
       start_time = gettime_ms();
     printf("T+%lldms: Before sendto of RFD900 packet\n", gettime_ms() - start_time);
+
+    /*//used to see if the Mesh Extender has sent or recieved a packet
+    char peer_prefix[6 * 2 + 1];
+    snprintf(peer_prefix, 6 * 2 + 1, "%02x%02x%02x%02x%02x%02x",
+             msg[0], msg[1], msg[2], msg[3], msg[4], msg[5]);*/
+
+
     errno = 0;
     int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     printf("Size Written %i using %p\n", offset, sp);

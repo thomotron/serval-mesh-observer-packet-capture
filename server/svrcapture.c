@@ -28,7 +28,6 @@
 
 #define MAX_PACKET_SIZE 255
 #define RADIO_RXBUFFER_SIZE 64 + MAX_PACKET_SIZE
-#define MY_ID "6abe0326e806"
 
 long long start_time = 0;
 
