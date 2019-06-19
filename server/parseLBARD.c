@@ -487,7 +487,7 @@ int message_parser_42(struct peer_state *sender, char *prefix,
     int offset = 0;
     if (length - offset < BAR_LENGTH)
     {
-        fprintf(stderr, "Ignoring runt BAR (len=%d instead of %d)\n",
+        printf(stderr, "Ignoring runt BAR (len=%d instead of %d)\n",
                 length - offset, BAR_LENGTH);
         return -2;
     }
@@ -549,6 +549,7 @@ int message_parser_42(struct peer_state *sender, char *prefix,
 
 #endif
 
+    message_description = monitor_log_buf;
     return offset;
 }
 
@@ -597,6 +598,7 @@ int message_parser_47(struct peer_state *sender, char *sender_prefix,
         }
     }
 
+    sprintf(message_description, "Peer %s* has restarted -- discarding stale knowledge of its state.\n", sender->sid_prefix);
     return offset;
 }
 
@@ -864,7 +866,7 @@ int message_parser_53(struct peer_state *sender, char *sender_prefix,
             snprintf(monitor_log_buf, sizeof(monitor_log_buf),
                      "S field with zero length at radio packet offset %d",
                      offset);
-            sprintf(message_description, "%s", message_description);
+            message_description = monitor_log_buf;
 
             //	monitor_log(sender_prefix,NULL,monitor_log_buf);
         }
@@ -872,7 +874,7 @@ int message_parser_53(struct peer_state *sender, char *sender_prefix,
     }
     
     sprintf(message_description, "SYNC Message");
-        printf("Before return message description:%s\n", message_description);
+        //printf("Before return message description:%s\n", message_description);
 
     return offset;
 }

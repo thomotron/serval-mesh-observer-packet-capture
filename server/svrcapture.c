@@ -137,12 +137,6 @@ int decode_lbard(unsigned char *msg, int len, char *returnString)
 				 msg[0], msg[1], msg[2], msg[3], msg[4], msg[5]);
 		int msg_number = msg[6] + 256 * (msg[7] & 0x7f);
 		int is_retransmission = msg[7] & 0x80;
-		if (peer_prefix == MY_ID)
-		{
-			//if the peer_previx of the packet is the same as the known ID of the mesh
-			//extender that we have defined above, then we must be recieving
-			areWeSending = 0;
-		}
 
 		// Find or create peer structure for this.
 		struct peer_state *p = NULL;
