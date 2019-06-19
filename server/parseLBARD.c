@@ -535,6 +535,7 @@ int message_parser_42(struct peer_state *sender, char *prefix,
                  sender->bundle_count
 #endif
         );
+        message_description = monitor_log_buf;
 
         //      monitor_log(sender_prefix,NULL,monitor_log_buf);
     }
@@ -549,7 +550,6 @@ int message_parser_42(struct peer_state *sender, char *prefix,
 
 #endif
 
-    message_description = monitor_log_buf;
     return offset;
 }
 
