@@ -480,6 +480,7 @@ int lookup_bundle_by_prefix(const unsigned char *prefix, int len)
     return best_bundle;
 }
 
+//ACK message - saw a bundle announce record
 int message_parser_42(struct peer_state *sender, char *prefix,
                       char *servald_server, char *credential,
                       unsigned char *msg, int length, char *message_description)
@@ -553,6 +554,7 @@ int message_parser_42(struct peer_state *sender, char *prefix,
     return offset;
 }
 
+//Instance ID changed each time LBARD starts. Used to disguard sync tree when the mesh extender resarts
 int message_parser_47(struct peer_state *sender, char *sender_prefix,
                       char *servald_server, char *credential,
                       unsigned char *msg, int length, char *message_description)
@@ -602,6 +604,7 @@ int message_parser_47(struct peer_state *sender, char *sender_prefix,
     return offset;
 }
 
+//Instance ID like process id - identifies an instance of LABRD running
 int message_parser_4C(struct peer_state *sender, char *sender_prefix,
                       char *servald_server, char *credential,
                       unsigned char *msg, int length, char *message_description)
@@ -654,6 +657,7 @@ int message_parser_4C(struct peer_state *sender, char *sender_prefix,
     return offset;
 }
 
+//Bitmap indicate what pieces of a bundle has been transferred
 int message_parser_4D(struct peer_state *p, char *sender_prefix,
                       char *servald_server, char *credential,
                       unsigned char *msg_in, int length, char *message_description)
@@ -732,6 +736,7 @@ int message_parser_4D(struct peer_state *p, char *sender_prefix,
     return offset;
 }
 
+//Identifies when a request has been seen and who sent it
 int message_parser_52(struct peer_state *sender, char *sender_prefix,
                       char *servald_server, char *credential,
                       unsigned char *msg, int length, char *message_description)
@@ -842,6 +847,7 @@ int message_parser_52(struct peer_state *sender, char *sender_prefix,
     return offset;
 }
 
+//Sync - Tree Sync Message
 int message_parser_53(struct peer_state *sender, char *sender_prefix,
                       char *ignore1, char *ignore2,
                       unsigned char *msg, int length, char *message_description)
@@ -879,6 +885,7 @@ int message_parser_53(struct peer_state *sender, char *sender_prefix,
     return offset;
 }
 
+//Timestamp Correction
 int message_parser_54(struct peer_state *sender, char *sender_prefix,
                       char *servald_server, char *credential,
                       unsigned char *msg, int length, char *message_description)
@@ -950,6 +957,7 @@ int message_parser_54(struct peer_state *sender, char *sender_prefix,
     return offset;
 }
 
+//Progress ACK
 int message_parser_41(struct peer_state *sender, char *sid_prefix_hex,
                       char *servald_server, char *credential,
                       unsigned char *msg, int length, char *message_description)
@@ -1085,6 +1093,7 @@ int message_parser_41(struct peer_state *sender, char *sid_prefix_hex,
     return 17;
 }
 
+//Packet contains a piece of the bundle - manifest and payload - so one "thing" in database
 int message_parser_50(struct peer_state *sender, char *sender_prefix,
                       char *servald_server, char *credential,
                       unsigned char *msg, int length, char *message_description)
