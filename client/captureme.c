@@ -442,7 +442,8 @@ int main(int argc, char **argv)
     while (links_setup == 0)
     {
       char buff[1024];
-      for (int i = 0; i < 4; i++)
+      int i=0;
+      for (; i < 4; i++)
       {
         int n = read(serial_ports[i].fd, buff, 1024);
         if (n > 0)
@@ -452,7 +453,8 @@ int main(int argc, char **argv)
           // have 16ms of latency. We allow 50ms here to be safe.
           usleep(50000);
           char buff2[1024];
-          for (int j = 0; j < 4; j++)
+          int j=0;
+          for (; j < 4; j++) 
           {
             // Don't look for the data on ourselves
             if (i == j)
@@ -467,7 +469,8 @@ int main(int argc, char **argv)
                 // Set one of those to 115200, and then one of the other two ports to 115200,
                 // and then we should have both speeds on both ports available
                 serial_setup_port_with_speed(serial_ports[i].fd, 115200);
-                for (int k = 0; k < 4; k++)
+                int k=0;
+                for (; k < 4; k++)
                 {
                   if (k == i)
                     continue;
