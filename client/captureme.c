@@ -25,6 +25,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <ctype.h>
 
 struct sockaddr_in serv_addr;
 int serversock = -1;
