@@ -37,7 +37,7 @@ void dump_packet(char *msg, unsigned char *b, int n);
 /*
  * 
  */
-#define SVR_IP "127.0.0.1"
+#define SVR_IP "192.168.1.2"
 #define SVR_PORT 3940
 
 struct serial_port
