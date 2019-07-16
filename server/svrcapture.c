@@ -197,26 +197,13 @@ int decode_lbard(unsigned char *msg, int len, char *returnString, char *myAttach
 				long long relative_time_ms;
 				relative_time_ms = gettime_ms() - start_time;
 
-
-
-
-
-				printf("Before test: MYID: %s, PEER: %s\n", myAttachedMeshExtender, peer_prefix);
-				int strcompResult = strcmp(myAttachedMeshExtender, peer_prefix);
-				printf("Result %i", strcompResult);
-
-
-
-
-
-
-				if (strcompResult)
+				if (myAttachedMeshExtender = peer_prefix)
 				{
 					snprintf(returnString, 8190, "%s -> BROADCAST: T+%lldms %c - %s\n", peer_prefix,
 							 relative_time_ms, msg[offset], message_description);
 				} else 
 				{
-					printf("**********************************\nWE ARE RECIEVING: MYID: %s, Sender: %s\n**********************", myAttachedMeshExtender, peer_prefix);
+					printf("**********************************\nWE ARE RECIEVING\n**********************");
 					snprintf(returnString, 8190, "BROADCAST -> %s: T+%lldms %c - %s\n", peer_prefix,
 							 relative_time_ms, msg[offset], message_description);
 				}
@@ -272,9 +259,7 @@ int main(int argc, char *argv[])
 		char *time = asctime(timeInfo);
 		time[strlen(time) - 1] = 0; //remove the new line at end of time
 		snprintf(timingDiagramFileName, bufferSize, "timingDiagram_%s.txt", time);
-		char myAttachedMeshExtender[20];
-		sprintf(myAttachedMeshExtender, "%s", argv[1]);
-		printf("*************\nI AM ATTACHED TO:%s\n", myAttachedMeshExtender);
+		char myAttachedMeshExtender = argv[1];
 
 			FILE *outFile;
 		outFile = fopen(timingDiagramFileName, "w"); //open file to write to
@@ -313,7 +298,7 @@ int main(int argc, char *argv[])
 		//set starting time
 		start_time = gettime_ms();
 
-		for (int i = 0; i < 100; i++)
+		for (int i = 0; i < 200; i++)
 		{
 			//memset(&buffer, 0, 500);
 			//printf("Waiting for packet to read\n");
