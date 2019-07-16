@@ -117,13 +117,13 @@ char decode_wifi(unsigned char *packet, int len)
 	return decodedString;
 }
 
-int decode_lbard(unsigned char *msg, int len, char *returnString, char *myAttachedMeshExtender)
+int decode_lbard(unsigned char *msg, int len, FILE *output_file, char *myAttachedMeshExtender)
 {
 	int areWeSending=1; //use this to see if we are sending or recieving
 	int iterationTest = 1;
 	int offset = 8;
 	int peer_index = -1;
-	//while (offset < len)
+	while (offset < len)
 	{
 		/*
     Parse message and act on it.    
@@ -150,8 +150,6 @@ int decode_lbard(unsigned char *msg, int len, char *returnString, char *myAttach
 			}
 		}
 
-		strcat(returnString, peer_prefix);
-		printf("\nT+%lldms: Built String: %s\n", gettime_ms()-start_time, returnString);
 
 		if (!p)
 		{
@@ -199,17 +197,15 @@ int decode_lbard(unsigned char *msg, int len, char *returnString, char *myAttach
 
 				if (strncasecmp(msg, "LBARD:RFD900:TX:", 16))
 				{
-					snprintf(returnString, 8190, "%s -> BROADCAST: T+%lldms %c - %s\n", peer_prefix,
+					fprintf(output_file, "%s -> BROADCAST: T+%lldms %c - %s\n", peer_prefix,
 							 relative_time_ms, msg[offset], message_description);
 				} else 
 				{
-					printf("**********************************\nME IS RECIEVING\n**********************");
-					snprintf(returnString, 8190, "BROADCAST -> %s: T+%lldms %c - %s\n", peer_prefix,
+					fprintf(output_file, "BROADCAST -> %s: T+%lldms %c - %s\n", peer_prefix,
 							 relative_time_ms, msg[offset], message_description);
 				}
 				
 
-				printf("CURRENT STRING: %s", returnString);
 				if (advance < 1)
 				{
 					fprintf(stderr,
@@ -298,7 +294,7 @@ int main(int argc, char *argv[])
 		//set starting time
 		start_time = gettime_ms();
 
-		for (int i = 0; i < 200; i++)
+		for (int i = 0; i < 20; i++)
 		{
 			//memset(&buffer, 0, 500);
 			//printf("Waiting for packet to read\n");
@@ -347,9 +343,7 @@ int main(int argc, char *argv[])
  //16 byte offset before analysis to remove packet header
 // 32 bytes of Reed-Solomon error correction trimmed from the end
 // 1 byte of new line character that is an artifact of data collection removed. from the end also
-					decode_lbard(&packet[16], n - 16 - 32 - 1, lbardResult, myAttachedMeshExtender);
-					printf("\n%s\n", lbardResult);
-					fprintf(outFile, "%s", lbardResult);
+					decode_lbard(&packet[16], n - 16 - 32 - 1, outFile, myAttachedMeshExtender);
 					//break;
 					lbardResult[0] = '\0';
 				}
