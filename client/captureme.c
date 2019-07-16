@@ -57,7 +57,8 @@ struct serial_port
   int tx_state;
 
   // For RX mode, we look for the envelope our RFD900 firmware puts following a received packet
-  // XXX
+  unsigned char rx_buff[1024];
+  int rx_bytes;
 };
 
 long long start_time = 0;
@@ -188,6 +189,55 @@ int serial_setup_port_with_speed(int fd, int speed)
   return 0;
 }
 
+int record_rfd900_rx_event(struct serial_port *sp)
+{
+  int retVal = 0;
+
+  do
+  {
+    char message[1024];
+    char first_bytes_hex[16];
+
+    snprintf(first_bytes_hex, 16, "%02X%02X%02X%02X%02X%02X",
+             sp->tx_buff[0], sp->tx_buff[1],
+             sp->tx_buff[2], sp->tx_buff[3],
+             sp->tx_buff[4], sp->tx_buff[5]);
+
+    *message = "LBARD:RFD900:RX:";
+
+    printf("Current string: %s", message);
+
+    int offset = strlen(message);
+    memcpy(&message[offset], sp->tx_buff, sp->tx_bytes);
+    offset += sp->tx_bytes;
+    message[offset++] = '\n';
+
+    if (!start_time)
+      start_time = gettime_ms();
+    printf("T+%lldms: Before sendto of RFD900 packet\n", gettime_ms() - start_time);
+
+    /*//used to see if the Mesh Extender has sent or recieved a packet
+    char peer_prefix[6 * 2 + 1];
+    snprintf(peer_prefix, 6 * 2 + 1, "%02x%02x%02x%02x%02x%02x",
+             msg[0], msg[1], msg[2], msg[3], msg[4], msg[5]);*/
+
+    errno = 0;
+    int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    printf("Size Written %i using %p\n", offset, sp);
+    if (n < 0)
+    {
+      perror("Error Sending");
+      retVal = -7;
+      break;
+    }
+    //fflush(outFile);
+    printf("Send to server socket\n\n");
+    message[0] = '\0'; // set the string to a zero length
+  } while (0);
+
+  return retVal;
+}
+
 int record_rfd900_tx_event(struct serial_port *sp)
 {
   int retVal = 0;
@@ -202,16 +252,7 @@ int record_rfd900_tx_event(struct serial_port *sp)
              sp->tx_buff[2], sp->tx_buff[3],
              sp->tx_buff[4], sp->tx_buff[5]);
 
-    if (!memcmp(first_bytes_hex, myMeshExtenderID, 12))
-    {
-      printf("ME is SENDING\n");
-      *message = "LBARD:RFD900:TX:";
-    }
-    else
-    {
-      printf("ME is RECIEVING\n");
-      *message = "LBARD:RFD900:RX:";
-    }
+    *message = "LBARD:RFD900:TX:";
 
     printf("Current string: %s", message);
 
@@ -296,6 +337,27 @@ int process_serial_char(struct serial_port *sp, unsigned char c)
 
   do
   {
+
+    if (sp->rx_bytes >= 1024 )
+    {
+      // shift RX bytes down
+      memmove(&sp->rx_buff[0],&sp->rx_buff[1],1023);
+      
+      sp->rx_bytes--;
+    }
+    sp->rx_buff[sp->rx_bytes++]=c;
+    
+    if ((sp->rx_buff[sp->rx_bytes-1]==0x55)
+	&&(sp->rx_buff[sp->rx_bytes-8]==0x55)
+	&&(sp->rx_buff[sp->rx_bytes-9]==0xaa))
+    {
+       int packet_bytes=sp->rx_buff[sp->rx_bytes-4];
+       unsigned char *packet=&sp->rx_buff[sp->rx_bytes-9-packet_bytes];
+       printf("Saw RFD900 RX envelope for %d byte packet.\n",packet_bytes);
+       record_rfd900_rx_event(sp);
+       sp->rfd900_rx_count++;
+    }
+    
     if (sp->tx_state == 0)
     {
       // Not in ! escape mode
