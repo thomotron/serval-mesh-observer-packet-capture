@@ -39,7 +39,7 @@ char *myMeshExtenderID;
 /*
  * 
  */
-#define SVR_IP "192.168.2.2"
+#define SVR_IP "127.0.0.1"
 #define SVR_PORT 3940
 
 struct serial_port
@@ -195,9 +195,14 @@ int record_rfd900_tx_event(struct serial_port *sp)
   do
   {
     char message[1024];
+    char first_bytes_hex[16];
 
-    printf("before if statement\n");
-    if (strncasecmp(sp->tx_buff, myMeshExtenderID, sizeof(myMeshExtenderID)))
+    snprintf(first_bytes_hex, 16, "%02X%02X%02X%02X%02X%02X",
+             sp->tx_buff[0], sp->tx_buff[1],
+             sp->tx_buff[2], sp->tx_buff[3],
+             sp->tx_buff[4], sp->tx_buff[5]);
+
+    if (!memcmp(first_bytes_hex, myMeshExtenderID, 12))
     {
       printf("ME is SENDING\n");
       *message = "LBARD:RFD900:TX:";
@@ -207,6 +212,8 @@ int record_rfd900_tx_event(struct serial_port *sp)
       printf("ME is RECIEVING\n");
       *message = "LBARD:RFD900:RX:";
     }
+
+    printf("Current string: %s", message);
 
     int offset = strlen(message);
     memcpy(&message[offset], sp->tx_buff, sp->tx_bytes);
