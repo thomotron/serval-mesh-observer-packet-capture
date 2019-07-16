@@ -536,9 +536,7 @@ int message_parser_42(struct peer_state *sender, char *prefix,
                  sender->bundle_count
 #endif
         );
-        message_description = monitor_log_buf;
-
-        //      monitor_log(sender_prefix,NULL,monitor_log_buf);
+        sprintf(message_description, "%s", monitor_log_buf);
     }
 
 #ifdef SYNC_BY_BAR
@@ -646,8 +644,8 @@ int message_parser_4C(struct peer_state *sender, char *sender_prefix,
         snprintf(monitor_log_buf, sizeof(monitor_log_buf),
                  "Payload length: BID=%s*, version 0x%010llx, length = %lld bytes",
                  bid_prefix, version, offset_compound);
-        //assign to message description
-        message_description = monitor_log_buf;
+
+        sprintf(message_description, "%s", monitor_log_buf);
 
         //    monitor_log(sender_prefix,NULL,monitor_log_buf);
     }
@@ -777,8 +775,7 @@ int message_parser_52(struct peer_state *sender, char *sender_prefix,
             snprintf(status_msg, 1024, "Saw request from SID=%s* BID=%s @ %c%d addressed to SID=%s*\n",
                      sender_prefix, bid_prefix, is_manifest ? 'M' : 'B', bundle_offset,
                      target_sid);
-            message_description = status_msg;
-            //     status_log(status_msg);
+            sprintf(message_description, "%s", status_msg);
         }
 
         {
@@ -788,9 +785,8 @@ int message_parser_52(struct peer_state *sender, char *sender_prefix,
             snprintf(monitor_log_buf, sizeof(monitor_log_buf),
                      "Request for BID=%s*, beginning at offset %d of %s.",
                      bid_prefix, bundle_offset, is_manifest ? "manifest" : "payload");
-            message_description = monitor_log_buf;
 
-            // monitor_log(sender_prefix,NULL,monitor_log_buf);
+            sprintf(message_description, "%s", monitor_log_buf);
         }
 
 #ifdef SYNC_BY_BAR
@@ -872,7 +868,8 @@ int message_parser_53(struct peer_state *sender, char *sender_prefix,
             snprintf(monitor_log_buf, sizeof(monitor_log_buf),
                      "S field with zero length at radio packet offset %d",
                      offset);
-            message_description = monitor_log_buf;
+                     
+            sprintf(message_description, "%s", monitor_log_buf);
 
             //	monitor_log(sender_prefix,NULL,monitor_log_buf);
         }
@@ -880,7 +877,6 @@ int message_parser_53(struct peer_state *sender, char *sender_prefix,
     }
     
     sprintf(message_description, "SYNC Message");
-        //printf("Before return message description:%s\n", message_description);
 
     return offset;
 }
@@ -1150,9 +1146,13 @@ int message_parser_50(struct peer_state *sender, char *sender_prefix,
                  piece_offset, piece_offset + piece_bytes - 1,
                  piece_is_manifest ? "manifest" : "payload",
                  is_end_piece ? " This is the last piece of that." : "");
-        message_description = monitor_log_buf;
 
-        //    monitor_log(sender_prefix,NULL,monitor_log_buf);
+        snprintf(message_description, sizeof(monitor_log_buf),
+                 "Piece of bundle: BID=%s*, [%lld--%lld) of %s.%s",
+                 bid_prefix,
+                 piece_offset, piece_offset + piece_bytes - 1,
+                 piece_is_manifest ? "manifest" : "payload",
+                 is_end_piece ? " This is the last piece of that." : "");
     }
 
     if (piece_bytes > 0)
