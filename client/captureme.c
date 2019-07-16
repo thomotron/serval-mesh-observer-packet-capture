@@ -189,7 +189,7 @@ int serial_setup_port_with_speed(int fd, int speed)
   return 0;
 }
 
-int record_rfd900_rx_event(struct serial_port *sp)
+int record_rfd900_rx_event(struct serial_port *sp, unsigned char *packet, int len)
 {
   int retVal = 0;
 
@@ -198,18 +198,13 @@ int record_rfd900_rx_event(struct serial_port *sp)
     char message[1024];
     char first_bytes_hex[16];
 
-    snprintf(first_bytes_hex, 16, "%02X%02X%02X%02X%02X%02X",
-             sp->tx_buff[0], sp->tx_buff[1],
-             sp->tx_buff[2], sp->tx_buff[3],
-             sp->tx_buff[4], sp->tx_buff[5]);
-
     *message = "LBARD:RFD900:RX:";
 
     printf("Current string: %s", message);
 
     int offset = strlen(message);
-    memcpy(&message[offset], sp->tx_buff, sp->tx_bytes);
-    offset += sp->tx_bytes;
+    memcpy(&message[offset], packet, len);
+    offset += len;
     message[offset++] = '\n';
 
     if (!start_time)
@@ -352,10 +347,14 @@ int process_serial_char(struct serial_port *sp, unsigned char c)
 	&&(sp->rx_buff[sp->rx_bytes-9]==0xaa))
     {
        int packet_bytes=sp->rx_buff[sp->rx_bytes-4];
-       unsigned char *packet=&sp->rx_buff[sp->rx_bytes-9-packet_bytes];
-       printf("Saw RFD900 RX envelope for %d byte packet.\n",packet_bytes);
-       record_rfd900_rx_event(sp);
+       int offset=sp->rx_bytes-9-packet_bytes;
+       if (offset>=0) {
+       unsigned char *packet=&sp->rx_buff[offset];
+       printf("Saw RFD900 RX envelope for %d byte packet @ offset %d.\n",
+              packet_bytes,offset);
+       record_rfd900_rx_event(sp,packet,packet_bytes);
        sp->rfd900_rx_count++;
+       }
     }
     
     if (sp->tx_state == 0)
