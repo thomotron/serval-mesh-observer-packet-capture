@@ -192,7 +192,17 @@ int record_rfd900_tx_event(struct serial_port *sp)
 
   do
   {
-    char message[1024] = "LBARD:RFD900:TX:";
+    char message[1024];
+    int MEsending = 1;
+
+    if (MEsending)
+    {
+      *message = "LBARD:RFD900:TX:";
+    }
+    else
+    {
+      *message = "LBARD:RFD900:RX:";
+    }
 
     int offset = strlen(message);
     memcpy(&message[offset], sp->tx_buff, sp->tx_bytes);
@@ -207,7 +217,6 @@ int record_rfd900_tx_event(struct serial_port *sp)
     char peer_prefix[6 * 2 + 1];
     snprintf(peer_prefix, 6 * 2 + 1, "%02x%02x%02x%02x%02x%02x",
              msg[0], msg[1], msg[2], msg[3], msg[4], msg[5]);*/
-
 
     errno = 0;
     int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
@@ -384,7 +393,7 @@ int main(int argc, char **argv)
     bpf_u_int32 maskp;                       // subnet mask
     bpf_u_int32 ip;                          //ip
     char *myMeshExtenderID = argv[1];
-    printf("My Mesh Extender ID is: %s\n", argv[1]);
+    printf("My Mesh Extender ID is: %s\n", myMeshExtenderID);
 
     char pcapFilterString[] = "ether host E2:95:6E:4C:A8:D7";
 
@@ -444,7 +453,7 @@ int main(int argc, char **argv)
     while (links_setup == 0)
     {
       char buff[1024];
-      int i=0;
+      int i = 0;
       for (; i < 4; i++)
       {
         int n = read(serial_ports[i].fd, buff, 1024);
@@ -455,8 +464,8 @@ int main(int argc, char **argv)
           // have 16ms of latency. We allow 50ms here to be safe.
           usleep(50000);
           char buff2[1024];
-          int j=0;
-          for (; j < 4; j++) 
+          int j = 0;
+          for (; j < 4; j++)
           {
             // Don't look for the data on ourselves
             if (i == j)
@@ -471,7 +480,7 @@ int main(int argc, char **argv)
                 // Set one of those to 115200, and then one of the other two ports to 115200,
                 // and then we should have both speeds on both ports available
                 serial_setup_port_with_speed(serial_ports[i].fd, 115200);
-                int k=0;
+                int k = 0;
                 for (; k < 4; k++)
                 {
                   if (k == i)
