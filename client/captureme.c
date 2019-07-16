@@ -29,7 +29,6 @@
 
 struct sockaddr_in serv_addr;
 int serversock = -1;
-#define MY_ID "6abe0326e806"
 
 //#define test 1
 
@@ -384,6 +383,8 @@ int main(int argc, char **argv)
     FILE *outFile = fopen("testFile", "ab"); // append to file only
     bpf_u_int32 maskp;                       // subnet mask
     bpf_u_int32 ip;                          //ip
+    char *myMeshExtenderID = argv[1];
+    printf("My Mesh Extender ID is: %s\n", argv[1]);
 
     char pcapFilterString[] = "ether host E2:95:6E:4C:A8:D7";
 
