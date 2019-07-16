@@ -197,13 +197,13 @@ int decode_lbard(unsigned char *msg, int len, char *returnString, char *myAttach
 				long long relative_time_ms;
 				relative_time_ms = gettime_ms() - start_time;
 
-				if (myAttachedMeshExtender = peer_prefix)
+				if (strncasecmp(msg, "LBARD:RFD900:TX:", 16))
 				{
 					snprintf(returnString, 8190, "%s -> BROADCAST: T+%lldms %c - %s\n", peer_prefix,
 							 relative_time_ms, msg[offset], message_description);
 				} else 
 				{
-					printf("**********************************\nWE ARE RECIEVING\n**********************");
+					printf("**********************************\nME IS RECIEVING\n**********************");
 					snprintf(returnString, 8190, "BROADCAST -> %s: T+%lldms %c - %s\n", peer_prefix,
 							 relative_time_ms, msg[offset], message_description);
 				}

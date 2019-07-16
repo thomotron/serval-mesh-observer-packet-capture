@@ -29,10 +29,12 @@
 
 struct sockaddr_in serv_addr;
 int serversock = -1;
+char *myMeshExtenderID;
 
-//#define test 1
+    //#define test 1
 
-void dump_packet(char *msg, unsigned char *b, int n);
+    void
+    dump_packet(char *msg, unsigned char *b, int n);
 
 /*
  * 
@@ -193,14 +195,16 @@ int record_rfd900_tx_event(struct serial_port *sp)
   do
   {
     char message[1024];
-    int MEsending = 1;
 
-    if (MEsending)
+    printf("before if statement\n");
+    if (strncasecmp(sp->tx_buff, myMeshExtenderID, sizeof(myMeshExtenderID)))
     {
+      printf("ME is SENDING\n");
       *message = "LBARD:RFD900:TX:";
     }
     else
     {
+      printf("ME is RECIEVING\n");
       *message = "LBARD:RFD900:RX:";
     }
 
@@ -392,7 +396,7 @@ int main(int argc, char **argv)
     FILE *outFile = fopen("testFile", "ab"); // append to file only
     bpf_u_int32 maskp;                       // subnet mask
     bpf_u_int32 ip;                          //ip
-    char *myMeshExtenderID = argv[1];
+    myMeshExtenderID = argv[1];
     printf("My Mesh Extender ID is: %s\n", myMeshExtenderID);
 
     char pcapFilterString[] = "ether host E2:95:6E:4C:A8:D7";
