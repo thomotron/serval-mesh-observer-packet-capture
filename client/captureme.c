@@ -195,10 +195,8 @@ int record_rfd900_rx_event(struct serial_port *sp, unsigned char *packet, int le
 
   do
   {
-    char message[1024];
+    char message[1024] = "LBARD:RFD900:RX:";
     char first_bytes_hex[16];
-
-    *message = "LBARD:RFD900:RX:";
 
     printf("Current string: %s", message);
 
@@ -206,6 +204,7 @@ int record_rfd900_rx_event(struct serial_port *sp, unsigned char *packet, int le
     memcpy(&message[offset], packet, len);
     offset += len;
     message[offset++] = '\n';
+    message[offset++]=0;
 
     if (!start_time)
       start_time = gettime_ms();
@@ -239,7 +238,7 @@ int record_rfd900_tx_event(struct serial_port *sp)
 
   do
   {
-    char message[1024];
+    char message[1024] = "LBARD:RFD900:TX:";
     char first_bytes_hex[16];
 
     snprintf(first_bytes_hex, 16, "%02X%02X%02X%02X%02X%02X",
@@ -247,7 +246,6 @@ int record_rfd900_tx_event(struct serial_port *sp)
              sp->tx_buff[2], sp->tx_buff[3],
              sp->tx_buff[4], sp->tx_buff[5]);
 
-    *message = "LBARD:RFD900:TX:";
 
     printf("Current string: %s", message);
 
