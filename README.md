@@ -5,7 +5,7 @@ These are the client and server programs used for capturing Serval Mesh packets 
 ## Prerequisites
 1. libpcap
 
-For Debian/Ubuntu machines, use apt: `sudo apt install libpcap-dev`
+For Debian/Ubuntu machines, use apt: `sudo apt install libpcap-dev`  
 For Fedora machines, use dnf: `sudo dnf install libpcap-devel`
 
 ## Build process
