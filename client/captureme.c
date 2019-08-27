@@ -506,69 +506,8 @@ int main(int argc, char **argv)
 
     printf("Before serial port setup\n");
 
-    //setup serial ports
-    // Start with all on same speed, so that we can
-    // figure out the pairs of ports that are connected
-    // to the same wire
-    setup_monitor_port("/dev/ttyUSB0", 230400);
-    setup_monitor_port("/dev/ttyUSB1", 230400);
-    setup_monitor_port("/dev/ttyUSB2", 230400);
-    setup_monitor_port("/dev/ttyUSB3", 230400);
-
-    // Then wait for input on one, and see if the same character
-    // appears on another very soon there after.
-    // (This assumes that there is traffic on at least one
-    // of the ports. If not, then there is nothing to collect, anyway.
-    int links_setup = 0;
-    while (links_setup == 0)
-    {
-      char buff[1024];
-      int i = 0;
-      for (; i < 4; i++)
-      {
-        int n = read(serial_ports[i].fd, buff, 1024);
-        if (n > 0)
-        {
-          // We have some input, so now look for it on the other ports.
-          // But give the USB serial adapters time to catch up, as they frequently
-          // have 16ms of latency. We allow 50ms here to be safe.
-          usleep(50000);
-          char buff2[1024];
-          int j = 0;
-          for (; j < 4; j++)
-          {
-            // Don't look for the data on ourselves
-            if (i == j)
-              continue;
-            int n2 = read(serial_ports[j].fd, buff2, 1024);
-            if (n2 >= n)
-            {
-              if (!bcmp(buff, buff2, n))
-              {
-                printf("Serial ports %d and %d seem to be linked.\n", i, j);
-
-                // Set one of those to 115200, and then one of the other two ports to 115200,
-                // and then we should have both speeds on both ports available
-                serial_setup_port_with_speed(serial_ports[i].fd, 115200);
-                int k = 0;
-                for (; k < 4; k++)
-                {
-                  if (k == i)
-                    continue;
-                  if (k == j)
-                    continue;
-                  serial_setup_port_with_speed(serial_ports[k].fd, 115200);
-                  links_setup = 1;
-                  break;
-                }
-              }
-            }
-          }
-        }
-      }
-      // Wait a little while before trying again
-      usleep(50000);
-    }
+    // Setup radio serial port
+    setup_monitor_port("/dev/ttyATH0", 230400);
 
 #ifdef WITH_PCAP
     printf("Before pcap setup\n");
@@ -596,7 +535,7 @@ int main(int argc, char **argv)
       break;
     }
 #endif
-    //while loop that serialy searches for a packet to be captured by all devices (round robin)
+    // While loop that serially searches for a packet to be captured by all devices (round robin)
 
     printf("Before loop\n");
     do
