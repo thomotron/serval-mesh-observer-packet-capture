@@ -25,16 +25,7 @@ struct sockaddr_in serv_addr;
 int serversock = -1;
 char *myMeshExtenderID;
 
-    //#define test 1
-
-    void
-    dump_packet(char *msg, unsigned char *b, int n);
-
-/*
- * 
- */
-#define SVR_IP "192.168.2.2"
-#define SVR_PORT 3940
+void dump_packet(char *msg, unsigned char *b, int n);
 
 struct serial_port
 {
