@@ -21,6 +21,9 @@
 #include <errno.h>
 #include <ctype.h>
 
+//#define test 1
+#define DEFAULT_SERVER_PORT 3940
+
 struct sockaddr_in serv_addr;
 int serversock = -1;
 char *myMeshExtenderID;
@@ -433,6 +436,24 @@ int main(int argc, char **argv)
 {
   int retVal = 0;
 
+  // Check arg count and print usage
+  if (argc < 2)
+  {
+      printf("Usage: %s <address> [port]", argv[0]);
+      exit(1);
+  }
+
+  // Parse address
+  struct in_addr address;
+  if (!inet_aton(argv[1], &address))
+  {
+      fprintf(stderr, "Invalid address \"%s\"\n", argv[1]);
+      exit(1);
+  }
+
+  // Parse optional port
+  int port = argc >= 3 ? *argv[2] : DEFAULT_SERVER_PORT;
+
   do
   {
     printf("Before variable deration\n");
@@ -457,8 +478,8 @@ int main(int argc, char **argv)
     u_char *capPacket;
     bzero((char *)&serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = inet_addr(SVR_IP);
-    int portno = SVR_PORT;
+    serv_addr.sin_addr = address;
+    int portno = port;
     serv_addr.sin_port = htons(portno);
     char hbuf[NI_MAXHOST];
     socklen_t len = sizeof(struct sockaddr_in);
