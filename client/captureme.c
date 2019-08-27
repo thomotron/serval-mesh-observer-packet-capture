@@ -437,22 +437,25 @@ int main(int argc, char **argv)
   int retVal = 0;
 
   // Check arg count and print usage
-  if (argc < 2)
+  if (argc < 3)
   {
-      printf("Usage: %s <address> [port]", argv[0]);
+      printf("Usage: %s <sid> <address> [port]\n", argv[0]);
       exit(1);
   }
 
+  // Get our SID
+  myMeshExtenderID = argv[1];
+
   // Parse address
   struct in_addr address;
-  if (!inet_aton(argv[1], &address))
+  if (!inet_aton(argv[2], &address))
   {
-      fprintf(stderr, "Invalid address \"%s\"\n", argv[1]);
+      fprintf(stderr, "Invalid address \"%s\"\n", argv[2]);
       exit(1);
   }
 
   // Parse optional port
-  int port = argc >= 3 ? *argv[2] : DEFAULT_SERVER_PORT;
+  int port = argc >= 4 ? *argv[3] : DEFAULT_SERVER_PORT;
 
   do
   {
@@ -468,7 +471,6 @@ int main(int argc, char **argv)
     FILE *outFile = fopen("testFile", "ab"); // append to file only
     bpf_u_int32 maskp;                       // subnet mask
     bpf_u_int32 ip;                          //ip
-    myMeshExtenderID = argv[1];
     printf("My Mesh Extender ID is: %s\n", myMeshExtenderID);
 
     char pcapFilterString[] = "ether host E2:95:6E:4C:A8:D7";
