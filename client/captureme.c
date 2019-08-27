@@ -515,7 +515,11 @@ int main(int argc, char **argv)
     printf("Before serial port setup\n");
 
     // Setup radio serial port
-    setup_monitor_port("/dev/ttyATH0", 230400);
+    if (setup_monitor_port("/dev/ttyATH0", 230400) < 0)
+    {
+        // Exit if we don't have a serial port to read from
+        exit(1);
+    }
 
 #ifdef WITH_PCAP
     printf("Before pcap setup\n");
