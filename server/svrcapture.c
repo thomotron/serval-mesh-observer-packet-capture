@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <linux/limits.h>
 #include <assert.h>
+#include <argp.h>
 
 #include "sync.h"
 #include "lbard.h"
@@ -29,8 +30,73 @@
 #define MAX_PACKET_SIZE 255
 #define RADIO_RXBUFFER_SIZE 64 + MAX_PACKET_SIZE
 
+// Define some default argument values
 #define DEFAULT_ADDRESS INADDR_ANY
 #define DEFAULT_PORT 3940
+#define DEFAULT_PACKET_CAPTURE_NUM 20
+#define DEFAULT_PLANTUML_JAR_PATH "plantuml.jar"
+
+// The number of mandatory arguments and a string containing them in the correct order delimited by spaces
+#define NUM_MANDATORY_ARGS 0
+static char argument_doc[] = "";
+
+// List our arguments for argp
+static struct argp_option options[] =
+{
+    {"port",    'p', "port",    OPTION_ARG_OPTIONAL, "Port to listen on"},
+    {"address", 'a', "address", OPTION_ARG_OPTIONAL, "Address to bind to"},
+    {"jarpath", 'j', "path",    OPTION_ARG_OPTIONAL, "PlantUML jarfile path"},
+    {"packets", 'n', "packets", OPTION_ARG_OPTIONAL, "Number of packets to capture"},
+    {0}
+};
+
+// Define a struct to hold our arg values
+struct arguments
+{
+    int            port;
+    struct in_addr address;
+    char*          jarpath;
+    int            packets;
+};
+
+// Parse a single argument from argp
+static error_t parse_arg(int key, char* arg, struct argp_state* state)
+{
+    // Get a pointer to the arguments struct
+    struct arguments* arguments = state->input;
+
+    // Parse the argument and store it in the struct
+    switch (key)
+    {
+        case 'p':
+//            if (!arg) argp_usage(state); // No argument value, print usage and exit
+            arguments->port = (int) strtol(arg, NULL, 10);
+            break;
+        case 'a':
+            // Convert & assign address, exiting on failure
+            if (!inet_aton(arg, &arguments->address)) argp_usage(state);
+            break;
+        case 'j':
+            arguments->jarpath = arg;
+            break;
+        case 'n':
+            arguments->packets = (int) strtol(arg, NULL, 10);
+            break;
+        case ARGP_KEY_ARG:
+            if (state->arg_num >= NUM_MANDATORY_ARGS) argp_usage(state); // Too many args, print usage and exit
+            // We would parse the args here, but we have none
+        case ARGP_KEY_END:
+            if (state->arg_num < NUM_MANDATORY_ARGS) argp_usage(state); // Not enough args, print usage and exit
+            break;
+        default:
+            return ARGP_ERR_UNKNOWN;
+    }
+
+    return 0;
+}
+
+// Define our argp parser which includes the argument structs and parser function we just defined
+static struct argp argp_parser = {options, parse_arg, argument_doc, 0};
 
 long long start_time = 0;
 
@@ -120,7 +186,7 @@ char decode_wifi(unsigned char *packet, int len)
 	return decodedString;
 }
 
-int decode_lbard(unsigned char *msg, int len, FILE *output_file, char *myAttachedMeshExtender)
+int decode_lbard(unsigned char *msg, int len, FILE *output_file)
 {
 	int areWeSending=1; //use this to see if we are sending or recieving
 	int iterationTest = 1;
@@ -246,15 +312,25 @@ int main(int argc, char *argv[])
 	int retVal;
 	//int fd = fileno(stdin);
 
-	// Check for correct number of args and print usage
-	if (argc < 2)
-    {
-	    printf("Usage: %s <sid> [port]\n", argv[0]);
-	    exit(1);
-    }
+	// Define args struct and populate simple defaults
+	struct arguments args;
+	args.port = DEFAULT_PORT;
+	args.packets = DEFAULT_PACKET_CAPTURE_NUM;
+	args.jarpath = DEFAULT_PLANTUML_JAR_PATH;
 
-	// Parse port arg
-	int port = argc >= 3 ? atoi(argv[2]) : DEFAULT_PORT;
+	// Populate complex defaults
+	if (DEFAULT_ADDRESS == NULL)
+	{
+		args.address.s_addr = DEFAULT_ADDRESS;
+	}
+	else if (!inet_aton(DEFAULT_ADDRESS, &args.address))
+	{
+		perror("Failed to parse and set default address");
+		exit(1);
+	};
+
+	// Parse command line args
+	argp_parse(&argp_parser, argc, argv, 0, 0, &args);
 
 	do
 	{
@@ -268,14 +344,13 @@ int main(int argc, char *argv[])
 		char *time = asctime(timeInfo);
 		time[strlen(time) - 1] = 0; //remove the new line at end of time
 		snprintf(timingDiagramFileName, bufferSize, "timingDiagram_%s.txt", time);
-		char myAttachedMeshExtender = argv[1];
 
 		FILE *outFile;
 		outFile = fopen(timingDiagramFileName, "w"); //open file to write to
 		fprintf(outFile, "@startuml\n");			 //write first line of uml file
 
 		//init socket variables
-		int sockfd, portno = port ? port : DEFAULT_PORT;
+		int sockfd, portno = args.port;
 
 		sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 		if (sockfd < 0)
@@ -289,8 +364,8 @@ int main(int argc, char *argv[])
 		memset(&serv_addr, 0, sizeof(serv_addr)); //clear struct before setting up
 		memset(&cliaddr, 0, sizeof(cliaddr));
 		serv_addr.sin_family = AF_INET;
-		serv_addr.sin_addr.s_addr = DEFAULT_ADDRESS; //any source address
-		serv_addr.sin_port = htons(portno);
+		serv_addr.sin_addr = args.address; //any source address
+		serv_addr.sin_port = htons(args.port);
 
 		//bind sockets
 		if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
@@ -299,7 +374,7 @@ int main(int argc, char *argv[])
 			exit(-1);
 		}
 
-		printf("Listening at %s:%i\n", inet_ntoa(serv_addr.sin_addr), port);
+		printf("Listening at %s:%i\n", inet_ntoa(serv_addr.sin_addr), args.port);
 		fflush(stdout);
 
 		//make variables for reading in packets
@@ -310,7 +385,7 @@ int main(int argc, char *argv[])
 		//set starting time
 		start_time = gettime_ms();
 
-		for (int i = 0; i < 20; i++)
+		for (int i = 0; i < args.packets; i++)
 		{
 			//memset(&buffer, 0, 500);
 			//printf("Waiting for packet to read\n");
@@ -359,7 +434,7 @@ int main(int argc, char *argv[])
  //16 byte offset before analysis to remove packet header
 // 32 bytes of Reed-Solomon error correction trimmed from the end
 // 1 byte of new line character that is an artifact of data collection removed. from the end also
-					decode_lbard(&packet[16], n - 16 - 32 - 1, outFile, myAttachedMeshExtender);
+					decode_lbard(&packet[16], n - 16 - 32 - 1, outFile);
 					//break;
 					lbardResult[0] = '\0';
 				}
@@ -379,7 +454,7 @@ int main(int argc, char *argv[])
 
 		//run the program to create the graph
 		//change the arguments to where file location is ect
-		char *location = "/home/honours/Desktop/MeshObserver-Packet-Capture/server/plantuml.jar";
+		char *location = args.jarpath;
 		//get current working directory as this is where the generated textural file will be saved
 		char cwd[PATH_MAX];
 		char command[256];
