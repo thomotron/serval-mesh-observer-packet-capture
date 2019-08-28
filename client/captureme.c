@@ -481,8 +481,7 @@ int main(int argc, char **argv)
     bzero((char *)&serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr = address;
-    int portno = port;
-    serv_addr.sin_port = htons(portno);
+    serv_addr.sin_port = htons(port);
     char hbuf[NI_MAXHOST];
     socklen_t len = sizeof(struct sockaddr_in);
 
