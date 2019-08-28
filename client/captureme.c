@@ -494,6 +494,10 @@ int main(int argc, char **argv)
       retVal = -2;
       return (retVal);
     }
+    else
+    {
+        printf("Will send data to %s:%i\n", inet_ntoa(serv_addr.sin_addr), port);
+    }
 
     serversock = sockfd;
 
