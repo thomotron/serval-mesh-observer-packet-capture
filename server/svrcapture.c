@@ -379,7 +379,7 @@ int main(int argc, char *argv[])
 
 		//run the program to create the graph
 		//change the arguments to where file location is ect
-		char *location = "/home/honours/Desktop/MeshObserver-Packet-Capture/server/plantuml.jar";
+		char *location = "plantuml.jar";
 		//get current working directory as this is where the generated textural file will be saved
 		char cwd[PATH_MAX];
 		char command[256];
