@@ -496,7 +496,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        printf("Will send data to %s:%i\n", inet_ntoa(serv_addr.sin_addr), port);
+        printf("Will send data to %s:%i\n", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
     }
 
     serversock = sockfd;
