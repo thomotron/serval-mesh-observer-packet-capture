@@ -21,7 +21,7 @@
 #include <errno.h>
 #include <ctype.h>
 
-//#define test 1
+//#define TEST
 //#define WITH_PCAP
 #define DEFAULT_SERVER_PORT 3940
 #define PCAP_FILE "testFile"
@@ -469,7 +469,9 @@ int main(int argc, char **argv)
     printf("Before variable declaration\n");
     int sockfd;
     FILE *outFile = fopen(PCAP_FILE, "ab"); // append to file only
-	 int serverlen;
+#ifdef TEST
+	  int serverlen;
+#endif
 #ifdef WITH_PCAP
     //setup wireless capture settings
     char *dev = PCAP_DEV;
@@ -511,7 +513,7 @@ int main(int argc, char **argv)
 
     serversock = sockfd;
 
-#ifdef test
+#ifdef TEST
     if (getnameinfo((struct sockaddr *)&serv_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
     {
       printf("could not resolve IP\n");
