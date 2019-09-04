@@ -22,7 +22,14 @@
 #include <ctype.h>
 
 //#define test 1
+//#define WITH_PCAP
 #define DEFAULT_SERVER_PORT 3940
+#define PCAP_FILE "testFile"
+
+#ifdef WITH_PCAP
+#define PCAP_DEV "mon0"
+#define PCAP_FILTER "ether host E2:95:6E:4C:A8:D7"
+#endif
 
 struct sockaddr_in serv_addr;
 int serversock = -1;
@@ -459,21 +466,24 @@ int main(int argc, char **argv)
 
   do
   {
-    printf("Before variable deration\n");
+    printf("Before variable declaration\n");
+    int sockfd;
+    FILE *outFile = fopen(PCAP_FILE, "ab"); // append to file only
+	 int serverlen;
+#ifdef WITH_PCAP
     //setup wireless capture settings
-    char *dev = "mon0";
+    char *dev = PCAP_DEV;
     char errbuf[PCAP_ERRBUF_SIZE];
     struct bpf_program fp; // hold compiled libpcap filter program
     pcap_t *handle;
     struct pcap_pkthdr header;
-    int serverlen;
-    int timeout = 10, sockfd, n;
-    FILE *outFile = fopen("testFile", "ab"); // append to file only
+    int timeout = 10, n;
     bpf_u_int32 maskp;                       // subnet mask
-    bpf_u_int32 ip;                          //ip
-    printf("My Mesh Extender ID is: %s\n", myMeshExtenderID);
+    bpf_u_int32 ip;                          // ip
+    char pcapFilterString[] = PCAP_FILTER;
+#endif
 
-    char pcapFilterString[] = "ether host E2:95:6E:4C:A8:D7";
+    printf("My Mesh Extender ID is: %s\n", myMeshExtenderID);
 
     printf("Before packet injection setup\n");
     //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
@@ -607,8 +617,8 @@ int main(int argc, char **argv)
       break;
     }
 #endif
-    // While loop that serially searches for a packet to be captured by all devices (round robin)
 
+    // While loop that serially searches for a packet to be captured by all devices (round robin)
     printf("Before loop\n");
     do
     {
