@@ -462,7 +462,7 @@ int main(int argc, char **argv)
   }
 
   // Parse optional port
-  int port = argc >= 4 ? *argv[3] : DEFAULT_SERVER_PORT;
+  int port = argc >= 4 ? atoi(argv[3]) : DEFAULT_SERVER_PORT;
 
   do
   {
