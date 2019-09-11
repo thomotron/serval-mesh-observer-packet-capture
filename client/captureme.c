@@ -22,13 +22,12 @@
 #include <ctype.h>
 
 //#define TEST
-//#define WITH_PCAP
+//#define WIFI
 #define DEFAULT_SERVER_PORT 3940
 #define PCAP_FILE "testFile"
 
-#ifdef WITH_PCAP
+#ifdef WIFI
 #define PCAP_DEV "mon0"
-#define PCAP_FILTER "ether host E2:95:6E:4C:A8:D7"
 #endif
 
 struct sockaddr_in serv_addr;
@@ -489,7 +488,7 @@ int main(int argc, char **argv)
 #ifdef TEST
 	  int serverlen;
 #endif
-#ifdef WITH_PCAP
+#ifdef WIFI
     //setup wireless capture settings
     char *dev = PCAP_DEV;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -608,7 +607,7 @@ int main(int argc, char **argv)
       usleep(50000);
     }
 
-#ifdef WITH_PCAP
+#ifdef WIFI
     printf("Before pcap setup\n");
 
     pcap_lookupnet(dev, &ip, &maskp, errbuf);
@@ -651,7 +650,7 @@ int main(int argc, char **argv)
 			process_serial_port(&serial_ports[i]);
 		}
 
-#ifdef WITH_PCAP
+#ifdef WIFI
 	  	header.len = 0;
 		header.caplen = 0;
 		capPacket = pcap_next(handle, &header);
