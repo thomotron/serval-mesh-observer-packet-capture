@@ -446,7 +446,7 @@ int main(int argc, char **argv)
   // Check arg count and print usage
   if (argc < 3)
   {
-      printf("Usage: %s <sid> <address> [port]\n", argv[0]);
+      printf("Usage: %s <sid> <address> [port] [-f/--filter <FILTER>]\n", argv[0]);
       exit(1);
   }
 
@@ -463,6 +463,23 @@ int main(int argc, char **argv)
 
   // Parse optional port
   int port = argc >= 4 ? atoi(argv[3]) : DEFAULT_SERVER_PORT;
+
+  // Parse additional options
+  char pcapFilterString[256] = ""; // Arbitrarily long buffer size out of laziness
+  for (int i = 3; i < argc; i++)
+  {
+  	if (!strcmp(argv[i], "-f") || !strcmp(argv[i], "--filter"))
+	{
+  		if (i + 1 >= argc)
+		{
+  			printf("Expected a value for argument '%s'\n", argv[i]);
+  			exit(1);
+		}
+
+  		// Copy the filter
+  		strncpy(pcapFilterString, argv[++i], 256); // also increment to skip the argument value
+	}
+  }
 
   do
   {
@@ -482,7 +499,6 @@ int main(int argc, char **argv)
     int timeout = 10, n;
     bpf_u_int32 maskp;                       // subnet mask
     bpf_u_int32 ip;                          // ip
-    char pcapFilterString[] = PCAP_FILTER;
 #endif
 
     printf("My Mesh Extender ID is: %s\n", myMeshExtenderID);
