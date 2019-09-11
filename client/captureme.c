@@ -604,6 +604,12 @@ int main(int argc, char **argv)
       printf("Error starting pcap device: %s\n", errbuf);
     }
 
+    // Set non-blocking mode
+	if (pcap_setnonblock(handle, 1, errbuf))
+	{
+		printf("Error setting pcap device to non-blocking: %s\n", errbuf);
+	}
+
     if (pcap_compile(handle, &fp, pcapFilterString, 0, ip) == -1)
     {
       printf("Bad filter - %s\n", pcap_geterr(handle));
