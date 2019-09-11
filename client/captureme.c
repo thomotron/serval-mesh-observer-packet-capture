@@ -524,7 +524,6 @@ int main(int argc, char **argv)
     {
       printf("host=%s\n", hbuf);
     }
-    serverlen = sizeof(serv_addr);
 #endif
 
     printf("Before serial port setup\n");
@@ -624,27 +623,31 @@ int main(int argc, char **argv)
     printf("Before loop\n");
     do
     {
-      int i;
-      for (i = 0; i < serial_port_count; i++)
-        process_serial_port(&serial_ports[i]);
+		int i;
+	  	for (i = 0; i < serial_port_count; i++)
+		{
+			process_serial_port(&serial_ports[i]);
+		}
 
-      /*header.len = 0;
-            header.caplen = 0;
-            capPacket = pcap_next(handle, &header);
-            if (header.len > 0)
-            {
-                printf("Captured WIFI packet total length %i\n", header.len);
-                n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, serverlen);
-                //dump_packet("Captured Packet", capPacket, n);
-                printf("Size Written %i\n", n);
-                if (n < 0)
-                {
-                    perror("Error Sending\n");
-                    retVal = -11;
-                    perror("Sendto: ");
-                    break;
-                }
-            }*/
+#ifdef WITH_PCAP
+	  	header.len = 0;
+		header.caplen = 0;
+		capPacket = pcap_next(handle, &header);
+		if (capPacket && header.len > 0)
+		{
+			printf("Captured WIFI packet total length %i\n", header.len);
+			n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+			//dump_packet("Captured Packet", capPacket, n);
+			printf("Size Written %i\n", n);
+			if (n < 0)
+			{
+				perror("Error Sending\n");
+				retVal = -11;
+				perror("Sendto: ");
+				break;
+			}
+		}
+#endif
     } while (1);
 
     printf("Closing output file.\n");
