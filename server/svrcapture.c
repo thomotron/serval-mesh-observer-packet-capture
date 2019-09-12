@@ -83,10 +83,13 @@ static error_t parse_arg(int key, char* arg, struct argp_state* state)
             arguments->packets = (int) strtol(arg, NULL, 10);
             break;
         case ARGP_KEY_ARG:
-            if (state->arg_num >= NUM_MANDATORY_ARGS) argp_usage(state); // Too many args, print usage and exit
+            // Check if we have too many args
+            if (state->arg_num >= NUM_MANDATORY_ARGS) argp_usage(state);
+
             // We would parse the args here, but we have none
         case ARGP_KEY_END:
-            if (state->arg_num < NUM_MANDATORY_ARGS) argp_usage(state); // Not enough args, print usage and exit
+            // Check if we have too few args
+            if (state->arg_num < NUM_MANDATORY_ARGS) argp_usage(state);
             break;
         default:
             return ARGP_ERR_UNKNOWN;
