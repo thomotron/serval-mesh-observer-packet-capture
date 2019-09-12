@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <linux/limits.h>
 #include <assert.h>
+#include <signal.h>
 
 #include "sync.h"
 #include "lbard.h"
@@ -31,6 +32,12 @@
 
 #define DEFAULT_ADDRESS INADDR_ANY
 #define DEFAULT_PORT 3940
+
+volatile sig_atomic_t sigint_flag = 0;
+void sigint_handler(int signal)
+{
+	sigint_flag = 1;
+}
 
 long long start_time = 0;
 
@@ -243,6 +250,9 @@ int decode_lbard(unsigned char *msg, int len, FILE *output_file, char *myAttache
 
 int main(int argc, char *argv[])
 {
+	// Register signal handlers
+	signal(SIGINT, sigint_handler);
+
 	int retVal;
 	//int fd = fileno(stdin);
 
@@ -285,9 +295,9 @@ int main(int argc, char *argv[])
 		}
 
 		//build server's internet address
-		struct sockaddr_in serv_addr, cliaddr;
+		struct sockaddr_in serv_addr, client_addr;
 		memset(&serv_addr, 0, sizeof(serv_addr)); //clear struct before setting up
-		memset(&cliaddr, 0, sizeof(cliaddr));
+		memset(&client_addr, 0, sizeof(client_addr));
 		serv_addr.sin_family = AF_INET;
 		serv_addr.sin_addr.s_addr = DEFAULT_ADDRESS; //any source address
 		serv_addr.sin_port = htons(portno);
@@ -306,72 +316,98 @@ int main(int argc, char *argv[])
 		u_char packet[8192];
 
 		//main while loop to accept packet
-		char wifiPacketInfo;
 		//set starting time
 		start_time = gettime_ms();
 
-		for (int i = 0; i < 20; i++)
+		// Accept and process incoming packets, will iterate until stopped
+		while (!sigint_flag)
 		{
-			//memset(&buffer, 0, 500);
-			//printf("Waiting for packet to read\n");
-			int n;
-			unsigned int len;
-			n = 0;
-			while (!n)
+			int bytesReceived = 0;
+			unsigned int addressLength;
+
+			// Accept incoming message
+			while (!bytesReceived && !sigint_flag)
 			{
-				packet[0]=0;
-				n = recvfrom(sockfd, packet, 8192, MSG_DONTWAIT, (struct sockaddr *)&cliaddr, &len);
-				if (!n)
+				// Null-terminate the packet buffer
+				packet[0] = 0;
+
+				// Receive packets (non-blocking)
+				bytesReceived = recvfrom(
+						sockfd, // Socket
+						packet, // Packet buffer
+						8192, // Packet length
+						MSG_DONTWAIT, // Don't block and wait
+						(struct sockaddr *) &client_addr, // Listen address
+						&addressLength // Address length
+				);
+
+				// Check if we haven't received anything
+				if (!bytesReceived)
 				{
-					usleep(100000);
+					usleep(100000); // Sleep for 100ms before we try again
 					printf(".");
 					fflush(stdout);
 				}
-				if (errno == EAGAIN)
-					n = 0;
-				if (errno)
+
+				// Handle errors
+				switch (errno)
 				{
-					if (errno != EAGAIN)
-					{
-						perror("recvfrom() says");
-					}
-					errno = 0;
+					case EAGAIN: // Receive timed out
+						bytesReceived = 0;
+						break;
+					default:
+						perror("Unhandled error from recvfrom()");
+						break;
 				}
+
+				// Reset errno
+				errno = 0;
 			}
-			printf("Received %d bytes\n",n);
-			if (n < 0)
+
+			printf("Received %d bytes\n", bytesReceived);
+
+			// Check for receive errors and break
+			if (bytesReceived < 0)
 			{
 				perror("ERROR in recieving packet\n");
 				retVal = 1;
 				break;
 			}
-			//decide if Wi-Fi packet or LABRD packet
+
+			// Is this an LBARD packet?
 			if (packet[0] == 'L' &&
 				packet[1] == 'B' &&
 				packet[2] == 'A' &&
 				packet[3] == 'R' &&
 				packet[4] == 'D')
 			{
+				// Check if the packet is not just a header
 				if (sizeof(packet) > 5)
 				{
 					printf("About to call decode_lbard()\n");
+
+					// Initialise a buffer to store our decoded LBARD packet in
 					char lbardResult[8192];
+
+					// Decode the LABRD packet
 					// 16 byte offset before analysis to remove packet header
 					// 32 bytes of Reed-Solomon error correction trimmed from the end
-					// 1 byte of new line character that is an artifact of data collection removed. from the end also
-					decode_lbard(&packet[16], n - 16 - 32 - 1, outFile, myAttachedMeshExtender);
-					//break;
+					// 1 byte of new line character that is an artifact of data collection removed from the end also
+					decode_lbard(&packet[16], bytesReceived - 16 - 32 - 1, outFile, myAttachedMeshExtender);
+
+					// Null-terminate the decoded packet buffer
 					lbardResult[0] = '\0';
 				}
 			}
-			else //if not lbard packet, is wifi packet
+			else // Not an LBARD packet, must be from WiFi
 			{
-				//decode wifi packet and put returned string into NTD text file
-				wifiPacketInfo = decode_wifi(&packet, n);
+				// Decode wifi packet and put returned string into NTD text file
+				char wifiPacketInfo = decode_wifi(&packet, bytesReceived);
 				fprintf(outFile, wifiPacketInfo);
-				wifiPacketInfo = '\0';
 			}
-			packet[0] = '\0'; // set the string to a zero length
+
+			// Null-terminate the packet buffer
+			packet[0] = '\0';
 		}
 
 		//add final line to file
