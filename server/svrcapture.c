@@ -51,19 +51,19 @@ static struct argp_option options[] =
 };
 
 // Define a struct to hold our arg values
-struct arguments
+typedef struct arguments
 {
     int            port;
     struct in_addr address;
     char*          jarpath;
     int            packets;
-};
+} arguments;
 
 // Parse a single argument from argp
 static error_t parse_arg(int key, char* arg, struct argp_state* state)
 {
     // Get a pointer to the arguments struct
-    struct arguments* arguments = state->input;
+    arguments* arguments = state->input;
 
     // Parse the argument and store it in the struct
     switch (key)
@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
 	//int fd = fileno(stdin);
 
 	// Define args struct and populate simple defaults
-	struct arguments args;
+	arguments args;
 	args.port = DEFAULT_PORT;
 	args.packets = DEFAULT_PACKET_CAPTURE_NUM;
 	args.jarpath = DEFAULT_PLANTUML_JAR_PATH;
