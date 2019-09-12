@@ -34,7 +34,7 @@
 // Define some default argument values
 #define DEFAULT_ADDRESS INADDR_ANY
 #define DEFAULT_PORT 3940
-#define DEFAULT_PACKET_CAPTURE_NUM 20
+#define DEFAULT_PACKET_CAPTURE_NUM -1
 #define DEFAULT_PLANTUML_JAR_PATH "plantuml.jar"
 
 // The number of mandatory arguments and a string containing them in the correct order delimited by spaces
@@ -388,7 +388,7 @@ int main(int argc, char *argv[])
 			exit(-1);
 		}
 
-		printf("Listening at %s:%i\n", inet_ntoa(serv_addr.sin_addr), port);
+		printf("Listening at %s:%i\n", inet_ntoa(serv_addr.sin_addr), args.port);
 
 		//make variables for reading in packets
 		u_char packet[8192];
@@ -398,11 +398,19 @@ int main(int argc, char *argv[])
 		start_time = gettime_ms();
 
 		// Print out a helpful reminder that this will run until you tell it to stop
+        if (args.packets > 0)
+        {
+            printf("Will capture %d packet%c\n", args.packets, args.packets > 1 ? 's' : '\0');
+        }
+        else
+        {
+            printf("Will capture forever until stopped\n");
+        }
 		printf("Press Ctrl+C to stop capturing\n");
 		fflush(stdout);
 
-		// Accept and process incoming packets, will iterate until stopped
-		for (int i = 0; i < args.packets && !sigint_flag; i++)
+		// Accept and process incoming packets, will iterate until desired number of packets reached or stopped manually
+		for (int i = 0; args.packets > 0 ? i < args.packets && !sigint_flag : !sigint_flag; i++)
 		{
 			int bytesReceived = 0;
 			unsigned int addressLength;
