@@ -43,10 +43,10 @@ static char argument_doc[] = "";
 // List our arguments for argp
 static struct argp_option options[] =
 {
-    {"port",    'p', "port",    OPTION_ARG_OPTIONAL, "Port to listen on"},
-    {"address", 'a', "address", OPTION_ARG_OPTIONAL, "Address to bind to"},
-    {"jarpath", 'j', "path",    OPTION_ARG_OPTIONAL, "PlantUML jarfile path"},
-    {"packets", 'n', "packets", OPTION_ARG_OPTIONAL, "Number of packets to capture"},
+    {"port",    'p', "port",    0, "Port to listen on"},
+    {"address", 'a', "address", 0, "Address to bind to"},
+    {"jarpath", 'j', "path",    0, "PlantUML jarfile path"},
+    {"packets", 'n', "packets", 0, "Number of packets to capture"},
     {0}
 };
 
@@ -69,8 +69,8 @@ static error_t parse_arg(int key, char* arg, struct argp_state* state)
     switch (key)
     {
         case 'p':
-//            if (!arg) argp_usage(state); // No argument value, print usage and exit
-            arguments->port = (int) strtol(arg, NULL, 10);
+            // Convert port number to int and assign it
+            arguments->port = (int) strtol(arg, NULL, 10);;
             break;
         case 'a':
             // Convert & assign address, exiting on failure
