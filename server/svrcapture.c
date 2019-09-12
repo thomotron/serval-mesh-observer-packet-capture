@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <linux/limits.h>
 #include <assert.h>
+#include <signal.h>
 
 #include "sync.h"
 #include "lbard.h"
@@ -28,6 +29,15 @@
 
 #define MAX_PACKET_SIZE 255
 #define RADIO_RXBUFFER_SIZE 64 + MAX_PACKET_SIZE
+
+#define DEFAULT_ADDRESS INADDR_ANY
+#define DEFAULT_PORT 3940
+
+volatile sig_atomic_t sigint_flag = 0;
+void sigint_handler(int signal)
+{
+	sigint_flag = 1;
+}
 
 long long start_time = 0;
 
@@ -240,8 +250,21 @@ int decode_lbard(unsigned char *msg, int len, FILE *output_file, char *myAttache
 
 int main(int argc, char *argv[])
 {
+	// Register signal handlers
+	signal(SIGINT, sigint_handler);
+
 	int retVal;
 	//int fd = fileno(stdin);
+
+	// Check for correct number of args and print usage
+	if (argc < 2)
+    {
+	    printf("Usage: %s <sid> [port]\n", argv[0]);
+	    exit(1);
+    }
+
+	// Parse port arg
+	int port = argc >= 3 ? atoi(argv[2]) : DEFAULT_PORT;
 
 	do
 	{
@@ -257,12 +280,12 @@ int main(int argc, char *argv[])
 		snprintf(timingDiagramFileName, bufferSize, "timingDiagram_%s.txt", time);
 		char myAttachedMeshExtender = argv[1];
 
-			FILE *outFile;
+		FILE *outFile;
 		outFile = fopen(timingDiagramFileName, "w"); //open file to write to
 		fprintf(outFile, "@startuml\n");			 //write first line of uml file
 
 		//init socket variables
-		int sockfd, portno = 3940;
+		int sockfd, portno = port ? port : DEFAULT_PORT;
 
 		sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 		if (sockfd < 0)
@@ -276,7 +299,7 @@ int main(int argc, char *argv[])
 		memset(&serv_addr, 0, sizeof(serv_addr)); //clear struct before setting up
 		memset(&cliaddr, 0, sizeof(cliaddr));
 		serv_addr.sin_family = AF_INET;
-		serv_addr.sin_addr.s_addr = INADDR_ANY; //any source address
+		serv_addr.sin_addr.s_addr = DEFAULT_ADDRESS; //any source address
 		serv_addr.sin_port = htons(portno);
 
 		//bind sockets
@@ -286,6 +309,9 @@ int main(int argc, char *argv[])
 			exit(-1);
 		}
 
+		printf("Listening at %s:%i\n", inet_ntoa(serv_addr.sin_addr), port);
+		fflush(stdout);
+
 		//make variables for reading in packets
 		u_char packet[8192];
 
@@ -294,14 +320,16 @@ int main(int argc, char *argv[])
 		//set starting time
 		start_time = gettime_ms();
 
-		for (int i = 0; i < 20; i++)
+		// Accept and process incoming packets, will iterate until stopped
+		while (!sigint_flag)
 		{
 			//memset(&buffer, 0, 500);
 			//printf("Waiting for packet to read\n");
 			int n;
 			unsigned int len;
 			n = 0;
-			while (!n)
+			// Accept incoming message
+			while (!n && !sigint_flag)
 			{
 				packet[0]=0;
 				n = recvfrom(sockfd, packet, 8192, MSG_DONTWAIT, (struct sockaddr *)&cliaddr, &len);

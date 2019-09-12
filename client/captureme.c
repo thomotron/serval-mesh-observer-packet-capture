@@ -1,10 +1,4 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-/* 
  * File:   captureme.c
  * Author: honours
  *
@@ -27,20 +21,14 @@
 #include <errno.h>
 #include <ctype.h>
 
+//#define test 1
+#define DEFAULT_SERVER_PORT 3940
+
 struct sockaddr_in serv_addr;
 int serversock = -1;
 char *myMeshExtenderID;
 
-    //#define test 1
-
-    void
-    dump_packet(char *msg, unsigned char *b, int n);
-
-/*
- * 
- */
-#define SVR_IP "192.168.2.2"
-#define SVR_PORT 3940
+void dump_packet(char *msg, unsigned char *b, int n);
 
 struct serial_port
 {
@@ -448,6 +436,27 @@ int main(int argc, char **argv)
 {
   int retVal = 0;
 
+  // Check arg count and print usage
+  if (argc < 3)
+  {
+      printf("Usage: %s <sid> <address> [port]\n", argv[0]);
+      exit(1);
+  }
+
+  // Get our SID
+  myMeshExtenderID = argv[1];
+
+  // Parse address
+  struct in_addr address;
+  if (!inet_aton(argv[2], &address))
+  {
+      fprintf(stderr, "Invalid address \"%s\"\n", argv[2]);
+      exit(1);
+  }
+
+  // Parse optional port
+  int port = argc >= 4 ? *argv[3] : DEFAULT_SERVER_PORT;
+
   do
   {
     printf("Before variable deration\n");
@@ -462,7 +471,6 @@ int main(int argc, char **argv)
     FILE *outFile = fopen("testFile", "ab"); // append to file only
     bpf_u_int32 maskp;                       // subnet mask
     bpf_u_int32 ip;                          //ip
-    myMeshExtenderID = argv[1];
     printf("My Mesh Extender ID is: %s\n", myMeshExtenderID);
 
     char pcapFilterString[] = "ether host E2:95:6E:4C:A8:D7";
@@ -472,9 +480,8 @@ int main(int argc, char **argv)
     u_char *capPacket;
     bzero((char *)&serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = inet_addr(SVR_IP);
-    int portno = SVR_PORT;
-    serv_addr.sin_port = htons(portno);
+    serv_addr.sin_addr = address;
+    serv_addr.sin_port = htons(port);
     char hbuf[NI_MAXHOST];
     socklen_t len = sizeof(struct sockaddr_in);
 
@@ -486,6 +493,10 @@ int main(int argc, char **argv)
       perror("Error setting up socket\n");
       retVal = -2;
       return (retVal);
+    }
+    else
+    {
+        printf("Will send data to %s:%i\n", inet_ntoa(serv_addr.sin_addr), port);
     }
 
     serversock = sockfd;
@@ -506,68 +517,11 @@ int main(int argc, char **argv)
 
     printf("Before serial port setup\n");
 
-    //setup serial ports
-    // Start with all on same speed, so that we can
-    // figure out the pairs of ports that are connected
-    // to the same wire
-    setup_monitor_port("/dev/ttyUSB0", 230400);
-    setup_monitor_port("/dev/ttyUSB1", 230400);
-    setup_monitor_port("/dev/ttyUSB2", 230400);
-    setup_monitor_port("/dev/ttyUSB3", 230400);
-
-    // Then wait for input on one, and see if the same character
-    // appears on another very soon there after.
-    // (This assumes that there is traffic on at least one
-    // of the ports. If not, then there is nothing to collect, anyway.
-    int links_setup = 0;
-    while (links_setup == 0)
+    // Setup radio serial port
+    if (setup_monitor_port("/dev/ttyATH0", 230400) < 0)
     {
-      char buff[1024];
-      int i = 0;
-      for (; i < 4; i++)
-      {
-        int n = read(serial_ports[i].fd, buff, 1024);
-        if (n > 0)
-        {
-          // We have some input, so now look for it on the other ports.
-          // But give the USB serial adapters time to catch up, as they frequently
-          // have 16ms of latency. We allow 50ms here to be safe.
-          usleep(50000);
-          char buff2[1024];
-          int j = 0;
-          for (; j < 4; j++)
-          {
-            // Don't look for the data on ourselves
-            if (i == j)
-              continue;
-            int n2 = read(serial_ports[j].fd, buff2, 1024);
-            if (n2 >= n)
-            {
-              if (!bcmp(buff, buff2, n))
-              {
-                printf("Serial ports %d and %d seem to be linked.\n", i, j);
-
-                // Set one of those to 115200, and then one of the other two ports to 115200,
-                // and then we should have both speeds on both ports available
-                serial_setup_port_with_speed(serial_ports[i].fd, 115200);
-                int k = 0;
-                for (; k < 4; k++)
-                {
-                  if (k == i)
-                    continue;
-                  if (k == j)
-                    continue;
-                  serial_setup_port_with_speed(serial_ports[k].fd, 115200);
-                  links_setup = 1;
-                  break;
-                }
-              }
-            }
-          }
-        }
-      }
-      // Wait a little while before trying again
-      usleep(50000);
+        // Exit if we don't have a serial port to read from
+        exit(1);
     }
 
 #ifdef WITH_PCAP
@@ -596,7 +550,7 @@ int main(int argc, char **argv)
       break;
     }
 #endif
-    //while loop that serialy searches for a packet to be captured by all devices (round robin)
+    // While loop that serially searches for a packet to be captured by all devices (round robin)
 
     printf("Before loop\n");
     do
