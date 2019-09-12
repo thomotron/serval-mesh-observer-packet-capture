@@ -20,9 +20,66 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <ctype.h>
+#include <argp.h>
 
 //#define test 1
 #define DEFAULT_SERVER_PORT 3940
+
+// The number of mandatory arguments and a string containing them in the correct order delimited by spaces
+#define NUM_MANDATORY_ARGS 2
+static char argument_doc[] = "SID ADDRESS";
+
+// List our arguments for argp
+static struct argp_option options[] =
+{
+        {"port",    'p', "port",    0, "Server port"},
+        {0}
+};
+
+// Define a struct to hold our arg values
+typedef struct arguments
+{
+    char*          sid;
+    struct in_addr address;
+    int            port;
+} arguments;
+
+// Parse a single argument from argp
+static error_t parse_arg(int key, char* arg, struct argp_state* state)
+{
+    // Get a pointer to the arguments struct
+    arguments* arguments = state->input;
+
+    // Parse the argument and store it in the struct
+    switch (key)
+    {
+        case 'p':
+            // Convert port number to int and assign it
+            arguments->port = (int) strtol(arg, NULL, 10);;
+            break;
+        case ARGP_KEY_ARG:
+            // Check if we have too many args
+            if (state->arg_num >= NUM_MANDATORY_ARGS) argp_usage(state);
+
+            // Set the SID
+            if (state->arg_num == 0) arguments->sid = arg;
+
+            // Parse and set the server address, printing usage on failure
+            if (state->arg_num == 1 && !inet_aton(arg, &arguments->address)) argp_usage(state);
+            break;
+        case ARGP_KEY_END:
+            // Check if we have too few args
+            if (state->arg_num < NUM_MANDATORY_ARGS) argp_usage(state);
+            break;
+        default:
+            return ARGP_ERR_UNKNOWN;
+    }
+
+    return 0;
+}
+
+// Define our argp parser which includes the argument structs and parser function we just defined
+static struct argp argp_parser = {options, parse_arg, argument_doc, 0};
 
 struct sockaddr_in serv_addr;
 int serversock = -1;
@@ -436,26 +493,12 @@ int main(int argc, char **argv)
 {
   int retVal = 0;
 
-  // Check arg count and print usage
-  if (argc < 3)
-  {
-      printf("Usage: %s <sid> <address> [port]\n", argv[0]);
-      exit(1);
-  }
+    // Define args struct and populate simple defaults
+    arguments args;
+    args.port = DEFAULT_SERVER_PORT;
 
-  // Get our SID
-  myMeshExtenderID = argv[1];
-
-  // Parse address
-  struct in_addr address;
-  if (!inet_aton(argv[2], &address))
-  {
-      fprintf(stderr, "Invalid address \"%s\"\n", argv[2]);
-      exit(1);
-  }
-
-  // Parse optional port
-  int port = argc >= 4 ? *argv[3] : DEFAULT_SERVER_PORT;
+    // Parse command line args
+    argp_parse(&argp_parser, argc, argv, 0, 0, &args);
 
   do
   {
@@ -480,8 +523,8 @@ int main(int argc, char **argv)
     u_char *capPacket;
     bzero((char *)&serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr = address;
-    int portno = port;
+    serv_addr.sin_addr = args.address;
+    int portno = args.port;
     serv_addr.sin_port = htons(portno);
     char hbuf[NI_MAXHOST];
     socklen_t len = sizeof(struct sockaddr_in);
