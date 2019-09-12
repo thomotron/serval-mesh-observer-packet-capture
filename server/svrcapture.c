@@ -352,6 +352,8 @@ int main(int argc, char *argv[])
 				// Handle errors
 				switch (errno)
 				{
+					case 0: // No error
+						break;
 					case EAGAIN: // Receive timed out
 						bytesReceived = 0;
 						break;
