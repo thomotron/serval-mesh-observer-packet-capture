@@ -337,7 +337,7 @@ int main(int argc, char *argv[])
 						packet, // Packet buffer
 						8192, // Packet length
 						MSG_DONTWAIT, // Don't block and wait
-						(struct sockaddr *) &client_addr, // Listen address
+						(struct sockaddr *) &client_addr, // Source address
 						&addressLength // Address length
 				);
 
