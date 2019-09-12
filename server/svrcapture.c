@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <linux/limits.h>
 #include <assert.h>
+#include <signal.h>
 
 #include "sync.h"
 #include "lbard.h"
@@ -31,6 +32,12 @@
 
 #define DEFAULT_ADDRESS INADDR_ANY
 #define DEFAULT_PORT 3940
+
+volatile sig_atomic_t sigint_flag = 0;
+void sigint_handler(int signal)
+{
+	sigint_flag = 1;
+}
 
 long long start_time = 0;
 
@@ -243,6 +250,9 @@ int decode_lbard(unsigned char *msg, int len, FILE *output_file, char *myAttache
 
 int main(int argc, char *argv[])
 {
+	// Register signal handlers
+	signal(SIGINT, sigint_handler);
+
 	int retVal;
 	//int fd = fileno(stdin);
 
@@ -310,14 +320,16 @@ int main(int argc, char *argv[])
 		//set starting time
 		start_time = gettime_ms();
 
-		for (int i = 0; i < 20; i++)
+		// Accept and process incoming packets, will iterate until stopped
+		while (!sigint_flag)
 		{
 			//memset(&buffer, 0, 500);
 			//printf("Waiting for packet to read\n");
 			int n;
 			unsigned int len;
 			n = 0;
-			while (!n)
+			// Accept incoming message
+			while (!n && !sigint_flag)
 			{
 				packet[0]=0;
 				n = recvfrom(sockfd, packet, 8192, MSG_DONTWAIT, (struct sockaddr *)&cliaddr, &len);
