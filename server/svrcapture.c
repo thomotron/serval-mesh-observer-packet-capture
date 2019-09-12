@@ -310,7 +310,6 @@ int main(int argc, char *argv[])
 		}
 
 		printf("Listening at %s:%i\n", inet_ntoa(serv_addr.sin_addr), port);
-		fflush(stdout);
 
 		//make variables for reading in packets
 		u_char packet[8192];
@@ -319,6 +318,10 @@ int main(int argc, char *argv[])
 		char wifiPacketInfo;
 		//set starting time
 		start_time = gettime_ms();
+
+		// Print out a helpful reminder that this will run until you tell it to stop
+		printf("Press Ctrl+C to stop capturing\n");
+		fflush(stdout);
 
 		// Accept and process incoming packets, will iterate until stopped
 		while (!sigint_flag)
