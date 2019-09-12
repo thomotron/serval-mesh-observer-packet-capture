@@ -21,8 +21,14 @@
 #include <errno.h>
 #include <ctype.h>
 
-//#define test 1
+//#define TEST
+//#define WIFI
 #define DEFAULT_SERVER_PORT 3940
+#define PCAP_FILE "testFile"
+
+#ifdef WIFI
+#define PCAP_DEV "mon0"
+#endif
 
 struct sockaddr_in serv_addr;
 int serversock = -1;
@@ -439,7 +445,7 @@ int main(int argc, char **argv)
   // Check arg count and print usage
   if (argc < 3)
   {
-      printf("Usage: %s <sid> <address> [port]\n", argv[0]);
+      printf("Usage: %s <sid> <address> [port] [-f/--filter <FILTER>]\n", argv[0]);
       exit(1);
   }
 
@@ -455,25 +461,46 @@ int main(int argc, char **argv)
   }
 
   // Parse optional port
-  int port = argc >= 4 ? *argv[3] : DEFAULT_SERVER_PORT;
+  int port = argc >= 4 ? atoi(argv[3]) : DEFAULT_SERVER_PORT;
+
+  // Parse additional options
+  char pcapFilterString[256] = ""; // Arbitrarily long buffer size out of laziness
+  for (int i = 3; i < argc; i++)
+  {
+  	if (!strcmp(argv[i], "-f") || !strcmp(argv[i], "--filter"))
+	{
+  		if (i + 1 >= argc)
+		{
+  			printf("Expected a value for argument '%s'\n", argv[i]);
+  			exit(1);
+		}
+
+  		// Copy the filter
+  		strncpy(pcapFilterString, argv[++i], 256); // also increment to skip the argument value
+	}
+  }
 
   do
   {
-    printf("Before variable deration\n");
+    printf("Before variable declaration\n");
+    int sockfd;
+    FILE *outFile = fopen(PCAP_FILE, "ab"); // append to file only
+#ifdef TEST
+	  int serverlen;
+#endif
+#ifdef WIFI
     //setup wireless capture settings
-    char *dev = "mon0";
+    char *dev = PCAP_DEV;
     char errbuf[PCAP_ERRBUF_SIZE];
     struct bpf_program fp; // hold compiled libpcap filter program
     pcap_t *handle;
     struct pcap_pkthdr header;
-    int serverlen;
-    int timeout = 10, sockfd, n;
-    FILE *outFile = fopen("testFile", "ab"); // append to file only
+    int timeout = 10, n;
     bpf_u_int32 maskp;                       // subnet mask
-    bpf_u_int32 ip;                          //ip
-    printf("My Mesh Extender ID is: %s\n", myMeshExtenderID);
+    bpf_u_int32 ip;                          // ip
+#endif
 
-    char pcapFilterString[] = "ether host E2:95:6E:4C:A8:D7";
+    printf("My Mesh Extender ID is: %s\n", myMeshExtenderID);
 
     printf("Before packet injection setup\n");
     //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
@@ -496,12 +523,12 @@ int main(int argc, char **argv)
     }
     else
     {
-        printf("Will send data to %s:%i\n", inet_ntoa(serv_addr.sin_addr), port);
+        printf("Will send data to %s:%i\n", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
     }
 
     serversock = sockfd;
 
-#ifdef test
+#ifdef TEST
     if (getnameinfo((struct sockaddr *)&serv_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
     {
       printf("could not resolve IP\n");
@@ -512,19 +539,75 @@ int main(int argc, char **argv)
     {
       printf("host=%s\n", hbuf);
     }
-    serverlen = sizeof(serv_addr);
 #endif
 
     printf("Before serial port setup\n");
 
-    // Setup radio serial port
-    if (setup_monitor_port("/dev/ttyATH0", 230400) < 0)
+    //setup serial ports
+    // Start with all on same speed, so that we can
+    // figure out the pairs of ports that are connected
+    // to the same wire
+    setup_monitor_port("/dev/ttyUSB0", 230400);
+    setup_monitor_port("/dev/ttyUSB1", 230400);
+    setup_monitor_port("/dev/ttyUSB2", 230400);
+    setup_monitor_port("/dev/ttyUSB3", 230400);
+
+    // Then wait for input on one, and see if the same character
+    // appears on another very soon there after.
+    // (This assumes that there is traffic on at least one
+    // of the ports. If not, then there is nothing to collect, anyway.
+    int links_setup = 0;
+    while (links_setup == 0)
     {
-        // Exit if we don't have a serial port to read from
-        exit(1);
+      char buff[1024];
+      int i = 0;
+      for (; i < 4; i++)
+      {
+        int n = read(serial_ports[i].fd, buff, 1024);
+        if (n > 0)
+        {
+          // We have some input, so now look for it on the other ports.
+          // But give the USB serial adapters time to catch up, as they frequently
+          // have 16ms of latency. We allow 50ms here to be safe.
+          usleep(50000);
+          char buff2[1024];
+          int j = 0;
+          for (; j < 4; j++)
+          {
+            // Don't look for the data on ourselves
+            if (i == j)
+              continue;
+            int n2 = read(serial_ports[j].fd, buff2, 1024);
+            if (n2 >= n)
+            {
+              if (!bcmp(buff, buff2, n))
+              {
+                printf("Serial ports %d and %d seem to be linked.\n", i, j);
+
+                // Set one of those to 115200, and then one of the other two ports to 115200,
+                // and then we should have both speeds on both ports available
+                serial_setup_port_with_speed(serial_ports[i].fd, 115200);
+                int k = 0;
+                for (; k < 4; k++)
+                {
+                  if (k == i)
+                    continue;
+                  if (k == j)
+                    continue;
+                  serial_setup_port_with_speed(serial_ports[k].fd, 115200);
+                  links_setup = 1;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+      // Wait a little while before trying again
+      usleep(50000);
     }
 
-#ifdef WITH_PCAP
+#ifdef WIFI
     printf("Before pcap setup\n");
 
     pcap_lookupnet(dev, &ip, &maskp, errbuf);
@@ -535,6 +618,12 @@ int main(int argc, char **argv)
     {
       printf("Error starting pcap device: %s\n", errbuf);
     }
+
+    // Set non-blocking mode
+	if (pcap_setnonblock(handle, 1, errbuf))
+	{
+		printf("Error setting pcap device to non-blocking: %s\n", errbuf);
+	}
 
     if (pcap_compile(handle, &fp, pcapFilterString, 0, ip) == -1)
     {
@@ -550,32 +639,36 @@ int main(int argc, char **argv)
       break;
     }
 #endif
-    // While loop that serially searches for a packet to be captured by all devices (round robin)
 
+    // While loop that serially searches for a packet to be captured by all devices (round robin)
     printf("Before loop\n");
     do
     {
-      int i;
-      for (i = 0; i < serial_port_count; i++)
-        process_serial_port(&serial_ports[i]);
+		int i;
+	  	for (i = 0; i < serial_port_count; i++)
+		{
+			process_serial_port(&serial_ports[i]);
+		}
 
-      /*header.len = 0;
-            header.caplen = 0;
-            capPacket = pcap_next(handle, &header);
-            if (header.len > 0)
-            {
-                printf("Captured WIFI packet total length %i\n", header.len);
-                n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, serverlen);
-                //dump_packet("Captured Packet", capPacket, n);
-                printf("Size Written %i\n", n);
-                if (n < 0)
-                {
-                    perror("Error Sending\n");
-                    retVal = -11;
-                    perror("Sendto: ");
-                    break;
-                }
-            }*/
+#ifdef WIFI
+	  	header.len = 0;
+		header.caplen = 0;
+		capPacket = pcap_next(handle, &header);
+		if (capPacket && header.len > 0)
+		{
+			printf("Captured WIFI packet total length %i\n", header.len);
+			n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+			//dump_packet("Captured Packet", capPacket, n);
+			printf("Size Written %i\n", n);
+			if (n < 0)
+			{
+				perror("Error Sending\n");
+				retVal = -11;
+				perror("Sendto: ");
+				break;
+			}
+		}
+#endif
     } while (1);
 
     printf("Closing output file.\n");

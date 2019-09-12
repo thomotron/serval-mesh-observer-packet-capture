@@ -368,9 +368,9 @@ int main(int argc, char *argv[])
 				{
 					printf("About to call decode_lbard()\n");
 					char lbardResult[8192];
- //16 byte offset before analysis to remove packet header
-// 32 bytes of Reed-Solomon error correction trimmed from the end
-// 1 byte of new line character that is an artifact of data collection removed. from the end also
+					// 16 byte offset before analysis to remove packet header
+					// 32 bytes of Reed-Solomon error correction trimmed from the end
+					// 1 byte of new line character that is an artifact of data collection removed. from the end also
 					decode_lbard(&packet[16], n - 16 - 32 - 1, outFile, myAttachedMeshExtender);
 					//break;
 					lbardResult[0] = '\0';
@@ -391,7 +391,7 @@ int main(int argc, char *argv[])
 
 		//run the program to create the graph
 		//change the arguments to where file location is ect
-		char *location = "/home/honours/Desktop/MeshObserver-Packet-Capture/server/plantuml.jar";
+		char *location = "plantuml.jar";
 		//get current working directory as this is where the generated textural file will be saved
 		char cwd[PATH_MAX];
 		char command[256];
