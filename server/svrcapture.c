@@ -22,6 +22,7 @@
 #include <linux/limits.h>
 #include <assert.h>
 #include <signal.h>
+#include <argp.h>
 
 #include "sync.h"
 #include "lbard.h"
@@ -30,8 +31,76 @@
 #define MAX_PACKET_SIZE 255
 #define RADIO_RXBUFFER_SIZE 64 + MAX_PACKET_SIZE
 
+// Define some default argument values
 #define DEFAULT_ADDRESS INADDR_ANY
 #define DEFAULT_PORT 3940
+#define DEFAULT_PACKET_CAPTURE_NUM -1
+#define DEFAULT_PLANTUML_JAR_PATH "plantuml.jar"
+
+// The number of mandatory arguments and a string containing them in the correct order delimited by spaces
+#define NUM_MANDATORY_ARGS 0
+static char argument_doc[] = "";
+
+// List our arguments for argp
+static struct argp_option options[] =
+{
+    {"port",    'p', "port",    0, "Port to listen on"},
+    {"address", 'a', "address", 0, "Address to bind to"},
+    {"jarpath", 'j', "path",    0, "PlantUML jarfile path"},
+    {"packets", 'n', "packets", 0, "Number of packets to capture"},
+    {0}
+};
+
+// Define a struct to hold our arg values
+typedef struct arguments
+{
+    int            port;
+    struct in_addr address;
+    char*          jarpath;
+    int            packets;
+} arguments;
+
+// Parse a single argument from argp
+static error_t parse_arg(int key, char* arg, struct argp_state* state)
+{
+    // Get a pointer to the arguments struct
+    arguments* arguments = state->input;
+
+    // Parse the argument and store it in the struct
+    switch (key)
+    {
+        case 'p':
+            // Convert port number to int and assign it
+            arguments->port = (int) strtol(arg, NULL, 10);;
+            break;
+        case 'a':
+            // Convert & assign address, exiting on failure
+            if (!inet_aton(arg, &arguments->address)) argp_usage(state);
+            break;
+        case 'j':
+            arguments->jarpath = arg;
+            break;
+        case 'n':
+            arguments->packets = (int) strtol(arg, NULL, 10);
+            break;
+        case ARGP_KEY_ARG:
+            // Check if we have too many args
+            if (state->arg_num >= NUM_MANDATORY_ARGS) argp_usage(state);
+
+            // We would parse the args here, but we have none
+        case ARGP_KEY_END:
+            // Check if we have too few args
+            if (state->arg_num < NUM_MANDATORY_ARGS) argp_usage(state);
+            break;
+        default:
+            return ARGP_ERR_UNKNOWN;
+    }
+
+    return 0;
+}
+
+// Define our argp parser which includes the argument structs and parser function we just defined
+static struct argp argp_parser = {options, parse_arg, argument_doc, 0};
 
 volatile sig_atomic_t sigint_flag = 0;
 void sigint_handler(int signal)
@@ -256,15 +325,25 @@ int main(int argc, char *argv[])
 	int retVal;
 	//int fd = fileno(stdin);
 
-	// Check for correct number of args and print usage
-	if (argc < 2)
-    {
-	    printf("Usage: %s <sid> [port]\n", argv[0]);
-	    exit(1);
-    }
+	// Define args struct and populate simple defaults
+	arguments args;
+	args.port = DEFAULT_PORT;
+	args.packets = DEFAULT_PACKET_CAPTURE_NUM;
+	args.jarpath = DEFAULT_PLANTUML_JAR_PATH;
 
-	// Parse port arg
-	int port = argc >= 3 ? atoi(argv[2]) : DEFAULT_PORT;
+	// Populate complex defaults
+	if (DEFAULT_ADDRESS == NULL)
+	{
+		args.address.s_addr = DEFAULT_ADDRESS;
+	}
+	else if (!inet_aton(DEFAULT_ADDRESS, &args.address))
+	{
+		perror("Failed to parse and set default address");
+		exit(1);
+	};
+
+	// Parse command line args
+	argp_parse(&argp_parser, argc, argv, 0, 0, &args);
 
 	do
 	{
@@ -285,7 +364,7 @@ int main(int argc, char *argv[])
 		fprintf(outFile, "@startuml\n");			 //write first line of uml file
 
 		//init socket variables
-		int sockfd, portno = port ? port : DEFAULT_PORT;
+		int sockfd, portno = args.port;
 
 		sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 		if (sockfd < 0)
@@ -299,8 +378,8 @@ int main(int argc, char *argv[])
 		memset(&serv_addr, 0, sizeof(serv_addr)); //clear struct before setting up
 		memset(&client_addr, 0, sizeof(client_addr));
 		serv_addr.sin_family = AF_INET;
-		serv_addr.sin_addr.s_addr = DEFAULT_ADDRESS; //any source address
-		serv_addr.sin_port = htons(portno);
+		serv_addr.sin_addr = args.address; //any source address
+		serv_addr.sin_port = htons(args.port);
 
 		//bind sockets
 		if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
@@ -309,7 +388,7 @@ int main(int argc, char *argv[])
 			exit(-1);
 		}
 
-		printf("Listening at %s:%i\n", inet_ntoa(serv_addr.sin_addr), port);
+		printf("Listening at %s:%i\n", inet_ntoa(serv_addr.sin_addr), args.port);
 
 		//make variables for reading in packets
 		u_char packet[8192];
@@ -319,11 +398,19 @@ int main(int argc, char *argv[])
 		start_time = gettime_ms();
 
 		// Print out a helpful reminder that this will run until you tell it to stop
+        if (args.packets > 0)
+        {
+            printf("Will capture %d packet%c\n", args.packets, args.packets > 1 ? 's' : '\0');
+        }
+        else
+        {
+            printf("Will capture forever until stopped\n");
+        }
 		printf("Press Ctrl+C to stop capturing\n");
 		fflush(stdout);
 
-		// Accept and process incoming packets, will iterate until stopped
-		while (!sigint_flag)
+		// Accept and process incoming packets, will iterate until desired number of packets reached or stopped manually
+		for (int i = 0; args.packets > 0 ? i < args.packets && !sigint_flag : !sigint_flag; i++)
 		{
 			int bytesReceived = 0;
 			unsigned int addressLength;
@@ -420,7 +507,7 @@ int main(int argc, char *argv[])
 
 		//run the program to create the graph
 		//change the arguments to where file location is ect
-		char *location = "plantuml.jar";
+		char *location = args.jarpath;
 		//get current working directory as this is where the generated textural file will be saved
 		char cwd[PATH_MAX];
 		char command[256];
