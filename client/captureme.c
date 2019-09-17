@@ -77,10 +77,24 @@ static error_t parse_arg(int key, char* arg, struct argp_state* state)
             arguments->filter = arg;
             break;
         case 1:
+            // Check if Wi-Fi capture is already disabled and print an error
+            if (!arguments->wifiCapture)
+            {
+                printf("Cannot disable both UHF and Wi-Fi capture at the same time\n");
+                argp_usage(state);
+            }
+
             // Disable UHF capture
             arguments->uhfCapture = 0;
             break;
         case 2:
+            // Check if Wi-Fi capture is already disabled and print an error
+            if (!arguments->uhfCapture)
+            {
+                printf("Cannot disable both UHF and Wi-Fi capture at the same time\n");
+                argp_usage(state);
+            }
+
             // Disable Wi-Fi capture
             arguments->wifiCapture = 0;
             break;
