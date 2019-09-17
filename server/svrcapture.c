@@ -159,9 +159,8 @@ void dump_packet(char *msg, unsigned char *b, int n)
 	}
 }
 
-char decode_wifi(unsigned char *packet, int len)
+void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 {
-	char decodedString[15];
 	uint16_t frame_control;
 	uint16_t duration_id;
 	uint8_t srcMac[6];
@@ -187,13 +186,12 @@ char decode_wifi(unsigned char *packet, int len)
 	printf("dst MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", dstMac[0], dstMac[1], dstMac[2], dstMac[3], dstMac[4], dstMac[5]);
 
 	printf("Before making string\n");
-	//snprintf(decodedString, sizeof(decodedString), "Src MAC:%s Dst MAC:%s", packetHeader.addr1, packetHeader.addr2);
+	fprintf(output_file, "\"%02X:%02X:%02X:%02X:%02X:%02X\" -> \"%02X:%02X:%02X:%02X:%02X:%02X\": T+%lldms\n",
+	        srcMac[0], srcMac[1], srcMac[2], srcMac[3], srcMac[4], srcMac[5],
+	        dstMac[0], dstMac[1], dstMac[2], dstMac[3], dstMac[4], dstMac[5],
+	        gettime_ms() - start_time);
 
 	//ARP has mac address destination of 00:00:00:00:00:00
-
-	char test[] = "this is a test";
-	printf("%s", test);
-	return decodedString;
 }
 
 int decode_lbard(unsigned char *msg, int len, FILE *output_file, char *myAttachedMeshExtender)
@@ -494,8 +492,7 @@ int main(int argc, char *argv[])
 			else // Not an LBARD packet, must be from WiFi
 			{
 				// Decode wifi packet and put returned string into NTD text file
-				char wifiPacketInfo = decode_wifi(&packet, bytesReceived);
-				fprintf(outFile, wifiPacketInfo);
+				decode_wifi(&packet, bytesReceived, outFile);
 			}
 
 			// Null-terminate the packet buffer
