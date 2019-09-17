@@ -25,11 +25,8 @@
 //#define TEST
 //#define WIFI
 #define DEFAULT_SERVER_PORT 3940
+#define DEFAULT_PCAP_DEV "mon0"
 #define PCAP_FILE "testFile"
-
-#ifdef WIFI
-#define PCAP_DEV "mon0"
-#endif
 
 // The number of mandatory arguments and a string containing them in the correct order delimited by spaces
 #define NUM_MANDATORY_ARGS 2
@@ -39,6 +36,7 @@ static char argument_doc[] = "SID ADDRESS";
 static struct argp_option options[] =
 {
         {"port",    'p', "port",    0, "Server port"},
+        {"wifidev", 'd', "wifidev", 0, "Wi-Fi capture device"},
         {0}
 };
 
@@ -48,6 +46,7 @@ typedef struct arguments
     char*          sid;
     struct in_addr address;
     int            port;
+    char*          wifidev;
 } arguments;
 
 // Parse a single argument from argp
@@ -61,7 +60,11 @@ static error_t parse_arg(int key, char* arg, struct argp_state* state)
     {
         case 'p':
             // Convert port number to int and assign it
-            arguments->port = (int) strtol(arg, NULL, 10);;
+            arguments->port = (int) strtol(arg, NULL, 10);
+            break;
+        case 'd':
+            // Set the Wi-Fi device name
+            arguments->wifidev = arg;
             break;
         case ARGP_KEY_ARG:
             // Check if we have too many args
@@ -502,6 +505,7 @@ int main(int argc, char **argv)
     // Define args struct and populate simple defaults
     arguments args;
     args.port = DEFAULT_SERVER_PORT;
+    args.wifidev = DEFAULT_PCAP_DEV;
 
     // Parse command line args
     argp_parse(&argp_parser, argc, argv, 0, 0, &args);
@@ -516,7 +520,7 @@ int main(int argc, char **argv)
 #endif
 #ifdef WIFI
     //setup wireless capture settings
-    char *dev = PCAP_DEV;
+    char *dev = args.wifidev;
     char errbuf[PCAP_ERRBUF_SIZE];
     struct bpf_program fp; // hold compiled libpcap filter program
     pcap_t *handle;
