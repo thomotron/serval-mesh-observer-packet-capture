@@ -26,6 +26,7 @@
 //#define WIFI
 #define DEFAULT_SERVER_PORT 3940
 #define DEFAULT_PCAP_DEV "mon0"
+#define DEFAULT_PCAP_FILTER ""
 #define PCAP_FILE "testFile"
 
 // The number of mandatory arguments and a string containing them in the correct order delimited by spaces
@@ -37,6 +38,7 @@ static struct argp_option options[] =
 {
         {"port",    'p', "port",    0, "Server port"},
         {"wifidev", 'd', "wifidev", 0, "Wi-Fi capture device"},
+        {"filter",  'f', "filter",  0, "Pcap filter for Wi-Fi packets"},
         {0}
 };
 
@@ -47,6 +49,7 @@ typedef struct arguments
     struct in_addr address;
     int            port;
     char*          wifidev;
+    char*          filter;
 } arguments;
 
 // Parse a single argument from argp
@@ -65,6 +68,10 @@ static error_t parse_arg(int key, char* arg, struct argp_state* state)
         case 'd':
             // Set the Wi-Fi device name
             arguments->wifidev = arg;
+            break;
+        case 'f':
+            // Set the pcap filter string
+            arguments->filter = arg;
             break;
         case ARGP_KEY_ARG:
             // Check if we have too many args
@@ -506,6 +513,7 @@ int main(int argc, char **argv)
     arguments args;
     args.port = DEFAULT_SERVER_PORT;
     args.wifidev = DEFAULT_PCAP_DEV;
+    args.filter = DEFAULT_PCAP_FILTER;
 
     // Parse command line args
     argp_parse(&argp_parser, argc, argv, 0, 0, &args);
@@ -656,7 +664,7 @@ int main(int argc, char **argv)
 		printf("Error setting pcap device to non-blocking: %s\n", errbuf);
 	}
 
-    if (pcap_compile(handle, &fp, pcapFilterString, 0, ip) == -1)
+    if (pcap_compile(handle, &fp, args.filter, 0, ip) == -1)
     {
       printf("Bad filter - %s\n", pcap_geterr(handle));
       retVal = -8;
