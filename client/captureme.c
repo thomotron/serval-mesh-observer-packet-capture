@@ -697,6 +697,7 @@ int main(int argc, char **argv)
         if (pcap_compile(handle, &fp, args.filter, 0, ip) == -1)
         {
             printf("Bad filter - %s\n", pcap_geterr(handle));
+            printf("For more information on pcap filters, see 'man pcap-filter' or https://www.tcpdump.org/manpages/pcap-filter.7.html\n");
             retVal = -8;
             break;
         }
