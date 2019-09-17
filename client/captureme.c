@@ -23,7 +23,7 @@
 #include <argp.h>
 
 //#define TEST
-//#define WIFI
+#define WIFI
 #define DEFAULT_SERVER_PORT 3940
 #define DEFAULT_PCAP_DEV "mon0"
 #define DEFAULT_PCAP_FILTER ""
