@@ -36,9 +36,11 @@ static char argument_doc[] = "SID ADDRESS";
 // List our arguments for argp
 static struct argp_option options[] =
 {
-        {"port",    'p', "port",    0, "Server port"},
-        {"wifidev", 'd', "wifidev", 0, "Wi-Fi capture device"},
-        {"filter",  'f', "filter",  0, "Pcap filter for Wi-Fi packets"},
+        {"port",    'p', "port",    0,                   "Server port"},
+        {"wifidev", 'd', "wifidev", 0,                   "Wi-Fi capture device"},
+        {"filter",  'f', "filter",  0,                   "Pcap filter for Wi-Fi packets"},
+        {"nouhf",    1,  "nouhf",   OPTION_ARG_OPTIONAL, "Disables UHF LBARD capture"},
+        {"nowifi",   2,  "nowifi",  OPTION_ARG_OPTIONAL, "Disables Wi-Fi packet capture"},
         {0}
 };
 
@@ -50,6 +52,8 @@ typedef struct arguments
     int            port;
     char*          wifidev;
     char*          filter;
+    unsigned char  uhfCapture;
+    unsigned char  wifiCapture;
 } arguments;
 
 // Parse a single argument from argp
@@ -72,6 +76,14 @@ static error_t parse_arg(int key, char* arg, struct argp_state* state)
         case 'f':
             // Set the pcap filter string
             arguments->filter = arg;
+            break;
+        case 1:
+            // Disable UHF capture
+            arguments->uhfCapture = 0;
+            break;
+        case 2:
+            // Disable Wi-Fi capture
+            arguments->wifiCapture = 0;
             break;
         case ARGP_KEY_ARG:
             // Check if we have too many args
@@ -514,6 +526,8 @@ int main(int argc, char **argv)
     args.port = DEFAULT_SERVER_PORT;
     args.wifidev = DEFAULT_PCAP_DEV;
     args.filter = DEFAULT_PCAP_FILTER;
+    args.uhfCapture = 1;
+    args.wifiCapture = 1;
 
     // Parse command line args
     argp_parse(&argp_parser, argc, argv, 0, 0, &args);
