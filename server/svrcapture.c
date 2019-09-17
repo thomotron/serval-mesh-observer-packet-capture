@@ -454,6 +454,9 @@ int main(int argc, char *argv[])
 				errno = 0;
 			}
 
+			// Kill the packet loop if we broke out with a SIGINT
+			if (sigint_flag) break;
+
 			printf("Received %d bytes\n", bytesReceived);
 
 			// Check for receive errors and break
