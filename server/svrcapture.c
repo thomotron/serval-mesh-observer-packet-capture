@@ -159,6 +159,12 @@ void dump_packet(char *msg, unsigned char *b, int n)
 	}
 }
 
+int parse_mac(unsigned char* mac, char* buffer)
+{
+    return sprintf(buffer, "%02X:%02X:%02X:%02X:%02X:%02X",
+                   mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+}
+
 void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 {
 	uint16_t frame_control;
@@ -182,14 +188,18 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 
 	dump_packet("Packet contents", packet, len);
 
-	printf("src MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", srcMac[0], srcMac[1], srcMac[2], srcMac[3], srcMac[4], srcMac[5]);
-	printf("dst MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", dstMac[0], dstMac[1], dstMac[2], dstMac[3], dstMac[4], dstMac[5]);
+	// Parse the MAC addresses as neatly-formatted C strings
+	char parsedSrcMac[18];
+    char parsedDstMac[18];
+    parse_mac(srcMac, parsedSrcMac);
+    parse_mac(dstMac, parsedDstMac);
 
-	printf("Before making string\n");
-	fprintf(output_file, "\"%02X:%02X:%02X:%02X:%02X:%02X\" -> \"%02X:%02X:%02X:%02X:%02X:%02X\": T+%lldms\n",
-	        srcMac[0], srcMac[1], srcMac[2], srcMac[3], srcMac[4], srcMac[5],
-	        dstMac[0], dstMac[1], dstMac[2], dstMac[3], dstMac[4], dstMac[5],
-	        gettime_ms() - start_time);
+    // Print out the source and destination
+	printf("src MAC: %s\n", parsedSrcMac);
+	printf("dst MAC: %s\n", parsedDstMac);
+
+	// Write to the diagram
+	fprintf(output_file, "\"%s\" -> \"%s\": T+%lldms\n", parsedSrcMac, parsedDstMac, gettime_ms() - start_time);
 
 	//ARP has mac address destination of 00:00:00:00:00:00
 }
