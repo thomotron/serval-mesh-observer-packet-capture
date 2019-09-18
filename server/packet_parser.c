@@ -3,40 +3,10 @@
 // captured by libpcap
 //
 
-// Represents an 802.11 frame header
-// Trimmed down to the frame control field for our purposes
-typedef struct header_80211
-{
-    unsigned char frame_type;
-    unsigned char frame_version;
-    unsigned char frame_subtype;
-
-} header_80211;
-
-// Represents an 802.11 LLC header
-// Trimmed down to the OUI and type fields
-typedef struct header_llc
-{
-    unsigned int   org_code;
-    unsigned short type;
-} header_llc;
-
-typedef struct header_ipv4
-{
-    unsigned char protocol;
-} header_ipv4;
-
-// Represents a parsed 802.11 packet
-// Consists of all parsable headers previously defined
-typedef struct parsed_packet
-{
-    header_80211 header_80211;
-    header_llc   header_llc;
-    header_ipv4  header_ipv4;
-} parsed_packet;
+#include "packet_parser.h"
 
 // Scrapes information from the given packet's 802.11 header
-static header_80211 get_header_80211(unsigned char* packet, int* offset)
+header_80211 get_header_80211(unsigned char* packet, int* offset)
 {
     header_80211 header;
 
@@ -53,7 +23,7 @@ static header_80211 get_header_80211(unsigned char* packet, int* offset)
 }
 
 // Scrapes information from the given packet's 802.11 LLC header
-static header_llc get_header_llc(unsigned char* packet, int* offset)
+header_llc get_header_llc(unsigned char* packet, int* offset)
 {
     header_llc header;
     *offset += 3; // Skip the first three octets (DSAP, SSAP, and control)
@@ -69,7 +39,7 @@ static header_llc get_header_llc(unsigned char* packet, int* offset)
 }
 
 // Scraped information from the given packet's IPv4 header
-static header_ipv4 get_header_ipv4(unsigned char* packet, int* offset)
+header_ipv4 get_header_ipv4(unsigned char* packet, int* offset)
 {
     header_ipv4 header;
     *offset += 9; // Skip to the 9th byte

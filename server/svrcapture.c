@@ -27,6 +27,7 @@
 #include "sync.h"
 #include "lbard.h"
 #include "message_handlers.h"
+#include "packet_parser.h"
 
 #define MAX_PACKET_SIZE 255
 #define RADIO_RXBUFFER_SIZE 64 + MAX_PACKET_SIZE
@@ -176,8 +177,12 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 	printf("\n\n WIFI PACKET \n");
 	//check if big or little endin
 
+	// Parse the packet headers
+    parsed_packet headers = parse_packet(packet, len);
+
 	printf("Before bit shift\n");
-	frame_control = (packet[0] >> 4) & 0x03; //bit shift to get the bits we want
+	//frame_control = (packet[0] >> 4) & 0x03; //bit shift to get the bits we want
+	frame_control = headers.header_80211.frame_type;
 
 	//copy in mac addresses
 	for (int i = 0; i < 6; i++)
@@ -198,8 +203,65 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 	printf("src MAC: %s\n", parsedSrcMac);
 	printf("dst MAC: %s\n", parsedDstMac);
 
+	// Work our way down the OSI stack and find the highest parsed header
+	char message[32];
+	if (headers.header_ipv4.protocol) // We've gotten the IPv4 header
+    {
+	    switch (headers.header_ipv4.protocol)
+        {
+            case 0x06: // TCP
+                sprintf(message, "%s", "TCP");
+                break;
+            case 0x11: // UDP
+                sprintf(message, "%s", "UDP");
+                break;
+            default:
+                sprintf(message, "Unknown IPv4-based protocol (%02X)", headers.header_ipv4.protocol);
+                break;
+        }
+    }
+	else if (headers.header_llc.type) // We've gotten the 802.11 LLC header
+    {
+	    switch (headers.header_llc.type)
+        {
+            case 0x0800: // IPv4
+                sprintf(message, "%s", "IPv4");
+                break;
+            case 0x0806: // ARP
+                sprintf(message, "%s", "ARP");
+                break;
+            case 0x86DD: // IPv6
+                sprintf(message, "%s", "IPv6");
+                break;
+            default:
+                sprintf(message, "Unknown LLC-based protocol (%04X)", headers.header_llc.type);
+                break;
+        }
+    }
+	else if (headers.header_80211.frame_type) // We've gotten the 802.11 frame header
+    {
+	    switch (headers.header_80211.frame_type)
+        {
+            case 0b00: // Management
+                sprintf(message, "%s", "802.11 Management");
+                break;
+            case 0b01: // Control
+                sprintf(message, "%s", "802.11 Control");
+                break;
+            case 0b10: // Data
+                sprintf(message, "%s", "802.11 Data");
+                break;
+            case 0b11: // Extension
+                sprintf(message, "%s", "802.11 Extension");
+                break;
+            default:
+                sprintf(message, "Unknown 802.11-based protocol (%01X)", headers.header_80211.frame_type);
+                break;
+        }
+    }
+
 	// Write to the diagram
-	fprintf(output_file, "\"%s\" -> \"%s\": T+%lldms\n", parsedSrcMac, parsedDstMac, gettime_ms() - start_time);
+	fprintf(output_file, "\"%s\" -> \"%s\": T+%lldms - %s\n", parsedSrcMac, parsedDstMac, gettime_ms() - start_time, message);
 
 	//ARP has mac address destination of 00:00:00:00:00:00
 }
