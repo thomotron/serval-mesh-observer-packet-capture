@@ -159,9 +159,14 @@ void dump_packet(char *msg, unsigned char *b, int n)
 	}
 }
 
-char decode_wifi(unsigned char *packet, int len)
+int parse_mac(unsigned char* mac, char* buffer)
 {
-	char decodedString[15];
+    return sprintf(buffer, "%02X:%02X:%02X:%02X:%02X:%02X",
+                   mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+}
+
+void decode_wifi(unsigned char *packet, int len, FILE* output_file)
+{
 	uint16_t frame_control;
 	uint16_t duration_id;
 	uint8_t srcMac[6];
@@ -183,17 +188,20 @@ char decode_wifi(unsigned char *packet, int len)
 
 	dump_packet("Packet contents", packet, len);
 
-	printf("src MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", srcMac[0], srcMac[1], srcMac[2], srcMac[3], srcMac[4], srcMac[5]);
-	printf("dst MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", dstMac[0], dstMac[1], dstMac[2], dstMac[3], dstMac[4], dstMac[5]);
+	// Parse the MAC addresses as neatly-formatted C strings
+	char parsedSrcMac[18];
+    char parsedDstMac[18];
+    parse_mac(srcMac, parsedSrcMac);
+    parse_mac(dstMac, parsedDstMac);
 
-	printf("Before making string\n");
-	//snprintf(decodedString, sizeof(decodedString), "Src MAC:%s Dst MAC:%s", packetHeader.addr1, packetHeader.addr2);
+    // Print out the source and destination
+	printf("src MAC: %s\n", parsedSrcMac);
+	printf("dst MAC: %s\n", parsedDstMac);
+
+	// Write to the diagram
+	fprintf(output_file, "\"%s\" -> \"%s\": T+%lldms\n", parsedSrcMac, parsedDstMac, gettime_ms() - start_time);
 
 	//ARP has mac address destination of 00:00:00:00:00:00
-
-	char test[] = "this is a test";
-	printf("%s", test);
-	return decodedString;
 }
 
 int decode_lbard(unsigned char *msg, int len, FILE *output_file, char *myAttachedMeshExtender)
@@ -456,6 +464,9 @@ int main(int argc, char *argv[])
 				errno = 0;
 			}
 
+			// Kill the packet loop if we broke out with a SIGINT
+			if (sigint_flag) break;
+
 			printf("Received %d bytes\n", bytesReceived);
 
 			// Check for receive errors and break
@@ -494,8 +505,7 @@ int main(int argc, char *argv[])
 			else // Not an LBARD packet, must be from WiFi
 			{
 				// Decode wifi packet and put returned string into NTD text file
-				char wifiPacketInfo = decode_wifi(&packet, bytesReceived);
-				fprintf(outFile, wifiPacketInfo);
+				decode_wifi(&packet, bytesReceived, outFile);
 			}
 
 			// Null-terminate the packet buffer
