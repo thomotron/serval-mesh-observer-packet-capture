@@ -170,12 +170,13 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 {
 	uint16_t frame_control;
 	uint16_t duration_id;
-	uint8_t srcMac[6];
-	uint8_t dstMac[6];
 	uint16_t seq_ctrl;
 
 	printf("\n\n WIFI PACKET \n");
 	//check if big or little endin
+
+    // Dump the contents to the terminal
+    dump_packet("Packet contents", packet, len);
 
 	// Parse the packet headers
     parsed_packet headers = parse_packet(packet, len);
@@ -184,20 +185,12 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 	//frame_control = (packet[0] >> 4) & 0x03; //bit shift to get the bits we want
 	frame_control = headers.header_80211.frame_type;
 
-	//copy in mac addresses
-	for (int i = 0; i < 6; i++)
-	{
-		srcMac[i] = packet[i + 4];
-		dstMac[i] = packet[i + 10];
-	}
-
-	dump_packet("Packet contents", packet, len);
 
 	// Parse the MAC addresses as neatly-formatted C strings
 	char parsedSrcMac[18];
     char parsedDstMac[18];
-    parse_mac(srcMac, parsedSrcMac);
-    parse_mac(dstMac, parsedDstMac);
+    parse_mac(headers.header_80211.source, parsedSrcMac);
+    parse_mac(headers.header_80211.dest, parsedDstMac);
 
     // Print out the source and destination
 	printf("src MAC: %s\n", parsedSrcMac);
