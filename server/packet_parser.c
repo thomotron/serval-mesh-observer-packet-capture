@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "packet_parser.h"
+#include "radiotap_iter.h"
 
 #define DEBUG
 
@@ -75,6 +76,15 @@ parsed_packet parse_packet(unsigned char* packet, int len)
 {
     parsed_packet parsed;
     int offset = 0;
+
+    // Set up a copious amount of structs to parse the RadioTap header
+    struct ieee80211_radiotap_iterator radiotap_iterator;
+    struct ieee80211_radiotap_header* radiotap_header = (struct ieee80211_radiotap_header*) packet;
+    struct ieee80211_radiotap_vendor_namespaces radiotap_namespaces;
+    ieee80211_radiotap_iterator_init(&radiotap_iterator, radiotap_header, len, &radiotap_namespaces);
+
+    // Skip past the RadioTap header
+    offset += radiotap_header->it_len;
 
     // Enter a run-once loop so we can break execution neatly
     do
