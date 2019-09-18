@@ -21,6 +21,13 @@ header_80211 get_header_80211(unsigned char* packet, int* offset)
     header.frame_type = (packet[*offset] >> 4) & 0x03; // Second bit pair, shifted down and masked
     header.frame_subtype = (packet[*offset]) & 0x0F; // Last four bits, masked
 
+    // Grab the source and dest MAC addresses
+    for (int i = 0; i < 6; i++)
+    {
+        header.dest[i] = packet[*offset+4+i];
+        header.source[i] = packet[*offset+10+i];
+    }
+
 #ifdef DEBUG
     printf("[DEBUG] 802.11 FRAME: VER %d, TYPE %d, SUBTYPE %d, SOURCE %02X:%02X:%02X:%02X:%02X:%02X, DEST %02X:%02X:%02X:%02X:%02X:%02X\n",
             header.frame_version,
