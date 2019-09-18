@@ -197,7 +197,7 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 	printf("dst MAC: %s\n", parsedDstMac);
 
 	// Work our way down the OSI stack and find the highest parsed header
-	char message[32];
+	char message[64];
 	if (headers.header_ipv4.protocol) // We've gotten the IPv4 header
     {
 	    switch (headers.header_ipv4.protocol)
