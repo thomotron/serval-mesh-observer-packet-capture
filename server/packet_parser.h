@@ -39,6 +39,85 @@ typedef struct parsed_packet
     header_ipv4  header_ipv4;
 } parsed_packet;
 
+// Massive lookup array for 802.11 frame versions, types, and subtypes
+// Plug in those values in that order
+const char* wifi_frame_description[1][4][16] = {
+    { // Version 0
+        { // Management
+            "Association request",
+            "Association response",
+            "Reassociation request",
+            "Reassociation response",
+            "Probe request",
+            "Probe response",
+            "Reserved",
+            "Reserved",
+            "Beacon",
+            "Announcement traffic indication message",
+            "Disassociation",
+            "Authentication",
+            "Deauthentication",
+            "Reserved",
+            "Reserved",
+            "Reserved"
+        },
+        { // Control
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Power-save poll",
+            "Request-to-send",
+            "Clear-to-send",
+            "Acknowledgement",
+            "Contention-free end",
+            "Contention-free end, contention-free acknowledgement"
+        },
+        { // Data
+            "Data",
+            "Data, contention-free acknowledgement",
+            "Data, contention-free poll",
+            "Data, contention-free acknowledgement and poll",
+            "No data",
+            "Contention-free acknowledgement",
+            "Contention-free poll",
+            "Contention-free acknowledgement and poll",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved"
+        },
+        { // Reserved
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved",
+            "Reserved"
+        }
+    }
+};
+
 header_80211 get_header_80211(unsigned char* packet, int* offset);
 header_llc get_header_llc(unsigned char* packet, int* offset);
 header_ipv4 get_header_ipv4(unsigned char* packet, int* offset);
