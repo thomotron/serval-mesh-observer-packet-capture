@@ -96,10 +96,15 @@ header_80211 get_header_80211(unsigned char* packet, int* offset)
     header_80211 header;
 
     // Frame control field is the first two octets
-    // We only care about the first octet, so we'll grab and mask that
+    // We (mostly) only care about the first octet, so we'll grab and mask that
     header.frame_version = packet[*offset] & 0x03; // First bit pair, shifted down and masked
     header.frame_type = (packet[*offset] >> 2) & 0x03; // Second bit pair, shifted down and masked
     header.frame_subtype = (packet[*offset] >> 4) & 0x0F; // Last four bits, masked
+
+    // We need to grab two bits from the second octet to determine if this frame is
+    // entering, exiting, or relaying through a wireless distribution system (or not at all)
+    header.to_ds = packet[*offset+1] & 0x01; // Entering the distribution system
+    header.from_ds = (packet[*offset+1] >> 1) & 0x01; // Exiting the distribution system
 
     // Grab the source and dest MAC addresses
     for (int i = 0; i < 6; i++)
@@ -109,13 +114,18 @@ header_80211 get_header_80211(unsigned char* packet, int* offset)
     }
 
 #ifdef DEBUG
-    printf("[DEBUG] 802.11 FRAME: VER %d, TYPE %d, SUBTYPE %d, SOURCE %02X:%02X:%02X:%02X:%02X:%02X, DEST %02X:%02X:%02X:%02X:%02X:%02X\n",
+    printf("[DEBUG] 802.11 FRAME: VER %d, TYPE %d, SUBTYPE %d, SOURCE %02X:%02X:%02X:%02X:%02X:%02X, DEST %02X:%02X:%02X:%02X:%02X:%02X, FROM DIST? %s, TO DIST? %s\n",
             header.frame_version,
             header.frame_type,
             header.frame_subtype,
             header.source[0], header.source[1], header.source[2], header.source[3], header.source[4], header.source[5],
-            header.dest[0], header.dest[1], header.dest[2], header.dest[3], header.dest[4], header.dest[5]);
+            header.dest[0], header.dest[1], header.dest[2], header.dest[3], header.dest[4], header.dest[5],
+            header.from_ds ? "YES" : "NO",
+            header.to_ds ? "YES" : "NO");
 #endif
+
+    // Check if this is a relayed frame (4 addresses instead of 3, skip 6 extra bytes)
+    if (header.from_ds && header.to_ds) *offset += 6;
 
     // Skip the remainder of the frame header
     *offset += 26;

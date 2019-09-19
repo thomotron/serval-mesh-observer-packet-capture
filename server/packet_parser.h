@@ -13,6 +13,8 @@ typedef struct header_80211
     unsigned char frame_type;
     unsigned char frame_version;
     unsigned char frame_subtype;
+    unsigned char to_ds;
+    unsigned char from_ds;
     unsigned char source[6];
     unsigned char dest[6];
 } header_80211;
