@@ -100,9 +100,15 @@ parsed_packet parse_packet(unsigned char* packet, int len)
     // Enter a run-once loop so we can break execution neatly
     do
     {
-        parsed.header_80211 = get_header_80211(packet, &offset); // Parse the 802.11 frame
+        // Parse the 802.11 frame
+        parsed.header_80211 = get_header_80211(packet, &offset);
         if (offset >= len) break;
-        parsed.header_llc = get_header_llc(packet, &offset); // Parse the LLC header
+
+        // Stop if the 802.11 header has a non-zero version (it hasn't been incremented as of Sep 2019)
+        if (parsed.header_80211.frame_version != 0) break;
+
+        // Parse the LLC header
+        parsed.header_llc = get_header_llc(packet, &offset);
         if (offset >= len) break;
 
         // Stop if the LLC header has a non-empty org code, meaning we can't rely on an EtherType for L3 parsing
