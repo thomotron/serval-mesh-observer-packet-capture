@@ -174,7 +174,7 @@ parsed_packet parse_packet(unsigned char* packet, int len)
     offset += radiotap_header->it_len;
 
 #ifdef DEBUG
-    printf("Starting packet parsing at offset %d\n", offset);
+    printf("[DEBUG] Starting packet parsing at offset %d\n", offset);
 #endif
 
     // Enter a run-once loop so we can break execution neatly
