@@ -17,9 +17,9 @@ header_80211 get_header_80211(unsigned char* packet, int* offset)
 
     // Frame control field is the first two octets
     // We only care about the first octet, so we'll grab and mask that
-    header.frame_version = (packet[*offset] >> 6) & 0x03; // First bit pair, shifted down and masked
-    header.frame_type = (packet[*offset] >> 4) & 0x03; // Second bit pair, shifted down and masked
-    header.frame_subtype = (packet[*offset]) & 0x0F; // Last four bits, masked
+    header.frame_version = packet[*offset] & 0x03; // First bit pair, shifted down and masked
+    header.frame_type = (packet[*offset] >> 2) & 0x03; // Second bit pair, shifted down and masked
+    header.frame_subtype = (packet[*offset] >> 4) & 0x0F; // Last four bits, masked
 
     // Grab the source and dest MAC addresses
     for (int i = 0; i < 6; i++)
@@ -92,6 +92,10 @@ parsed_packet parse_packet(unsigned char* packet, int len)
 
     // Skip past the RadioTap header
     offset += radiotap_header->it_len;
+
+#ifdef DEBUG
+    printf("Starting packet parsing at offset %d\n", offset);
+#endif
 
     // Enter a run-once loop so we can break execution neatly
     do
