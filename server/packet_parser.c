@@ -118,7 +118,7 @@ header_80211 get_header_80211(unsigned char* packet, int* offset)
 #endif
 
     // Skip the remainder of the frame header
-    *offset += 36;
+    *offset += 26;
 
     return header;
 }
