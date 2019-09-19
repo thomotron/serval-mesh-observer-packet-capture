@@ -161,7 +161,7 @@ header_ipv4 get_header_ipv4(unsigned char* packet, int* offset)
 // Parses the given packet through as many parsing functions as possible
 parsed_packet parse_packet(unsigned char* packet, int len)
 {
-    parsed_packet parsed;
+    parsed_packet parsed = {0};
     int offset = 0;
 
     // Set up a copious amount of structs to parse the RadioTap header
