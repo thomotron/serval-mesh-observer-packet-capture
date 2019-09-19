@@ -200,6 +200,7 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 	char message[64];
 	if (headers.header_ipv4.protocol) // We've gotten the IPv4 header
     {
+	    printf("This is an IPv4 packet\n");
 	    switch (headers.header_ipv4.protocol)
         {
             case 0x06: // TCP
@@ -215,6 +216,7 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
     }
 	else if (headers.header_llc.type) // We've gotten the 802.11 LLC header
     {
+        printf("This is an 802.11 data frame with an LLC header\n");
 	    switch (headers.header_llc.type)
         {
             case 0x0800: // IPv4
@@ -231,8 +233,9 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
                 break;
         }
     }
-	else if (headers.header_80211.frame_type) // We've gotten the 802.11 frame header
+	else // We've gotten the 802.11 frame header
     {
+	    printf("This is an 802.11 frame\n");
         sprintf(message, "%s", wifi_frame_description[headers.header_80211.frame_version][headers.header_80211.frame_type][headers.header_80211.frame_subtype]);
     }
 
