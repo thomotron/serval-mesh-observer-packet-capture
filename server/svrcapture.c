@@ -233,24 +233,7 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
     }
 	else if (headers.header_80211.frame_type) // We've gotten the 802.11 frame header
     {
-	    switch (headers.header_80211.frame_type)
-        {
-            case 0b00: // Management
-                sprintf(message, "%s", "802.11 Management");
-                break;
-            case 0b01: // Control
-                sprintf(message, "%s", "802.11 Control");
-                break;
-            case 0b10: // Data
-                sprintf(message, "%s", "802.11 Data");
-                break;
-            case 0b11: // Extension
-                sprintf(message, "%s", "802.11 Extension");
-                break;
-            default:
-                sprintf(message, "Unknown 802.11-based protocol (%01X)", headers.header_80211.frame_type);
-                break;
-        }
+        sprintf(message, "%s", wifi_frame_description[headers.header_80211.frame_version][headers.header_80211.frame_type][headers.header_80211.frame_subtype]);
     }
 
 	// Write to the diagram
