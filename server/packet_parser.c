@@ -201,8 +201,8 @@ parsed_packet parse_packet(unsigned char* packet, int len)
         // Stop if the 802.11 header has a non-zero version (it hasn't been incremented as of Sep 2019)
         if (parsed.header_80211.frame_version != 0) break;
 
-        // Stop if the 802.11 frame is not data, as only data frames carry LLC
-        if (parsed.header_80211.frame_type != 2) break;
+        // Stop if the 802.11 frame is not data or is QoS, as only data frames carry LLC
+        if (parsed.header_80211.frame_type != 2 || parsed.header_80211.frame_subtype > 7) break;
 
         // Parse the LLC header
         parsed.header_llc = get_header_llc(packet, &offset);
