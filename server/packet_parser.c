@@ -91,7 +91,7 @@ const char* wifi_frame_description[1][4][16] =
 };
 
 // Scrapes information from the given packet's 802.11 header
-header_80211 get_header_80211(unsigned char* packet, int* offset)
+header_80211 get_header_80211(unsigned char* packet, int* offset, int* trailer_len)
 {
     header_80211 header;
 
@@ -129,6 +129,9 @@ header_80211 get_header_80211(unsigned char* packet, int* offset)
 
     // Skip the remainder of the frame header
     *offset += 26;
+
+    // Let the main parser know about the four-byte trailer
+    *trailer_len += 4;
 
     return header;
 }
@@ -173,6 +176,7 @@ parsed_packet parse_packet(unsigned char* packet, int len)
 {
     parsed_packet parsed = {0};
     int offset = 0;
+    int trailer_len = 0;
 
     // Set up a copious amount of structs to parse the RadioTap header
     struct ieee80211_radiotap_iterator radiotap_iterator;
@@ -191,8 +195,8 @@ parsed_packet parse_packet(unsigned char* packet, int len)
     do
     {
         // Parse the 802.11 frame
-        parsed.header_80211 = get_header_80211(packet, &offset);
-        if (offset >= len) break;
+        parsed.header_80211 = get_header_80211(packet, &offset, &trailer_len);
+        if (offset >= len - trailer_len) break;
 
         // Stop if the 802.11 header has a non-zero version (it hasn't been incremented as of Sep 2019)
         if (parsed.header_80211.frame_version != 0) break;
@@ -202,7 +206,7 @@ parsed_packet parse_packet(unsigned char* packet, int len)
 
         // Parse the LLC header
         parsed.header_llc = get_header_llc(packet, &offset);
-        if (offset >= len) break;
+        if (offset >= len - trailer_len) break;
 
         // Stop if the LLC header has a non-empty org code, meaning we can't rely on an EtherType for L3 parsing
         if (parsed.header_llc.org_code) break;
@@ -211,7 +215,7 @@ parsed_packet parse_packet(unsigned char* packet, int len)
         if (parsed.header_llc.type == 0x0800) parsed.header_ipv4 = get_header_ipv4(packet, &offset); // IPv4
         else if (parsed.header_llc.type == 0x86DD) {} // TODO: IPv6
         else break; // No other predefined parsing functions so we'll stop here
-        if (offset >= len) break;
+        if (offset >= len - trailer_len) break;
 
         // TODO: TCP/UDP, Rhizome
     } while (0);
