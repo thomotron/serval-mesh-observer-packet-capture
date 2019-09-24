@@ -53,6 +53,7 @@ typedef struct parsed_packet
     header_80211 header_80211;
     header_llc   header_llc;
     header_ipv4  header_ipv4;
+    header_ipv6  header_ipv6;
 } parsed_packet;
 
 // Massive lookup array for 802.11 frame versions, types, and subtypes
