@@ -128,7 +128,7 @@ header_80211 get_header_80211(unsigned char* packet, int* offset, int* trailer_l
     if (header.from_ds && header.to_ds) *offset += 6;
 
     // Skip the remainder of the frame header
-    *offset += 26;
+    *offset += 24;
 
     // Let the main parser know about the four-byte trailer
     *trailer_len += 4;
