@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
+#include <string.h>
 #include "packet_parser.h"
 #include "radiotap_iter.h"
 
@@ -242,6 +243,37 @@ header_udp get_header_udp(unsigned char* packet, int* offset)
 
     // Skip the remainder of the header
     *offset += 8;
+
+    return header;
+}
+
+header_bar get_header_bar(unsigned char* packet, int* offset)
+{
+    header_bar header = {0};
+
+    // Copy over both of the char* fields
+    strncpy(header.manifest_prefix, packet + *offset, 15);
+    strncpy(header.lower_version, packet + *offset + 16, 7);
+
+    // Get the remaining fields
+    header.log_length = packet[*offset+15];
+    header.lat_min = packet[*offset+23];
+    header.lon_min = packet[*offset+24];
+    header.lon_min = packet[*offset+25];
+    header.lon_min = packet[*offset+26];
+    header.ttl = packet[*offset+27];
+
+#ifdef DEBUG
+    printf("[DEBUG] RHIZOME BUNDLE ANNOUNCEMENT: MANIFEST PREFIX %s, LENGTH %d, LOW VERSION %s, BOUNDS (lat %d, lon %d) -> (lat %d, lon %d), TTL %d",
+            header.manifest_prefix,
+            header.log_length,
+            header.lower_version,
+            header.lat_min, header.lon_min, header.lat_max, header.lon_max,
+            header.ttl);
+#endif
+
+    // Skip the remainder of the packet
+    *offset += 32;
 
     return header;
 }

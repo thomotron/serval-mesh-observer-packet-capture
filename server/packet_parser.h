@@ -55,6 +55,19 @@ typedef struct header_udp
     unsigned short payload_length;
 } header_udp;
 
+typedef struct header_bar
+{
+    unsigned char manifest_prefix[15];
+    unsigned char log_length;
+    unsigned char lower_version[7];
+    int           lat_max;
+    int           lat_min;
+    int           lon_max;
+    int           lon_min;
+    unsigned char ttl;
+
+} header_bar;
+
 // Represents a parsed 802.11 packet
 // Consists of all parsable headers previously defined
 typedef struct parsed_packet
@@ -64,6 +77,7 @@ typedef struct parsed_packet
     header_ipv4  header_ipv4;
     header_ipv6  header_ipv6;
     header_udp   header_udp;
+    header_bar   header_bar;
 } parsed_packet;
 
 // Massive lookup array for 802.11 frame versions, types, and subtypes
