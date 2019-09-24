@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <arpa/inet.h>
 #include "packet_parser.h"
 #include "radiotap_iter.h"
 
@@ -179,8 +180,12 @@ header_ipv4 get_header_ipv4(unsigned char* packet, int* offset)
     // Get the protocol
     header.payload_proto = packet[*offset + 9];
 
+    // Get the source and destination addresses
+    header.source.s_addr = (packet[*offset+12] << 24) | (packet[*offset+13] << 16) | (packet[*offset+14] << 8) | packet[*offset+15];
+    header.dest.s_addr = (packet[*offset+16] << 24) | (packet[*offset+17] << 16) | (packet[*offset+18] << 8) | packet[*offset+19];
+
 #ifdef DEBUG
-    printf("[DEBUG] IPv4 HEADER: LEN %d, PROTO %02X\n", header.length, header.payload_proto);
+    printf("[DEBUG] IPv4 HEADER: SRC %s, DEST %s, LEN %d, PROTO %02X\n", inet_ntoa(header.source), inet_ntoa(header.dest), header.length, header.payload_proto);
 #endif
 
     // Skip the remainder of the header

@@ -31,8 +31,10 @@ typedef struct header_llc
 // Trimmed down to the IHL and protocol fields
 typedef struct header_ipv4
 {
-    unsigned char length;
-    unsigned char payload_proto;
+    unsigned char  length;
+    unsigned char  payload_proto;
+    struct in_addr source;
+    struct in_addr dest;
 } header_ipv4;
 
 // Represents an IPv6 packet header
