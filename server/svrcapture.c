@@ -195,28 +195,25 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
         sprintf(protocol, "UDP");
 	    sprintf(message, "%d -> %d", headers.header_udp.source_port, headers.header_udp.dest_port);
     }
-	else if (headers.header_ipv6.payload_proto) // We've gotten the IPv6 header
+	else if (headers.header_ipv6.payload_proto || headers.header_ipv4.payload_proto) // We've gotten an IP header
     {
-	    printf("This is an IPv6 packet\n");
-	    sprintf(protocol, "IPv6");
-        switch (headers.header_ipv6.payload_proto)
+	    // Get the IP version and protocol
+	    char version;
+	    unsigned char payload_proto;
+	    if (headers.header_ipv6.payload_proto)
         {
-            case 0x06: // TCP
-                sprintf(message, "%s", "TCP");
-                break;
-            case 0x11: // UDP
-                sprintf(message, "%s", "UDP");
-                break;
-            default:
-                sprintf(message, "Unknown protocol (%02X)", headers.header_ipv6.payload_proto);
-                break;
+	        version = '6';
+            payload_proto = headers.header_ipv6.payload_proto;
         }
-    }
-	else if (headers.header_ipv4.payload_proto) // We've gotten the IPv4 header
-    {
-	    printf("This is an IPv4 packet\n");
-        sprintf(protocol, "IPv4");
-	    switch (headers.header_ipv4.payload_proto)
+	    else
+        {
+	        version = '4';
+            payload_proto = headers.header_ipv4.payload_proto;
+        }
+
+	    printf("This is an IPv%c packet\n", version);
+	    sprintf(protocol, "IPv%c", version);
+        switch (payload_proto)
         {
             case 0x06: // TCP
                 sprintf(message, "%s", "TCP");
@@ -225,7 +222,7 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
                 sprintf(message, "%s", "UDP");
                 break;
             default:
-                sprintf(message, "Unknown protocol (%02X)", headers.header_ipv4.payload_proto);
+                sprintf(message, "Unknown protocol (%02X)", payload_proto);
                 break;
         }
     }
