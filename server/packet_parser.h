@@ -29,6 +29,7 @@ typedef struct header_llc
 
 typedef struct header_ipv4
 {
+    unsigned char length;
     unsigned char protocol;
 } header_ipv4;
 

@@ -172,13 +172,19 @@ header_llc get_header_llc(unsigned char* packet, int* offset)
 header_ipv4 get_header_ipv4(unsigned char* packet, int* offset)
 {
     header_ipv4 header = {0};
-    *offset += 9; // Skip to the 9th byte
 
-    header.protocol = packet[*offset]; // Protocol byte
+    // Get the header length from the IHL field
+    header.length = packet[*offset] & 0x0F; // Mask the lower 4 bits
+
+    // Get the protocol
+    header.protocol = packet[*offset+9];
 
 #ifdef DEBUG
-    printf("[DEBUG] IPv4 HEADER: PROTO %02X\n", header.protocol);
+    printf("[DEBUG] IPv4 HEADER: LEN %d, PROTO %02X\n", header.length, header.protocol);
 #endif
+
+    // Skip the remainder of the header
+    *offset += header.length;
 
     return header;
 }
