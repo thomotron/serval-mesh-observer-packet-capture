@@ -231,6 +231,8 @@ header_ipv6 get_header_ipv6(unsigned char* packet, int* offset)
 
     // Skip the remainder of the header
     *offset += 40;
+
+    return header;
 }
 
 // Parses the given packet through as many parsing functions as possible
