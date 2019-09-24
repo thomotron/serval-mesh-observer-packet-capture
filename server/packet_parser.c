@@ -189,6 +189,31 @@ header_ipv4 get_header_ipv4(unsigned char* packet, int* offset)
     return header;
 }
 
+header_ipv6 get_header_ipv6(unsigned char* packet, int* offset)
+{
+    header_ipv6 header = {0};
+
+    // Get the Next Header field and treat it as the payload protocol
+    header.payload_proto = packet[*offset+5];
+
+    // Get the source and destination addresses
+    for (int i = 0; i < 16; i++)
+    {
+        header.source[i] = packet[*offset+8+i];
+        header.dest[i] = packet[*offset+24+i];
+    }
+
+#ifdef DEBUG
+    printf("[DEBUG] IPv6 HEADER: SRC %04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x, DEST %04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x, PROTO %02x\n",
+            header.source,
+            header.dest,
+            header.payload_proto);
+#endif
+
+    // Skip the remainder of the header
+    *offset += 40;
+}
+
 // Parses the given packet through as many parsing functions as possible
 parsed_packet parse_packet(unsigned char* packet, int len)
 {

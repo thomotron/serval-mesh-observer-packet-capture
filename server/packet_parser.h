@@ -35,6 +35,15 @@ typedef struct header_ipv4
     unsigned char payload_proto;
 } header_ipv4;
 
+// Represents an IPv6 packet header
+// Trimmed down to the XXX fields
+typedef struct header_ipv6
+{
+    unsigned char payload_proto;
+    unsigned char source[16];
+    unsigned char dest[16];
+} header_ipv6;
+
 // Represents a parsed 802.11 packet
 // Consists of all parsable headers previously defined
 typedef struct parsed_packet
