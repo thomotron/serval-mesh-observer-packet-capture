@@ -188,7 +188,12 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 
 	// Work our way down the OSI stack and find the highest parsed header
 	char message[64];
-	if (headers.header_ipv6.payload_proto) // We've gotten the IPv6 header
+	if (headers.header_udp.length) // We've gotten the UDP header
+    {
+	    printf("This is a UDP packet\n");
+	    sprintf(message, "%d -> %d", headers.header_udp.source_port, headers.header_udp.dest_port);
+    }
+	else if (headers.header_ipv6.payload_proto) // We've gotten the IPv6 header
     {
 	    printf("This is an IPv6 packet\n");
         switch (headers.header_ipv6.payload_proto)

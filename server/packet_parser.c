@@ -224,6 +224,27 @@ header_ipv6 get_header_ipv6(unsigned char* packet, int* offset)
     return header;
 }
 
+header_udp get_header_udp(unsigned char* packet, int* offset)
+{
+    header_udp header = {0};
+
+    // Get the source and destination ports
+    header.source_port = (packet[*offset] << 8) | packet[*offset+1];
+    header.dest_port = (packet[*offset+2] << 8) | packet[*offset+3];
+
+    // Get the content length
+    header.length = (packet[*offset+4] << 8) | packet[*offset+5];
+
+#ifdef DEBUG
+    printf("[DEBUG] UDP HEADER: SRC PORT %d, DEST PORT %d, LEN %d\n", header.source_port, header.dest_port, header.length);
+#endif
+
+    // Skip the remainder of the header
+    *offset += 8;
+
+    return header;
+}
+
 // Parses the given packet through as many parsing functions as possible
 parsed_packet parse_packet(unsigned char* packet, int len)
 {
@@ -288,6 +309,7 @@ parsed_packet parse_packet(unsigned char* packet, int len)
         switch (l4_proto)
         {
             case 0x11: // UDP
+                parsed.header_udp = get_header_udp(packet, &offset);
                 break;
             default:
                 break;

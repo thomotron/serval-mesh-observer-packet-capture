@@ -46,6 +46,14 @@ typedef struct header_ipv6
     struct in6_addr dest;
 } header_ipv6;
 
+// Represents a UDP packet header
+typedef struct header_udp
+{
+    unsigned short source_port;
+    unsigned short dest_port;
+    unsigned short length;
+} header_udp;
+
 // Represents a parsed 802.11 packet
 // Consists of all parsable headers previously defined
 typedef struct parsed_packet
@@ -54,6 +62,7 @@ typedef struct parsed_packet
     header_llc   header_llc;
     header_ipv4  header_ipv4;
     header_ipv6  header_ipv6;
+    header_udp   header_udp;
 } parsed_packet;
 
 // Massive lookup array for 802.11 frame versions, types, and subtypes
