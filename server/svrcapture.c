@@ -168,23 +168,13 @@ int parse_mac(unsigned char* mac, char* buffer)
 
 void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 {
-	uint16_t frame_control;
-	uint16_t duration_id;
-	uint16_t seq_ctrl;
-
 	printf("\n\n WIFI PACKET \n");
-	//check if big or little endin
 
     // Dump the contents to the terminal
     dump_packet("Packet contents", packet, len);
 
 	// Parse the packet headers
     parsed_packet headers = parse_packet(packet, len);
-
-	printf("Before bit shift\n");
-	//frame_control = (packet[0] >> 4) & 0x03; //bit shift to get the bits we want
-	frame_control = headers.header_80211.frame_type;
-
 
 	// Parse the MAC addresses as neatly-formatted C strings
 	char parsedSrcMac[18];
@@ -257,8 +247,6 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 
 	// Write to the diagram
 	fprintf(output_file, "\"%s\" -> \"%s\": T+%lldms - %s\n", parsedSrcMac, parsedDstMac, gettime_ms() - start_time, message);
-
-	//ARP has mac address destination of 00:00:00:00:00:00
 }
 
 int decode_lbard(unsigned char *msg, int len, FILE *output_file, char *myAttachedMeshExtender)
