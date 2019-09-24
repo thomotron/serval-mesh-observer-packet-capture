@@ -27,10 +27,12 @@ typedef struct header_llc
     unsigned short type;
 } header_llc;
 
+// Represents an IPv4 packet header
+// Trimmed down to the IHL and protocol fields
 typedef struct header_ipv4
 {
     unsigned char length;
-    unsigned char protocol;
+    unsigned char payload_proto;
 } header_ipv4;
 
 // Represents a parsed 802.11 packet

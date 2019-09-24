@@ -198,10 +198,10 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 
 	// Work our way down the OSI stack and find the highest parsed header
 	char message[64];
-	if (headers.header_ipv4.protocol) // We've gotten the IPv4 header
+	if (headers.header_ipv4.payload_proto) // We've gotten the IPv4 header
     {
 	    printf("This is an IPv4 packet\n");
-	    switch (headers.header_ipv4.protocol)
+	    switch (headers.header_ipv4.payload_proto)
         {
             case 0x06: // TCP
                 sprintf(message, "%s", "TCP");
@@ -210,7 +210,7 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
                 sprintf(message, "%s", "UDP");
                 break;
             default:
-                sprintf(message, "Unknown IPv4-based protocol (%02X)", headers.header_ipv4.protocol);
+                sprintf(message, "Unknown IPv4-based protocol (%02X)", headers.header_ipv4.payload_proto);
                 break;
         }
     }

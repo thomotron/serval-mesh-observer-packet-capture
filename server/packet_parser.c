@@ -177,10 +177,10 @@ header_ipv4 get_header_ipv4(unsigned char* packet, int* offset)
     header.length = packet[*offset] & 0x0F; // Mask the lower 4 bits
 
     // Get the protocol
-    header.protocol = packet[*offset+9];
+    header.payload_proto = packet[*offset + 9];
 
 #ifdef DEBUG
-    printf("[DEBUG] IPv4 HEADER: LEN %d, PROTO %02X\n", header.length, header.protocol);
+    printf("[DEBUG] IPv4 HEADER: LEN %d, PROTO %02X\n", header.length, header.payload_proto);
 #endif
 
     // Skip the remainder of the header
