@@ -139,19 +139,31 @@ header_80211 get_header_80211(unsigned char* packet, int* offset, int* trailer_l
 // Scrapes information from the given packet's 802.11 LLC header
 header_llc get_header_llc(unsigned char* packet, int* offset)
 {
-    header_llc header;
-    *offset += 3; // Skip the first three octets (DSAP, SSAP, and control)
+    header_llc header = {0};
 
-    // Grab the organisationally unique identifier and content type
-    header.org_code = (packet[*offset+0] << 16) | (packet[*offset+1] << 8) | (packet[*offset+2]); // First three bytes
-    header.type = (packet[*offset+3] << 8) | (packet[*offset+4]); // Remaining two bytes
+    // Check if there is a SNAP header by checking DSAP and SSAP are 0xAA
+    // If not, then this isn't a valid header and we should stop here
+    if (packet[*offset] == 0xAA && packet[*offset+1] == 0xAA)
+    {
+        // Skip the DSAP, SSAP, and control fields
+        *offset += 3;
+
+        // Grab the organisationally unique identifier and content type
+        header.org_code = (packet[*offset+0] << 16) | (packet[*offset+1] << 8) | (packet[*offset+2]); // First three bytes
+        header.type = (packet[*offset+3] << 8) | (packet[*offset+4]); // Remaining two bytes
+
+        // Skip to the end of the LLC header
+        *offset += 5;
+    }
+    else
+    {
+        // Skip the DSAP, SSAP, and control fields
+        *offset += 3;
+    }
 
 #ifdef DEBUG
     printf("[DEBUG] LLC HEADER: OUI %06X, TYPE %04X\n", header.org_code, header.type);
 #endif
-
-    // Skip to the end of the LLC header
-    *offset += 5;
 
     return header;
 }
