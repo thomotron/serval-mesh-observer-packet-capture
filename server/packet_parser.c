@@ -264,13 +264,36 @@ parsed_packet parse_packet(unsigned char* packet, int len)
         // Stop if the LLC header has a non-empty org code, meaning we can't rely on an EtherType for L3 parsing
         if (parsed.header_llc.org_code) break;
 
+        // Store our L4 protocol EtherType in a common place since IPv4 and IPv6 use the same protocol values
+        unsigned char l4_proto = 0;
+
         // Check what kind of header we should parse the L3 block as
-        if (parsed.header_llc.type == 0x0800) parsed.header_ipv4 = get_header_ipv4(packet, &offset); // IPv4
-        else if (parsed.header_llc.type == 0x86DD) parsed.header_ipv6 = get_header_ipv6(packet, &offset); // IPv6
-        else break; // No other predefined parsing functions so we'll stop here
+        switch (parsed.header_llc.type)
+        {
+            case 0x0800: // IPv4
+                parsed.header_ipv4 = get_header_ipv4(packet, &offset);
+                l4_proto = parsed.header_ipv4.payload_proto; // Inner protocol EtherType
+                break;
+            case 0x86DD: // IPv6
+                parsed.header_ipv6 = get_header_ipv6(packet, &offset);
+                l4_proto = parsed.header_ipv6.payload_proto; // Inner protocol EtherType
+                break;
+            default: // Unknown
+                // No other predefined parsing functions so we'll stop here
+                break;
+        }
         if (offset >= len - trailer_len) break;
 
-        // TODO: TCP/UDP, Rhizome
+        // Check what kind of EtherType we got from L3 and parse accordingly
+        switch (l4_proto)
+        {
+            case 0x11: // UDP
+                break;
+            default:
+                break;
+        }
+
+        // TODO: TCP, Rhizome
     } while (0);
 
     // Return the parsed packet
