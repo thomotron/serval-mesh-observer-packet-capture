@@ -187,15 +187,18 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 	printf("dst MAC: %s\n", parsedDstMac);
 
 	// Work our way down the OSI stack and find the highest parsed header
+	char protocol[16];
 	char message[64];
 	if (headers.header_udp.length) // We've gotten the UDP header
     {
 	    printf("This is a UDP packet\n");
+        sprintf(protocol, "UDP");
 	    sprintf(message, "%d -> %d", headers.header_udp.source_port, headers.header_udp.dest_port);
     }
 	else if (headers.header_ipv6.payload_proto) // We've gotten the IPv6 header
     {
 	    printf("This is an IPv6 packet\n");
+	    sprintf(protocol, "IPv6");
         switch (headers.header_ipv6.payload_proto)
         {
             case 0x06: // TCP
@@ -205,13 +208,14 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
                 sprintf(message, "%s", "UDP");
                 break;
             default:
-                sprintf(message, "Unknown IPv6-based protocol (%02X)", headers.header_ipv6.payload_proto);
+                sprintf(message, "Unknown protocol (%02X)", headers.header_ipv6.payload_proto);
                 break;
         }
     }
 	else if (headers.header_ipv4.payload_proto) // We've gotten the IPv4 header
     {
 	    printf("This is an IPv4 packet\n");
+        sprintf(protocol, "IPv4");
 	    switch (headers.header_ipv4.payload_proto)
         {
             case 0x06: // TCP
@@ -221,13 +225,14 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
                 sprintf(message, "%s", "UDP");
                 break;
             default:
-                sprintf(message, "Unknown IPv4-based protocol (%02X)", headers.header_ipv4.payload_proto);
+                sprintf(message, "Unknown protocol (%02X)", headers.header_ipv4.payload_proto);
                 break;
         }
     }
 	else if (headers.header_llc.type) // We've gotten the 802.11 LLC header
     {
         printf("This is an 802.11 data frame with an LLC header\n");
+        sprintf(protocol, "LLC");
 	    switch (headers.header_llc.type)
         {
             case 0x0800: // IPv4
@@ -240,18 +245,19 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
                 sprintf(message, "%s", "IPv6");
                 break;
             default:
-                sprintf(message, "Unknown LLC-based protocol (%04X)", headers.header_llc.type);
+                sprintf(message, "Unknown protocol (%04X)", headers.header_llc.type);
                 break;
         }
     }
 	else // We've gotten the 802.11 frame header
     {
 	    printf("This is an 802.11 frame\n");
+        sprintf(protocol, "802.11");
         sprintf(message, "%s", wifi_frame_description[headers.header_80211.frame_version][headers.header_80211.frame_type][headers.header_80211.frame_subtype]);
     }
 
 	// Write to the diagram
-	fprintf(output_file, "\"%s\" -> \"%s\": T+%lldms - %s\n", parsedSrcMac, parsedDstMac, gettime_ms() - start_time, message);
+	fprintf(output_file, "\"%s\" -> \"%s\": T+%lldms - %s: %s\n", parsedSrcMac, parsedDstMac, gettime_ms() - start_time, protocol, message);
 }
 
 int decode_lbard(unsigned char *msg, int len, FILE *output_file, char *myAttachedMeshExtender)
