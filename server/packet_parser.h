@@ -38,7 +38,7 @@ typedef struct header_ipv4
 } header_ipv4;
 
 // Represents an IPv6 packet header
-// Trimmed down to the XXX fields
+// Trimmed down to the protocol and address fields
 typedef struct header_ipv6
 {
     unsigned char   payload_proto;
