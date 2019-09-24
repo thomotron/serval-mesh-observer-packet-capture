@@ -93,7 +93,7 @@ const char* wifi_frame_description[1][4][16] =
 // Scrapes information from the given packet's 802.11 header
 header_80211 get_header_80211(unsigned char* packet, int* offset, int* trailer_len)
 {
-    header_80211 header;
+    header_80211 header = {0};
 
     // Frame control field is the first two octets
     // We (mostly) only care about the first octet, so we'll grab and mask that
@@ -171,7 +171,7 @@ header_llc get_header_llc(unsigned char* packet, int* offset)
 // Scraped information from the given packet's IPv4 header
 header_ipv4 get_header_ipv4(unsigned char* packet, int* offset)
 {
-    header_ipv4 header;
+    header_ipv4 header = {0};
     *offset += 9; // Skip to the 9th byte
 
     header.protocol = packet[*offset]; // Protocol byte
