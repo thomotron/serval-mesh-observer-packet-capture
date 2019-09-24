@@ -209,7 +209,7 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
                 break;
         }
     }
-	if (headers.header_ipv4.payload_proto) // We've gotten the IPv4 header
+	else if (headers.header_ipv4.payload_proto) // We've gotten the IPv4 header
     {
 	    printf("This is an IPv4 packet\n");
 	    switch (headers.header_ipv4.payload_proto)
