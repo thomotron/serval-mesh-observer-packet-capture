@@ -181,8 +181,8 @@ header_ipv4 get_header_ipv4(unsigned char* packet, int* offset)
     header.payload_proto = packet[*offset + 9];
 
     // Get the source and destination addresses
-    header.source.s_addr = (packet[*offset+12] << 24) | (packet[*offset+13] << 16) | (packet[*offset+14] << 8) | packet[*offset+15];
-    header.dest.s_addr = (packet[*offset+16] << 24) | (packet[*offset+17] << 16) | (packet[*offset+18] << 8) | packet[*offset+19];
+    header.source.s_addr = packet[*offset+12] | (packet[*offset+13] << 8) | (packet[*offset+14] << 16) | (packet[*offset+15] << 24);
+    header.dest.s_addr = packet[*offset+16] | (packet[*offset+17] << 8) | (packet[*offset+18] << 16) | (packet[*offset+19] << 24);
 
 #ifdef DEBUG
     printf("[DEBUG] IPv4 HEADER: SRC %s, DEST %s, LEN %d, PROTO %02X\n", inet_ntoa(header.source), inet_ntoa(header.dest), header.length, header.payload_proto);
