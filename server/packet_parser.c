@@ -204,10 +204,16 @@ header_ipv6 get_header_ipv6(unsigned char* packet, int* offset)
     }
 
 #ifdef DEBUG
-    printf("[DEBUG] IPv6 HEADER: SRC %04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x, DEST %04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x, PROTO %02x\n",
-            header.source,
-            header.dest,
-            header.payload_proto);
+    // Print the preamble
+    printf("[DEBUG] IPv6 HEADER: SRC ");
+
+    // Print out the source and destination addresses
+    for (int i = 0; i < 16; i += 2) printf("%02x%02x", header.source[i], header.source[i+1]);
+    printf(", DEST ");
+    for (int i = 0; i < 16; i += 2) printf("%02x%02x", header.dest[i], header.dest[i+1]);
+
+    // Finish off the line
+    printf(", PROTO %02x\n", header.payload_proto);
 #endif
 
     // Skip the remainder of the header
