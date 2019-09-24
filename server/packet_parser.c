@@ -338,17 +338,30 @@ parsed_packet parse_packet(unsigned char* packet, int len)
         }
         if (offset >= len - trailer_len) break;
 
+        // Store the L7 port/protocol number in a common spot as above for TCP/UDP
+        unsigned short l7_source = 0;
+        unsigned short l7_dest = 0;
+
         // Check what kind of EtherType we got from L3 and parse accordingly
         switch (l4_proto)
         {
             case 0x11: // UDP
                 parsed.header_udp = get_header_udp(packet, &offset);
+                l7_source = parsed.header_udp.source_port;
+                l7_dest = parsed.header_udp.dest_port;
+                break;
+            case 0x06: // TCP
+                // TODO: TCP
                 break;
             default:
                 break;
         }
 
-        // TODO: TCP, Rhizome
+        // Try parse the L7 protocol from the L4 payload
+        if (l7_source == 4110 || l7_dest == 4110) // Rhizome
+        {
+            // TODO: Parse Rhizome
+        }
     } while (0);
 
     // Return the parsed packet
