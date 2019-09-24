@@ -52,6 +52,7 @@ typedef struct header_udp
     unsigned short source_port;
     unsigned short dest_port;
     unsigned short length;
+    unsigned short payload_length;
 } header_udp;
 
 // Represents a parsed 802.11 packet

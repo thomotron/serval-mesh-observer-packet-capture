@@ -232,8 +232,9 @@ header_udp get_header_udp(unsigned char* packet, int* offset)
     header.source_port = (packet[*offset] << 8) | packet[*offset+1];
     header.dest_port = (packet[*offset+2] << 8) | packet[*offset+3];
 
-    // Get the content length
-    header.length = (packet[*offset+4] << 8) | packet[*offset+5];
+    // Get the packet and content length
+    header.length = packet[*offset+4] | (packet[*offset+5] << 8);
+    header.payload_length = header.length - 8;
 
 #ifdef DEBUG
     printf("[DEBUG] UDP HEADER: SRC PORT %d, DEST PORT %d, LEN %d\n", header.source_port, header.dest_port, header.length);
