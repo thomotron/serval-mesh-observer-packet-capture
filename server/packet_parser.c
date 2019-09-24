@@ -175,7 +175,7 @@ header_ipv4 get_header_ipv4(unsigned char* packet, int* offset)
     header_ipv4 header = {0};
 
     // Get the header length from the IHL field
-    header.length = packet[*offset] & 0x0F; // Mask the lower 4 bits
+    header.length = (packet[*offset] & 0x0F) * 4; // Mask the lower 4 bits and multiply into byte length
 
     // Get the protocol
     header.payload_proto = packet[*offset + 9];
