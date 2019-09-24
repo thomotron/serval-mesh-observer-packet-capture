@@ -208,9 +208,17 @@ header_ipv6 get_header_ipv6(unsigned char* packet, int* offset)
     printf("[DEBUG] IPv6 HEADER: SRC ");
 
     // Print out the source and destination addresses
-    for (int i = 0; i < 16; i += 2) printf("%02x%02x", header.source[i], header.source[i+1]);
+    for (int i = 0; i < 16; i += 2)
+    {
+        if (i > 0) printf(":");
+        printf("%02x%02x", header.source[i], header.source[i+1]);
+    }
     printf(", DEST ");
-    for (int i = 0; i < 16; i += 2) printf("%02x%02x", header.dest[i], header.dest[i+1]);
+    for (int i = 0; i < 16; i += 2)
+    {
+        if (i > 0) printf(":");
+        printf("%02x%02x", header.dest[i], header.dest[i+1]);
+    }
 
     // Finish off the line
     printf(", PROTO %02x\n", header.payload_proto);
