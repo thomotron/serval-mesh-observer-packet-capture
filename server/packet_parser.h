@@ -55,6 +55,13 @@ typedef struct header_udp
     unsigned short payload_length;
 } header_udp;
 
+// Represents a Rhizome packet header
+typedef struct header_rhizome
+{
+    unsigned char type;
+} header_rhizome;
+
+// Represents a Rhizome Bundle Advertisement Record (BAR)
 typedef struct header_bar
 {
     unsigned char manifest_prefix[15];
@@ -72,12 +79,12 @@ typedef struct header_bar
 // Consists of all parsable headers previously defined
 typedef struct parsed_packet
 {
-    header_80211 header_80211;
-    header_llc   header_llc;
-    header_ipv4  header_ipv4;
-    header_ipv6  header_ipv6;
-    header_udp   header_udp;
-    header_bar   header_bar;
+    header_80211   header_80211;
+    header_llc     header_llc;
+    header_ipv4    header_ipv4;
+    header_ipv6    header_ipv6;
+    header_udp     header_udp;
+    header_rhizome header_rhizome;
 } parsed_packet;
 
 // Massive lookup array for 802.11 frame versions, types, and subtypes
@@ -87,6 +94,8 @@ const char* wifi_frame_description[1][4][16];
 header_80211 get_header_80211(unsigned char* packet, int* offset, int* trailer_len);
 header_llc get_header_llc(unsigned char* packet, int* offset);
 header_ipv4 get_header_ipv4(unsigned char* packet, int* offset);
+header_rhizome get_header_rhizome(unsigned char* packet, int* offset, int len);
+header_bar get_header_bar(unsigned char* packet, int* offset);
 parsed_packet parse_packet(unsigned char* packet, int len);
 
 

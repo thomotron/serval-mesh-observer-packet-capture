@@ -247,6 +247,21 @@ header_udp get_header_udp(unsigned char* packet, int* offset)
     return header;
 }
 
+header_rhizome get_header_rhizome(unsigned char* packet, int* offset, int len)
+{
+    header_rhizome header = {0};
+
+    // Get the packet type
+    header.type = packet[*offset];
+
+#ifdef DEBUG
+    printf("[DEBUG] RHIZOME HEADER: TYPE %d\n", header.type);
+#endif
+
+    // Skip the remainder of the packet
+    *offset += len;
+}
+
 header_bar get_header_bar(unsigned char* packet, int* offset)
 {
     header_bar header = {0};
@@ -360,7 +375,7 @@ parsed_packet parse_packet(unsigned char* packet, int len)
         // Try parse the L7 protocol from the L4 payload
         if (l7_source == 4110 || l7_dest == 4110) // Rhizome
         {
-            // TODO: Parse Rhizome
+            parsed.header_rhizome = get_header_rhizome(packet, &offset, len);
         }
     } while (0);
 
