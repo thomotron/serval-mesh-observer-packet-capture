@@ -186,71 +186,88 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 	printf("src MAC: %s\n", parsedSrcMac);
 	printf("dst MAC: %s\n", parsedDstMac);
 
-	// Work our way down the OSI stack and find the highest parsed header
+	// Parse the header on the highest level of the OSI stack
 	char protocol[16];
 	char message[64];
-	if (headers.header_udp.length) // We've gotten the UDP header
+	switch (headers.highest_header)
     {
-	    printf("This is a UDP packet\n");
-        sprintf(protocol, "UDP");
-	    sprintf(message, "%d -> %d", headers.header_udp.source_port, headers.header_udp.dest_port);
-    }
-	else if (headers.header_ipv6.payload_proto || headers.header_ipv4.payload_proto) // We've gotten an IP header
-    {
-	    // Get the IP version and protocol
-	    char version;
-	    unsigned char payload_proto;
-	    if (headers.header_ipv6.payload_proto)
-        {
-	        version = '6';
-            payload_proto = headers.header_ipv6.payload_proto;
-        }
-	    else
-        {
-	        version = '4';
-            payload_proto = headers.header_ipv4.payload_proto;
-        }
-
-	    printf("This is an IPv%c packet\n", version);
-	    sprintf(protocol, "IPv%c", version);
-        switch (payload_proto)
-        {
-            case 0x06: // TCP
-                sprintf(message, "%s", "TCP");
-                break;
-            case 0x11: // UDP
-                sprintf(message, "%s", "UDP");
-                break;
-            default:
-                sprintf(message, "Unknown protocol (%02X)", payload_proto);
-                break;
-        }
-    }
-	else if (headers.header_llc.type) // We've gotten the 802.11 LLC header
-    {
-        printf("This is an 802.11 data frame with an LLC header\n");
-        sprintf(protocol, "LLC");
-	    switch (headers.header_llc.type)
-        {
-            case 0x0800: // IPv4
-                sprintf(message, "%s", "IPv4");
-                break;
-            case 0x0806: // ARP
-                sprintf(message, "%s", "ARP");
-                break;
-            case 0x86DD: // IPv6
-                sprintf(message, "%s", "IPv6");
-                break;
-            default:
-                sprintf(message, "Unknown protocol (%04X)", headers.header_llc.type);
-                break;
-        }
-    }
-	else // We've gotten the 802.11 frame header
-    {
-	    printf("This is an 802.11 frame\n");
-        sprintf(protocol, "802.11");
-        sprintf(message, "%s", wifi_frame_description[headers.header_80211.frame_version][headers.header_80211.frame_type][headers.header_80211.frame_subtype]);
+        case Rhizome:
+            printf("This is a Rhizome packet\n");
+            sprintf(protocol, "Rhizome");
+            sprintf(message, "%s", headers.header_rhizome.type == 0 ? "BAR response" : "BAR request");
+            break;
+        case UDP:
+            printf("This is a UDP packet\n");
+            sprintf(protocol, "UDP");
+            sprintf(message, "%d -> %d", headers.header_udp.source_port, headers.header_udp.dest_port);
+            break;
+        case TCP:
+            // TODO: Parse TCP properly
+            printf("This is a TCP packet\n");
+            sprintf(protocol, "TCP");
+            sprintf(message, "TCP parsing is not implemented yet");
+            break;
+        case IPv6:
+            printf("This is an IPv6 packet\n");
+            sprintf(protocol, "IPv6");
+            switch (headers.header_ipv6.payload_proto)
+            {
+                case 0x06: // TCP
+                    sprintf(message, "%s", "TCP");
+                    break;
+                case 0x11: // UDP
+                    sprintf(message, "%s", "UDP");
+                    break;
+                default:
+                    sprintf(message, "Unknown protocol (%02X)", headers.header_ipv6.payload_proto);
+                    break;
+            }
+            break;
+        case IPv4:
+            printf("This is an IPv4 packet\n");
+            sprintf(protocol, "IPv4");
+            switch (headers.header_ipv4.payload_proto)
+            {
+                case 0x06: // TCP
+                    sprintf(message, "%s", "TCP");
+                    break;
+                case 0x11: // UDP
+                    sprintf(message, "%s", "UDP");
+                    break;
+                default:
+                    sprintf(message, "Unknown protocol (%02X)", headers.header_ipv4.payload_proto);
+                    break;
+            }
+            break;
+        case LLC:
+            printf("This is an 802.11 data frame with an LLC header\n");
+            sprintf(protocol, "LLC");
+            switch (headers.header_llc.type)
+            {
+                case 0x0800: // IPv4
+                    sprintf(message, "%s", "IPv4");
+                    break;
+                case 0x0806: // ARP
+                    sprintf(message, "%s", "ARP");
+                    break;
+                case 0x86DD: // IPv6
+                    sprintf(message, "%s", "IPv6");
+                    break;
+                default:
+                    sprintf(message, "Unknown protocol (%04X)", headers.header_llc.type);
+                    break;
+            }
+            break;
+        case MAC_80211:
+            printf("This is an 802.11 frame\n");
+            sprintf(protocol, "802.11");
+            sprintf(message, "%s", wifi_frame_description[headers.header_80211.frame_version][headers.header_80211.frame_type][headers.header_80211.frame_subtype]);
+            break;
+        default:
+            printf("This is an unknown packet type\n");
+            sprintf(protocol, "???");
+            sprintf(message, "%s", "");
+            break;
     }
 
 	// Write to the diagram

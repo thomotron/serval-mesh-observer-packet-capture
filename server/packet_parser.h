@@ -75,10 +75,23 @@ typedef struct header_bar
 
 } header_bar;
 
+// A simple enum to determine the highest header we dissected in the final struct
+typedef enum highest_header
+{
+    MAC_80211,
+    LLC,
+    IPv4,
+    IPv6,
+    TCP,
+    UDP,
+    Rhizome
+} highest_header;
+
 // Represents a parsed 802.11 packet
 // Consists of all parsable headers previously defined
 typedef struct parsed_packet
 {
+    highest_header highest_header;
     header_80211   header_80211;
     header_llc     header_llc;
     header_ipv4    header_ipv4;

@@ -318,6 +318,7 @@ parsed_packet parse_packet(unsigned char* packet, int len)
     {
         // Parse the 802.11 frame
         parsed.header_80211 = get_header_80211(packet, &offset, &trailer_len);
+        parsed.highest_header = MAC_80211;
         if (offset >= len - trailer_len) break;
 
         // Stop if the 802.11 header has a non-zero version (it hasn't been incremented as of Sep 2019)
@@ -328,6 +329,7 @@ parsed_packet parse_packet(unsigned char* packet, int len)
 
         // Parse the LLC header
         parsed.header_llc = get_header_llc(packet, &offset);
+        parsed.highest_header = LLC;
         if (offset >= len - trailer_len) break;
 
         // Stop if the LLC header has a non-empty org code, meaning we can't rely on an EtherType for L3 parsing
@@ -341,10 +343,12 @@ parsed_packet parse_packet(unsigned char* packet, int len)
         {
             case 0x0800: // IPv4
                 parsed.header_ipv4 = get_header_ipv4(packet, &offset);
+                parsed.highest_header = IPv4;
                 l4_proto = parsed.header_ipv4.payload_proto; // Inner protocol EtherType
                 break;
             case 0x86DD: // IPv6
                 parsed.header_ipv6 = get_header_ipv6(packet, &offset);
+                parsed.highest_header = IPv6;
                 l4_proto = parsed.header_ipv6.payload_proto; // Inner protocol EtherType
                 break;
             default: // Unknown
@@ -362,6 +366,7 @@ parsed_packet parse_packet(unsigned char* packet, int len)
         {
             case 0x11: // UDP
                 parsed.header_udp = get_header_udp(packet, &offset);
+                parsed.highest_header = UDP;
                 l7_source = parsed.header_udp.source_port;
                 l7_dest = parsed.header_udp.dest_port;
                 break;
@@ -376,6 +381,7 @@ parsed_packet parse_packet(unsigned char* packet, int len)
         if (l7_source == 4110 || l7_dest == 4110) // Rhizome
         {
             parsed.header_rhizome = get_header_rhizome(packet, &offset, len);
+            parsed.highest_header = Rhizome;
         }
     } while (0);
 
