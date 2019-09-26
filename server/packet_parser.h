@@ -94,6 +94,8 @@ const char* wifi_frame_description[1][4][16];
 header_80211 get_header_80211(unsigned char* packet, int* offset, int* trailer_len);
 header_llc get_header_llc(unsigned char* packet, int* offset);
 header_ipv4 get_header_ipv4(unsigned char* packet, int* offset);
+header_ipv6 get_header_ipv6(unsigned char* packet, int* offset);
+header_udp get_header_udp(unsigned char* packet, int* offset);
 header_rhizome get_header_rhizome(unsigned char* packet, int* offset, int len);
 header_bar get_header_bar(unsigned char* packet, int* offset);
 parsed_packet parse_packet(unsigned char* packet, int len);
