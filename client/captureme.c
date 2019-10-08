@@ -22,6 +22,9 @@
 #include <ctype.h>
 #include <argp.h>
 
+#define ENTER(n) printf("Entered "n"\n");
+#define EXIT(n) printf("Exited "n"\n");
+
 //#define TEST
 #define DEFAULT_SERVER_PORT 3940
 #define DEFAULT_PCAP_DEV "mon0"
@@ -463,9 +466,13 @@ int process_serial_char(struct serial_port *sp, unsigned char c)
                 case '!':
                     // Double ! = TX packet
                     printf("Recognised TX of %d byte packet.\n", sp->tx_bytes);
+                    ENTER("dump_packet")
                     dump_packet("sent packet", sp->tx_buff, sp->tx_bytes);
+                    EXIT("dump_packet")
 
+                    ENTER("record_rfd900_tx_event")
                     record_rfd900_tx_event(sp);
+                    EXIT("record_rfd900_tx_event")
 
                     sp->rfd900_tx_count++;
                     sp->tx_bytes = 0;
