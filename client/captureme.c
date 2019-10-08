@@ -409,7 +409,7 @@ int process_serial_char(struct serial_port *sp, unsigned char c)
             {
                 case '!': // '!!' = TX packet
                     printf("Recognised TX of %d byte packet.\n", sp->tx_bytes);
-                    dump_packet("sent packet", sp->tx_buff, sp->tx_bytes);
+                    dump_packet("Outgoing packet dump", sp->tx_buff, sp->tx_bytes);
 
                     // Send the packet to the server
                     record_rfd900_event(sp, sp->tx_buff, sp->tx_bytes, "TX");
@@ -450,7 +450,7 @@ int process_serial_port(struct serial_port *sp)
 
         if (bytes_read > 0)
         {
-            dump_packet("read", buffer, bytes_read);
+            dump_packet("Incoming packet dump", buffer, bytes_read);
             printf("Read Size: %i\n", bytes_read);
             for (i = 0; i < bytes_read; i++)
                 process_serial_char(sp, buffer[i]);
