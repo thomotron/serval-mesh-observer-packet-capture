@@ -523,12 +523,20 @@ void dump_packet(char *msg, unsigned char *buffer, int n)
 
         // Print a line of 16 bytes
         int j;
-        for (j = 0; j < 16 && (offset + j) < n; j++)
-            printf("%02X ", buffer[offset + j]);
-
-        // Pad any missing bytes to align the last column properly
-        for (; j < 16; j++)
-            printf("   ");
+        for (j = 0; j < 16; j++)
+        {
+            // Check if there are more bytes available
+            if ((offset + j) < n)
+            {
+                // Print the next byte
+                printf("%02X ", buffer[offset + j]);
+            }
+            else
+            {
+                // Pad the missing byte
+                printf("   ");
+            }
+        }
 
         // Print an ASCII representation of the line
         for (j = 0; j < 16 && (offset + j) < n; j++)
