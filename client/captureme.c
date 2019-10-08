@@ -19,8 +19,8 @@
 #define PCAP_FILE "testFile"
 
 // The number of mandatory arguments and a string containing them in the correct order delimited by spaces
-#define NUM_MANDATORY_ARGS 2
-static char argument_doc[] = "SID ADDRESS";
+#define NUM_MANDATORY_ARGS 1
+static char argument_doc[] = "ADDRESS";
 
 // List our arguments for argp
 static struct argp_option options[] =
@@ -36,7 +36,6 @@ static struct argp_option options[] =
 // Define a struct to hold our arg values
 typedef struct arguments
 {
-    char*          sid;
     struct in_addr address;
     int            port;
     char*          wifidev;
@@ -92,11 +91,8 @@ static error_t parse_arg(int key, char* arg, struct argp_state* state)
             // Check if we have too many args
             if (state->arg_num >= NUM_MANDATORY_ARGS) argp_usage(state);
 
-            // Set the SID
-            if (state->arg_num == 0) arguments->sid = arg;
-
             // Parse and set the server address, printing usage on failure
-            if (state->arg_num == 1 && !inet_aton(arg, &arguments->address)) argp_usage(state);
+            if (state->arg_num == 0 && !inet_aton(arg, &arguments->address)) argp_usage(state);
             break;
         case ARGP_KEY_END:
             // Check if we have too few args
@@ -114,7 +110,6 @@ static struct argp argp_parser = {options, parse_arg, argument_doc, 0};
 
 struct sockaddr_in serv_addr;
 int server_socket = -1;
-char *myMeshExtenderID;
 
 void dump_packet(char *msg, unsigned char *buffer, int n);
 
@@ -508,8 +503,6 @@ int main(int argc, char **argv)
         int timeout = 10, n;
         bpf_u_int32 maskp;                       // subnet mask
         bpf_u_int32 ip;                          // ip
-
-        printf("My Mesh Extender ID is: %s\n", myMeshExtenderID);
 
         printf("Before packet injection setup\n");
         //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
