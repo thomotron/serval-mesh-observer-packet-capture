@@ -515,23 +515,22 @@ int process_serial_port(struct serial_port *sp)
 
 void dump_packet(char *msg, unsigned char *b, int n)
 {
-  printf("%s: Displaying %d bytes.\n", msg, n);
-  int i;
-  for (i = 0; i < n; i += 16)
-  {
-    int j;
-    printf("%08X : ", i);
-    for (j = 0; j < 16 && (i + j) < n; j++)
-      printf("%02X ", b[i + j]);
-    for (; j < 16; j++)
-      printf("   ");
-    for (j = 0; j < 16 && (i + j) < n; j++)
-      if (b[i + j] >= ' ' && b[i + j] < 0x7f)
-        printf("%c", b[i + j]);
-      else
-        printf(".");
-    printf("\n");
-  }
+    printf("%s: Displaying %d bytes.\n", msg, n);
+    for (int i = 0; i < n; i += 16)
+    {
+        int j;
+        printf("%08X : ", i);
+        for (j = 0; j < 16 && (i + j) < n; j++)
+            printf("%02X ", b[i + j]);
+        for (; j < 16; j++)
+            printf("   ");
+        for (j = 0; j < 16 && (i + j) < n; j++)
+            if (b[i + j] >= ' ' && b[i + j] < 0x7f)
+                printf("%c", b[i + j]);
+            else
+                printf(".");
+        printf("\n");
+    }
 }
 
 int main(int argc, char **argv)
