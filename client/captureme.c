@@ -113,7 +113,7 @@ static error_t parse_arg(int key, char* arg, struct argp_state* state)
 static struct argp argp_parser = {options, parse_arg, argument_doc, 0};
 
 struct sockaddr_in serv_addr;
-int serversock = -1;
+int server_socket = -1;
 char *myMeshExtenderID;
 
 void dump_packet(char *msg, unsigned char *buffer, int n);
@@ -290,7 +290,7 @@ int record_rfd900_event(struct serial_port *sp, unsigned char *packet, int len, 
         // Try writing the message to the server socket
         errno = 0;
         printf("T+%lldms: Writing %i bytes to the server socket from serial port %p\n", gettime_ms() - start_time, offset, sp);
-        if (sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+        if (sendto(server_socket, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
         {
             perror("Error sending");
             retVal = -7;
@@ -535,7 +535,7 @@ int main(int argc, char **argv)
         {
             printf("Will send data to %s:%i\n", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
         }
-        serversock = sockfd;
+        server_socket = sockfd;
 
         if (args.uhfCapture)
         {
