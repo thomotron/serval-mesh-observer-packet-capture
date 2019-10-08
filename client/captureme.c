@@ -13,7 +13,6 @@
 #include <errno.h>
 #include <argp.h>
 
-//#define TEST
 #define DEFAULT_SERVER_PORT 3940
 #define DEFAULT_PCAP_DEV "mon0"
 #define DEFAULT_PCAP_FILTER ""
@@ -499,9 +498,6 @@ int main(int argc, char **argv)
         printf("Before variable declaration\n");
         int sockfd;
         FILE *outFile = fopen(PCAP_FILE, "ab"); // append to file only
-#ifdef TEST
-        int serverlen;
-#endif
 
         //setup wireless capture settings
         char *dev = args.wifidev;
@@ -539,21 +535,7 @@ int main(int argc, char **argv)
         {
             printf("Will send data to %s:%i\n", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
         }
-
         serversock = sockfd;
-
-#ifdef TEST
-        if (getnameinfo((struct sockaddr *)&serv_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
-    {
-      printf("could not resolve IP\n");
-      retVal = -1;
-      return (retVal);
-    }
-    else
-    {
-      printf("host=%s\n", hbuf);
-    }
-#endif
 
         if (args.uhfCapture)
         {
