@@ -382,7 +382,7 @@ int process_serial_char(struct serial_port *sp, unsigned char c)
                 // Send the packet to the server
                 record_rfd900_event(sp, &sp->rx_buff[offset], packet_bytes, "RX");
 
-                // Increment the number of RX packets we've received
+                // Increment the number of RX packets we've seen
                 sp->rfd900_rx_count++;
             }
         }
