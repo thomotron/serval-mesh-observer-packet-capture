@@ -412,79 +412,78 @@ int setup_monitor_port(char *path, int speed)
 
 int process_serial_char(struct serial_port *sp, unsigned char c)
 {
-  int retVal = 0;
+    int retVal = 0;
 
-  do
-  {
-
-    if (sp->rx_bytes >= 1024 )
+    do
     {
-      // shift RX bytes down
-      memmove(&sp->rx_buff[0],&sp->rx_buff[1],1023);
-      
-      sp->rx_bytes--;
-    }
-    sp->rx_buff[sp->rx_bytes++]=c;
-    
-    if ((sp->rx_buff[sp->rx_bytes-1]==0x55)
-	&&(sp->rx_buff[sp->rx_bytes-8]==0x55)
-	&&(sp->rx_buff[sp->rx_bytes-9]==0xaa))
-    {
-       int packet_bytes=sp->rx_buff[sp->rx_bytes-4];
-       int offset=sp->rx_bytes-9-packet_bytes;
-       if (offset>=0) {
-       unsigned char *packet=&sp->rx_buff[offset];
-       printf("Saw RFD900 RX envelope for %d byte packet @ offset %d.\n",
-              packet_bytes,offset);
-       record_rfd900_rx_event(sp,packet,packet_bytes);
-       sp->rfd900_rx_count++;
-       }
-    }
-    
-    if (sp->tx_state == 0)
-    {
-      // Not in ! escape mode
-      if (c == '!')
-        sp->tx_state = 1;
-      else
-      {
-        if (sp->tx_bytes < 1024)
-          sp->tx_buff[sp->tx_bytes++] = c;
-      }
-    }
-    else
-    {
-      switch (c)
-      {
-      case '!':
-        // Double ! = TX packet
-        printf("Recognised TX of %d byte packet.\n", sp->tx_bytes);
-        dump_packet("sent packet", sp->tx_buff, sp->tx_bytes);
+        if (sp->rx_bytes >= 1024)
+        {
+            // shift RX bytes down
+            memmove(&sp->rx_buff[0],&sp->rx_buff[1],1023);
 
-        record_rfd900_tx_event(sp);
+            sp->rx_bytes--;
+        }
+        sp->rx_buff[sp->rx_bytes++]=c;
 
-        sp->rfd900_tx_count++;
-        sp->tx_bytes = 0;
-        break;
-      case '.':
-        // Escaped !
-        if (sp->tx_bytes < 1024)
-          sp->tx_buff[sp->tx_bytes++] = '!';
-        break;
-      case 'c':
-      case 'C':
-        // Flush TX buffer
-        sp->tx_bytes = 0;
-        break;
-      default:
-        // Some other character we don't know what to do with
-        break;
-      }
-      sp->tx_state = 0;
-    }
-  } while (0);
+        if ((sp->rx_buff[sp->rx_bytes-1]==0x55)
+            &&(sp->rx_buff[sp->rx_bytes-8]==0x55)
+            &&(sp->rx_buff[sp->rx_bytes-9]==0xaa))
+        {
+            int packet_bytes=sp->rx_buff[sp->rx_bytes-4];
+            int offset=sp->rx_bytes-9-packet_bytes;
+            if (offset>=0) {
+                unsigned char *packet=&sp->rx_buff[offset];
+                printf("Saw RFD900 RX envelope for %d byte packet @ offset %d.\n",
+                       packet_bytes,offset);
+                record_rfd900_rx_event(sp,packet,packet_bytes);
+                sp->rfd900_rx_count++;
+            }
+        }
 
-  return retVal;
+        if (sp->tx_state == 0)
+        {
+            // Not in ! escape mode
+            if (c == '!')
+                sp->tx_state = 1;
+            else
+            {
+                if (sp->tx_bytes < 1024)
+                    sp->tx_buff[sp->tx_bytes++] = c;
+            }
+        }
+        else
+        {
+            switch (c)
+            {
+                case '!':
+                    // Double ! = TX packet
+                    printf("Recognised TX of %d byte packet.\n", sp->tx_bytes);
+                    dump_packet("sent packet", sp->tx_buff, sp->tx_bytes);
+
+                    record_rfd900_tx_event(sp);
+
+                    sp->rfd900_tx_count++;
+                    sp->tx_bytes = 0;
+                    break;
+                case '.':
+                    // Escaped !
+                    if (sp->tx_bytes < 1024)
+                        sp->tx_buff[sp->tx_bytes++] = '!';
+                    break;
+                case 'c':
+                case 'C':
+                    // Flush TX buffer
+                    sp->tx_bytes = 0;
+                    break;
+                default:
+                    // Some other character we don't know what to do with
+                    break;
+            }
+            sp->tx_state = 0;
+        }
+    } while (0);
+
+    return retVal;
 }
 
 int process_serial_port(struct serial_port *sp)
