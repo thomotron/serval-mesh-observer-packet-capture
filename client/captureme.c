@@ -126,7 +126,7 @@ struct sockaddr_in serv_addr;
 int serversock = -1;
 char *myMeshExtenderID;
 
-void dump_packet(char *msg, unsigned char *b, int n);
+void dump_packet(char *msg, unsigned char *buffer, int n);
 
 struct serial_port
 {
@@ -513,20 +513,27 @@ int process_serial_port(struct serial_port *sp)
   return retVal;
 }
 
-void dump_packet(char *msg, unsigned char *b, int n)
+void dump_packet(char *msg, unsigned char *buffer, int n)
 {
     printf("%s: Displaying %d bytes.\n", msg, n);
-    for (int i = 0; i < n; i += 16)
+    for (int offset = 0; offset < n; offset += 16)
     {
+        // Print the offset
+        printf("%08X : ", offset);
+
+        // Print a line of 16 bytes
         int j;
-        printf("%08X : ", i);
-        for (j = 0; j < 16 && (i + j) < n; j++)
-            printf("%02X ", b[i + j]);
+        for (j = 0; j < 16 && (offset + j) < n; j++)
+            printf("%02X ", buffer[offset + j]);
+
+        // Pad any missing bytes to align the last column properly
         for (; j < 16; j++)
             printf("   ");
-        for (j = 0; j < 16 && (i + j) < n; j++)
-            if (b[i + j] >= ' ' && b[i + j] < 0x7f)
-                printf("%c", b[i + j]);
+
+        // Print an ASCII representation of the line
+        for (j = 0; j < 16 && (offset + j) < n; j++)
+            if (buffer[offset + j] >= ' ' && buffer[offset + j] < 0x7f)
+                printf("%c", buffer[offset + j]);
             else
                 printf(".");
         printf("\n");
