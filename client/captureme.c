@@ -527,15 +527,11 @@ void dump_packet(char *msg, unsigned char *buffer, int n)
         {
             // Check if there are more bytes available
             if ((offset + j) < n)
-            {
                 // Print the next byte
                 printf("%02X ", buffer[offset + j]);
-            }
             else
-            {
                 // Pad the missing byte
                 printf("   ");
-            }
         }
 
         // Print an ASCII representation of the line
