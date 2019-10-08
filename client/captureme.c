@@ -130,49 +130,49 @@ void dump_packet(char *msg, unsigned char *buffer, int n);
 
 struct serial_port
 {
-  int fd;
-  int rfd900_tx_count;
-  int rfd900_rx_count;
+    int fd;
+    int rfd900_tx_count;
+    int rfd900_rx_count;
 
-  char *port;
-  int id;
+    char *port;
+    int id;
 
-  // For !! tx mode, here is the accumulated transmitted packet
-  unsigned char tx_buff[1024];
-  int tx_bytes;
-  int tx_state;
+    // For !! tx mode, here is the accumulated transmitted packet
+    unsigned char tx_buff[1024];
+    int tx_bytes;
+    int tx_state;
 
-  // For RX mode, we look for the envelope our RFD900 firmware puts following a received packet
-  unsigned char rx_buff[1024];
-  int rx_bytes;
+    // For RX mode, we look for the envelope our RFD900 firmware puts following a received packet
+    unsigned char rx_buff[1024];
+    int rx_bytes;
 };
 
 long long start_time = 0;
 long long gettime_ms()
 {
-  long long retVal = -1;
+    long long retVal = -1;
 
-  do
-  {
-    struct timeval nowtv;
-
-    // If gettimeofday() fails or returns an invalid value, all else is lost!
-    if (gettimeofday(&nowtv, NULL) == -1)
+    do
     {
-      perror("gettimeofday returned -1");
-      break;
-    }
+        struct timeval nowtv;
 
-    if (nowtv.tv_sec < 0 || nowtv.tv_usec < 0 || nowtv.tv_usec >= 1000000)
-    {
-      perror("gettimeofday returned invalid value");
-      break;
-    }
+        // If gettimeofday() fails or returns an invalid value, all else is lost!
+        if (gettimeofday(&nowtv, NULL) == -1)
+        {
+            perror("gettimeofday returned -1");
+            break;
+        }
 
-    retVal = nowtv.tv_sec * 1000LL + nowtv.tv_usec / 1000;
-  } while (0);
+        if (nowtv.tv_sec < 0 || nowtv.tv_usec < 0 || nowtv.tv_usec >= 1000000)
+        {
+            perror("gettimeofday returned invalid value");
+            break;
+        }
 
-  return retVal;
+        retVal = nowtv.tv_sec * 1000LL + nowtv.tv_usec / 1000;
+    } while (0);
+
+    return retVal;
 }
 
 #define MAX_PORTS 16
@@ -181,98 +181,98 @@ int serial_port_count = 0;
 
 int set_nonblock(int fd)
 {
-  int retVal = 0;
+    int retVal = 0;
 
-  do
-  {
-    if (fd == -1)
-      break;
+    do
+    {
+        if (fd == -1)
+            break;
 
-    int flags;
-    if ((flags = fcntl(fd, F_GETFL, NULL)) == -1)
-    {
-      perror("fcntl");
-      printf("set_nonblock: fcntl(%d,F_GETFL,NULL)", fd);
-      retVal = -1;
-      break;
-    }
-    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
-    {
-      perror("fcntl");
-      printf("set_nonblock: fcntl(%d,F_SETFL,n|O_NONBLOCK)", fd);
-      return -1;
-    }
-  } while (0);
-  return retVal;
+        int flags;
+        if ((flags = fcntl(fd, F_GETFL, NULL)) == -1)
+        {
+            perror("fcntl");
+            printf("set_nonblock: fcntl(%d,F_GETFL,NULL)", fd);
+            retVal = -1;
+            break;
+        }
+        if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+        {
+            perror("fcntl");
+            printf("set_nonblock: fcntl(%d,F_SETFL,n|O_NONBLOCK)", fd);
+            return -1;
+        }
+    } while (0);
+    return retVal;
 }
 
 int serial_setup_port_with_speed(int fd, int speed)
 {
-  struct termios t;
+    struct termios t;
 
-  tcgetattr(fd, &t);
-  fprintf(stderr, "Serial port settings before tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
-          (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
-          (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
+    tcgetattr(fd, &t);
+    fprintf(stderr, "Serial port settings before tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
+            (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
+            (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
 
-  speed_t baud_rate;
-  switch (speed)
-  {
-  case 115200:
-    baud_rate = B115200;
-    break;
-  case 230400:
-    baud_rate = B230400;
-    break;
-  }
+    speed_t baud_rate;
+    switch (speed)
+    {
+        case 115200:
+            baud_rate = B115200;
+            break;
+        case 230400:
+            baud_rate = B230400;
+            break;
+    }
 
-  // XXX Speed and options should be configurable
-  if (cfsetospeed(&t, baud_rate))
-    return -1;
-  if (cfsetispeed(&t, baud_rate))
-    return -1;
+    // XXX Speed and options should be configurable
+    if (cfsetospeed(&t, baud_rate))
+        return -1;
+    if (cfsetispeed(&t, baud_rate))
+        return -1;
 
-  // 8N1
-  t.c_cflag &= ~PARENB;
-  t.c_cflag &= ~CSTOPB;
-  t.c_cflag &= ~CSIZE;
-  t.c_cflag |= CS8;
-  t.c_cflag |= CLOCAL;
+    // 8N1
+    t.c_cflag &= ~PARENB;
+    t.c_cflag &= ~CSTOPB;
+    t.c_cflag &= ~CSIZE;
+    t.c_cflag |= CS8;
+    t.c_cflag |= CLOCAL;
 
-  t.c_lflag &= ~(ICANON | ISIG | IEXTEN | ECHO | ECHOE);
-  //Noncanonical mode, disable signals, extended
-  //input processing, and software flow control and echoing
+    t.c_lflag &= ~(ICANON | ISIG | IEXTEN | ECHO | ECHOE);
+    //Noncanonical mode, disable signals, extended
+    //input processing, and software flow control and echoing
 
-  t.c_iflag &= ~(BRKINT | ICRNL | IGNBRK | IGNCR | INLCR |
-                 INPCK | ISTRIP | IXON | IXOFF | IXANY | PARMRK);
-  //Disable special handling of CR, NL, and BREAK.
-  //No 8th-bit stripping or parity error handling.
-  //Disable START/STOP output flow control.
+    t.c_iflag &= ~(BRKINT | ICRNL | IGNBRK | IGNCR | INLCR |
+                   INPCK | ISTRIP | IXON | IXOFF | IXANY | PARMRK);
+    //Disable special handling of CR, NL, and BREAK.
+    //No 8th-bit stripping or parity error handling.
+    //Disable START/STOP output flow control.
 
-  // Disable CTS/RTS flow control
+    // Disable CTS/RTS flow control
 #ifndef CNEW_RTSCTS
-  t.c_cflag &= ~CRTSCTS;
+    t.c_cflag &= ~CRTSCTS;
 #else
-  t.c_cflag &= ~CNEW_RTSCTS;
+    t.c_cflag &= ~CNEW_RTSCTS;
 #endif
 
-  // no output processing
-  t.c_oflag &= ~OPOST;
+    // no output processing
+    t.c_oflag &= ~OPOST;
 
-  fprintf(stderr, "Serial port settings attempting to be set: c=%08x, i=%08x, o=%08x, l=%08x\n",
-          (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
-          (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
+    fprintf(stderr, "Serial port settings attempting to be set: c=%08x, i=%08x, o=%08x, l=%08x\n",
+            (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
+            (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
 
-  tcsetattr(fd, TCSANOW, &t);
+    tcsetattr(fd, TCSANOW, &t);
 
-  tcgetattr(fd, &t);
-  fprintf(stderr, "Serial port settings after tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
-          (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
-          (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
+    tcgetattr(fd, &t);
+    fprintf(stderr, "Serial port settings after tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
+            (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
+            (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
 
-  set_nonblock(fd);
+    set_nonblock(fd);
 
-  return 0;
+    return 0;
 }
 
 int record_rfd900_event(struct serial_port *sp, unsigned char *packet, int len, char* type)
@@ -317,46 +317,46 @@ int record_rfd900_event(struct serial_port *sp, unsigned char *packet, int len, 
 
 int setup_monitor_port(char *path, int speed)
 {
-  int retVal = 0;
+    int retVal = 0;
 
-  do
-  {
-    if (serial_port_count >= MAX_PORTS)
+    do
     {
-      fprintf(stderr, "Too many serial ports. (Increase MAX_PORTS?)\n");
-      retVal = -3;
-      break;
-    }
+        if (serial_port_count >= MAX_PORTS)
+        {
+            fprintf(stderr, "Too many serial ports. (Increase MAX_PORTS?)\n");
+            retVal = -3;
+            break;
+        }
 
-    //open serial port
-    int r1 = open(path, O_RDONLY | O_NOCTTY | O_NDELAY);
-    if (r1 == -1)
-    {
-      fprintf(stderr, "Failed to open serial port '%s'\n", path);
-      retVal = -3;
-      break;
-    }
+        //open serial port
+        int r1 = open(path, O_RDONLY | O_NOCTTY | O_NDELAY);
+        if (r1 == -1)
+        {
+            fprintf(stderr, "Failed to open serial port '%s'\n", path);
+            retVal = -3;
+            break;
+        }
 
-    serial_ports[serial_port_count].fd = r1;
-    serial_ports[serial_port_count].port = strdup(path);
-    serial_ports[serial_port_count].id = serial_port_count;
-    serial_ports[serial_port_count].rfd900_tx_count = 0;
-    serial_ports[serial_port_count].rfd900_rx_count = 0;
-    serial_ports[serial_port_count].tx_state = 0;
-    serial_ports[serial_port_count].tx_bytes = 0;
+        serial_ports[serial_port_count].fd = r1;
+        serial_ports[serial_port_count].port = strdup(path);
+        serial_ports[serial_port_count].id = serial_port_count;
+        serial_ports[serial_port_count].rfd900_tx_count = 0;
+        serial_ports[serial_port_count].rfd900_rx_count = 0;
+        serial_ports[serial_port_count].tx_state = 0;
+        serial_ports[serial_port_count].tx_bytes = 0;
 
-    //set non blocking for the serial ports for continous loop
-    set_nonblock(r1);
+        //set non blocking for the serial ports for continous loop
+        set_nonblock(r1);
 
-    //set serial port speeds
-    serial_setup_port_with_speed(r1, speed);
+        //set serial port speeds
+        serial_setup_port_with_speed(r1, speed);
 
-    printf("Initialised '%s' as serial port %d\n", path, serial_port_count);
+        printf("Initialised '%s' as serial port %d\n", path, serial_port_count);
 
-    serial_port_count++;
+        serial_port_count++;
 
-  } while (0);
-  return retVal;
+    } while (0);
+    return retVal;
 }
 
 int process_serial_char(struct serial_port *sp, unsigned char c)
@@ -437,24 +437,24 @@ int process_serial_char(struct serial_port *sp, unsigned char c)
 
 int process_serial_port(struct serial_port *sp)
 {
-  int i;
-  int retVal = 0;
-  int bytes_read;
-  unsigned char buffer[128]; // small buffer, so we round-robin among the ports more often
-  do
-  {
-    bytes_read = read(sp->fd, buffer, sizeof(buffer));
-
-    if (bytes_read > 0)
+    int i;
+    int retVal = 0;
+    int bytes_read;
+    unsigned char buffer[128]; // small buffer, so we round-robin among the ports more often
+    do
     {
-      dump_packet("read", buffer, bytes_read);
-      printf("Read Size: %i\n", bytes_read);
-      for (i = 0; i < bytes_read; i++)
-        process_serial_char(sp, buffer[i]);
-    }
-  } while (0);
+        bytes_read = read(sp->fd, buffer, sizeof(buffer));
 
-  return retVal;
+        if (bytes_read > 0)
+        {
+            dump_packet("read", buffer, bytes_read);
+            printf("Read Size: %i\n", bytes_read);
+            for (i = 0; i < bytes_read; i++)
+                process_serial_char(sp, buffer[i]);
+        }
+    } while (0);
+
+    return retVal;
 }
 
 void dump_packet(char *msg, unsigned char *buffer, int n)
@@ -490,7 +490,7 @@ void dump_packet(char *msg, unsigned char *buffer, int n)
 
 int main(int argc, char **argv)
 {
-  int retVal = 0;
+    int retVal = 0;
 
     // Define args struct and populate simple defaults
     arguments args;
@@ -503,56 +503,56 @@ int main(int argc, char **argv)
     // Parse command line args
     argp_parse(&argp_parser, argc, argv, 0, 0, &args);
 
-  do
-  {
-    printf("Before variable declaration\n");
-    int sockfd;
-    FILE *outFile = fopen(PCAP_FILE, "ab"); // append to file only
+    do
+    {
+        printf("Before variable declaration\n");
+        int sockfd;
+        FILE *outFile = fopen(PCAP_FILE, "ab"); // append to file only
 #ifdef TEST
-	  int serverlen;
+        int serverlen;
 #endif
 
-    //setup wireless capture settings
-    char *dev = args.wifidev;
-    char errbuf[PCAP_ERRBUF_SIZE];
-    struct bpf_program fp; // hold compiled libpcap filter program
-    pcap_t *handle;
-    struct pcap_pkthdr header;
-    int timeout = 10, n;
-    bpf_u_int32 maskp;                       // subnet mask
-    bpf_u_int32 ip;                          // ip
+        //setup wireless capture settings
+        char *dev = args.wifidev;
+        char errbuf[PCAP_ERRBUF_SIZE];
+        struct bpf_program fp; // hold compiled libpcap filter program
+        pcap_t *handle;
+        struct pcap_pkthdr header;
+        int timeout = 10, n;
+        bpf_u_int32 maskp;                       // subnet mask
+        bpf_u_int32 ip;                          // ip
 
-    printf("My Mesh Extender ID is: %s\n", myMeshExtenderID);
+        printf("My Mesh Extender ID is: %s\n", myMeshExtenderID);
 
-    printf("Before packet injection setup\n");
-    //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
-    u_char *capPacket;
-    bzero((char *)&serv_addr, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr = args.address;
-    int portno = args.port;
-    serv_addr.sin_port = htons(portno);
-    char hbuf[NI_MAXHOST];
-    socklen_t len = sizeof(struct sockaddr_in);
+        printf("Before packet injection setup\n");
+        //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
+        u_char *capPacket;
+        bzero((char *)&serv_addr, sizeof(serv_addr));
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_addr = args.address;
+        int portno = args.port;
+        serv_addr.sin_port = htons(portno);
+        char hbuf[NI_MAXHOST];
+        socklen_t len = sizeof(struct sockaddr_in);
 
-    //setup sockets
-    printf("Before socket setup\n");
-    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0)
-    {
-      perror("Error setting up socket\n");
-      retVal = -2;
-      return (retVal);
-    }
-    else
-    {
-        printf("Will send data to %s:%i\n", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
-    }
+        //setup sockets
+        printf("Before socket setup\n");
+        sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+        if (sockfd < 0)
+        {
+            perror("Error setting up socket\n");
+            retVal = -2;
+            return (retVal);
+        }
+        else
+        {
+            printf("Will send data to %s:%i\n", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
+        }
 
-    serversock = sockfd;
+        serversock = sockfd;
 
 #ifdef TEST
-    if (getnameinfo((struct sockaddr *)&serv_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
+        if (getnameinfo((struct sockaddr *)&serv_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
     {
       printf("could not resolve IP\n");
       retVal = -1;
@@ -564,150 +564,150 @@ int main(int argc, char **argv)
     }
 #endif
 
-    if (args.uhfCapture)
-    {
-        printf("Before serial port setup\n");
-
-        //setup serial ports
-        // Start with all on same speed, so that we can
-        // figure out the pairs of ports that are connected
-        // to the same wire
-        setup_monitor_port("/dev/ttyUSB0", 230400);
-        setup_monitor_port("/dev/ttyUSB1", 230400);
-        setup_monitor_port("/dev/ttyUSB2", 230400);
-        setup_monitor_port("/dev/ttyUSB3", 230400);
-
-        // Then wait for input on one, and see if the same character
-        // appears on another very soon there after.
-        // (This assumes that there is traffic on at least one
-        // of the ports. If not, then there is nothing to collect, anyway.
-        int links_setup = 0;
-        while (links_setup == 0)
+        if (args.uhfCapture)
         {
-            char buff[1024];
-            int i = 0;
-            for (; i < 4; i++)
-            {
-                int n = read(serial_ports[i].fd, buff, 1024);
-                if (n > 0)
-                {
-                    // We have some input, so now look for it on the other ports.
-                    // But give the USB serial adapters time to catch up, as they frequently
-                    // have 16ms of latency. We allow 50ms here to be safe.
-                    usleep(50000);
-                    char buff2[1024];
-                    int j = 0;
-                    for (; j < 4; j++)
-                    {
-                        // Don't look for the data on ourselves
-                        if (i == j)
-                            continue;
-                        int n2 = read(serial_ports[j].fd, buff2, 1024);
-                        if (n2 >= n)
-                        {
-                            if (!bcmp(buff, buff2, n))
-                            {
-                                printf("Serial ports %d and %d seem to be linked.\n", i, j);
+            printf("Before serial port setup\n");
 
-                                // Set one of those to 115200, and then one of the other two ports to 115200,
-                                // and then we should have both speeds on both ports available
-                                serial_setup_port_with_speed(serial_ports[i].fd, 115200);
-                                int k = 0;
-                                for (; k < 4; k++)
+            //setup serial ports
+            // Start with all on same speed, so that we can
+            // figure out the pairs of ports that are connected
+            // to the same wire
+            setup_monitor_port("/dev/ttyUSB0", 230400);
+            setup_monitor_port("/dev/ttyUSB1", 230400);
+            setup_monitor_port("/dev/ttyUSB2", 230400);
+            setup_monitor_port("/dev/ttyUSB3", 230400);
+
+            // Then wait for input on one, and see if the same character
+            // appears on another very soon there after.
+            // (This assumes that there is traffic on at least one
+            // of the ports. If not, then there is nothing to collect, anyway.
+            int links_setup = 0;
+            while (links_setup == 0)
+            {
+                char buff[1024];
+                int i = 0;
+                for (; i < 4; i++)
+                {
+                    int n = read(serial_ports[i].fd, buff, 1024);
+                    if (n > 0)
+                    {
+                        // We have some input, so now look for it on the other ports.
+                        // But give the USB serial adapters time to catch up, as they frequently
+                        // have 16ms of latency. We allow 50ms here to be safe.
+                        usleep(50000);
+                        char buff2[1024];
+                        int j = 0;
+                        for (; j < 4; j++)
+                        {
+                            // Don't look for the data on ourselves
+                            if (i == j)
+                                continue;
+                            int n2 = read(serial_ports[j].fd, buff2, 1024);
+                            if (n2 >= n)
+                            {
+                                if (!bcmp(buff, buff2, n))
                                 {
-                                    if (k == i)
-                                        continue;
-                                    if (k == j)
-                                        continue;
-                                    serial_setup_port_with_speed(serial_ports[k].fd, 115200);
-                                    links_setup = 1;
-                                    break;
+                                    printf("Serial ports %d and %d seem to be linked.\n", i, j);
+
+                                    // Set one of those to 115200, and then one of the other two ports to 115200,
+                                    // and then we should have both speeds on both ports available
+                                    serial_setup_port_with_speed(serial_ports[i].fd, 115200);
+                                    int k = 0;
+                                    for (; k < 4; k++)
+                                    {
+                                        if (k == i)
+                                            continue;
+                                        if (k == j)
+                                            continue;
+                                        serial_setup_port_with_speed(serial_ports[k].fd, 115200);
+                                        links_setup = 1;
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-            // Wait a little while before trying again
-            usleep(50000);
-        }
-    }
-
-    if (args.wifiCapture)
-    {
-        printf("Before pcap setup\n");
-
-        pcap_lookupnet(dev, &ip, &maskp, errbuf);
-
-        //open handle for wireless device
-        handle = pcap_open_live(dev, BUFSIZ, 1, timeout, errbuf);
-        if (handle == NULL)
-        {
-            printf("Error starting pcap device: %s\n", errbuf);
-        }
-
-        // Set non-blocking mode
-        if (pcap_setnonblock(handle, 1, errbuf))
-        {
-            printf("Error setting pcap device to non-blocking: %s\n", errbuf);
-        }
-
-        if (pcap_compile(handle, &fp, args.filter, 0, ip) == -1)
-        {
-            printf("Bad filter - %s\n", pcap_geterr(handle));
-            printf("For more information on pcap filters, see 'man pcap-filter' or https://www.tcpdump.org/manpages/pcap-filter.7.html\n");
-            retVal = -8;
-            break;
-        }
-
-        if (pcap_setfilter(handle, &fp) == -1)
-        {
-            fprintf(stderr, "Error setting filter\n");
-            retVal = -8;
-            break;
-        }
-    }
-
-    // While loop that serially searches for a packet to be captured by all devices (round robin)
-    printf("Before loop\n");
-    do
-    {
-        if (args.uhfCapture)
-        {
-            int i;
-            for (i = 0; i < serial_port_count; i++)
-            {
-                process_serial_port(&serial_ports[i]);
+                // Wait a little while before trying again
+                usleep(50000);
             }
         }
 
         if (args.wifiCapture)
         {
-            header.len = 0;
-            header.caplen = 0;
-            capPacket = pcap_next(handle, &header);
-            if (capPacket && header.len > 0)
+            printf("Before pcap setup\n");
+
+            pcap_lookupnet(dev, &ip, &maskp, errbuf);
+
+            //open handle for wireless device
+            handle = pcap_open_live(dev, BUFSIZ, 1, timeout, errbuf);
+            if (handle == NULL)
             {
-                printf("Captured WIFI packet total length %i\n", header.len);
-                n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-                //dump_packet("Captured Packet", capPacket, n);
-                printf("Size Written %i\n", n);
-                if (n < 0)
-                {
-                    perror("Error Sending\n");
-                    retVal = -11;
-                    perror("Sendto: ");
-                    break;
-                }
+                printf("Error starting pcap device: %s\n", errbuf);
+            }
+
+            // Set non-blocking mode
+            if (pcap_setnonblock(handle, 1, errbuf))
+            {
+                printf("Error setting pcap device to non-blocking: %s\n", errbuf);
+            }
+
+            if (pcap_compile(handle, &fp, args.filter, 0, ip) == -1)
+            {
+                printf("Bad filter - %s\n", pcap_geterr(handle));
+                printf("For more information on pcap filters, see 'man pcap-filter' or https://www.tcpdump.org/manpages/pcap-filter.7.html\n");
+                retVal = -8;
+                break;
+            }
+
+            if (pcap_setfilter(handle, &fp) == -1)
+            {
+                fprintf(stderr, "Error setting filter\n");
+                retVal = -8;
+                break;
             }
         }
-    } while (1);
 
-    printf("Closing output file.\n");
-    //close opened file
-    fclose(outFile);
+        // While loop that serially searches for a packet to be captured by all devices (round robin)
+        printf("Before loop\n");
+        do
+        {
+            if (args.uhfCapture)
+            {
+                int i;
+                for (i = 0; i < serial_port_count; i++)
+                {
+                    process_serial_port(&serial_ports[i]);
+                }
+            }
 
-  } while (0);
+            if (args.wifiCapture)
+            {
+                header.len = 0;
+                header.caplen = 0;
+                capPacket = pcap_next(handle, &header);
+                if (capPacket && header.len > 0)
+                {
+                    printf("Captured WIFI packet total length %i\n", header.len);
+                    n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+                    //dump_packet("Captured Packet", capPacket, n);
+                    printf("Size Written %i\n", n);
+                    if (n < 0)
+                    {
+                        perror("Error Sending\n");
+                        retVal = -11;
+                        perror("Sendto: ");
+                        break;
+                    }
+                }
+            }
+        } while (1);
 
-  return (retVal);
+        printf("Closing output file.\n");
+        //close opened file
+        fclose(outFile);
+
+    } while (0);
+
+    return (retVal);
 }
