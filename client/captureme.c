@@ -22,9 +22,6 @@
 #include <ctype.h>
 #include <argp.h>
 
-#define ENTER(n) printf("Entered "n"\n");
-#define EXIT(n) printf("Exited "n"\n");
-
 //#define TEST
 #define DEFAULT_SERVER_PORT 3940
 #define DEFAULT_PCAP_DEV "mon0"
@@ -327,11 +324,9 @@ int record_rfd900_tx_event(struct serial_port *sp)
 
   do
   {
-      printf("[record_rfd900_tx_event] Section 1\n");
     char message[1024 + 16 + 1] = "LBARD:RFD900:TX:"; // 1024-byte max packet length + 16-byte header (this) + 1-byte newline
     char first_bytes_hex[16];
 
-      printf("[record_rfd900_tx_event] Section 2\n");
     snprintf(first_bytes_hex, 16, "%02X%02X%02X%02X%02X%02X",
              sp->tx_buff[0], sp->tx_buff[1],
              sp->tx_buff[2], sp->tx_buff[3],
@@ -340,13 +335,11 @@ int record_rfd900_tx_event(struct serial_port *sp)
 
     printf("Current string: %s", message);
 
-      printf("[record_rfd900_tx_event] Section 3\n");
     int offset = strlen(message);
     memcpy(&message[offset], sp->tx_buff, sp->tx_bytes);
     offset += sp->tx_bytes;
     message[offset++] = '\n';
 
-      printf("[record_rfd900_tx_event] Section 4\n");
     if (!start_time)
       start_time = gettime_ms();
     printf("T+%lldms: Before sendto of RFD900 packet\n", gettime_ms() - start_time);
@@ -356,7 +349,6 @@ int record_rfd900_tx_event(struct serial_port *sp)
     snprintf(peer_prefix, 6 * 2 + 1, "%02x%02x%02x%02x%02x%02x",
              msg[0], msg[1], msg[2], msg[3], msg[4], msg[5]);*/
 
-      printf("[record_rfd900_tx_event] Section 5\n");
     errno = 0;
     int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     printf("Size Written %i using %p\n", offset, sp);
@@ -466,13 +458,9 @@ int process_serial_char(struct serial_port *sp, unsigned char c)
                 case '!':
                     // Double ! = TX packet
                     printf("Recognised TX of %d byte packet.\n", sp->tx_bytes);
-                    ENTER("dump_packet")
                     dump_packet("sent packet", sp->tx_buff, sp->tx_bytes);
-                    EXIT("dump_packet")
 
-                    ENTER("record_rfd900_tx_event")
                     record_rfd900_tx_event(sp);
-                    EXIT("record_rfd900_tx_event")
 
                     sp->rfd900_tx_count++;
                     sp->tx_bytes = 0;
