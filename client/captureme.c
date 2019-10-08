@@ -126,7 +126,7 @@ struct sockaddr_in serv_addr;
 int serversock = -1;
 char *myMeshExtenderID;
 
-void dump_packet(char *msg, unsigned char *b, int n);
+void dump_packet(char *msg, unsigned char *buffer, int n);
 
 struct serial_port
 {
@@ -275,95 +275,44 @@ int serial_setup_port_with_speed(int fd, int speed)
   return 0;
 }
 
-int record_rfd900_rx_event(struct serial_port *sp, unsigned char *packet, int len)
+int record_rfd900_event(struct serial_port *sp, unsigned char *packet, int len, char* type)
 {
-  int retVal = 0;
+    int retVal = 0;
 
-  do
-  {
-    char message[1024] = "LBARD:RFD900:RX:";
-    char first_bytes_hex[16];
-
-    printf("Current string: %s", message);
-
-    int offset = strlen(message);
-    memcpy(&message[offset], packet, len);
-    offset += len;
-    message[offset++] = '\n';
-    message[offset++]=0;
-
-    if (!start_time)
-      start_time = gettime_ms();
-    printf("T+%lldms: Before sendto of RFD900 packet\n", gettime_ms() - start_time);
-
-    /*//used to see if the Mesh Extender has sent or recieved a packet
-    char peer_prefix[6 * 2 + 1];
-    snprintf(peer_prefix, 6 * 2 + 1, "%02x%02x%02x%02x%02x%02x",
-             msg[0], msg[1], msg[2], msg[3], msg[4], msg[5]);*/
-
-    errno = 0;
-    int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-    printf("Size Written %i using %p\n", offset, sp);
-    if (n < 0)
+    do
     {
-      perror("Error Sending");
-      retVal = -7;
-      break;
-    }
-    //fflush(outFile);
-    printf("Send to server socket\n\n");
-    message[0] = '\0'; // set the string to a zero length
-  } while (0);
+        char message[1024 + 16 + 2]; // 1024-byte max packet length + 16-byte header + 2-byte newline & null-terminator
 
-  return retVal;
-}
+        // Write the header to the message buffer
+        sprintf(message, "LBARD:RFD900:%s:", type);
 
-int record_rfd900_tx_event(struct serial_port *sp)
-{
-  int retVal = 0;
+        // Write the packet contents to the message buffer and terminate it
+        int offset = strlen(message);
+        memcpy(&message[offset], packet, len);
+        offset += len;
+        message[offset++] = '\n';
+        message[offset++] = 0;
 
-  do
-  {
-    char message[1024] = "LBARD:RFD900:TX:";
-    char first_bytes_hex[16];
+        // Set up the start time if it hasn't been already
+        if (!start_time)
+            start_time = gettime_ms();
 
-    snprintf(first_bytes_hex, 16, "%02X%02X%02X%02X%02X%02X",
-             sp->tx_buff[0], sp->tx_buff[1],
-             sp->tx_buff[2], sp->tx_buff[3],
-             sp->tx_buff[4], sp->tx_buff[5]);
+        // Try writing the message to the server socket
+        errno = 0;
+        printf("T+%lldms: Writing %i bytes to the server socket from serial port %p\n", gettime_ms() - start_time, offset, sp);
+        if (sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+        {
+            perror("Error sending");
+            retVal = -7;
+            break;
+        }
+        else
+        {
+            printf("Sent successfully\n\n");
+        }
+    } while (0);
 
-
-    printf("Current string: %s", message);
-
-    int offset = strlen(message);
-    memcpy(&message[offset], sp->tx_buff, sp->tx_bytes);
-    offset += sp->tx_bytes;
-    message[offset++] = '\n';
-
-    if (!start_time)
-      start_time = gettime_ms();
-    printf("T+%lldms: Before sendto of RFD900 packet\n", gettime_ms() - start_time);
-
-    /*//used to see if the Mesh Extender has sent or recieved a packet
-    char peer_prefix[6 * 2 + 1];
-    snprintf(peer_prefix, 6 * 2 + 1, "%02x%02x%02x%02x%02x%02x",
-             msg[0], msg[1], msg[2], msg[3], msg[4], msg[5]);*/
-
-    errno = 0;
-    int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-    printf("Size Written %i using %p\n", offset, sp);
-    if (n < 0)
-    {
-      perror("Error Sending");
-      retVal = -7;
-      break;
-    }
-    //fflush(outFile);
-    printf("Send to server socket\n\n");
-    message[0] = '\0'; // set the string to a zero length
-  } while (0);
-
-  return retVal;
+    return retVal;
 }
 
 int setup_monitor_port(char *path, int speed)
@@ -412,79 +361,78 @@ int setup_monitor_port(char *path, int speed)
 
 int process_serial_char(struct serial_port *sp, unsigned char c)
 {
-  int retVal = 0;
+    int retVal = 0;
 
-  do
-  {
-
-    if (sp->rx_bytes >= 1024 )
+    do
     {
-      // shift RX bytes down
-      memmove(&sp->rx_buff[0],&sp->rx_buff[1],1023);
-      
-      sp->rx_bytes--;
-    }
-    sp->rx_buff[sp->rx_bytes++]=c;
-    
-    if ((sp->rx_buff[sp->rx_bytes-1]==0x55)
-	&&(sp->rx_buff[sp->rx_bytes-8]==0x55)
-	&&(sp->rx_buff[sp->rx_bytes-9]==0xaa))
-    {
-       int packet_bytes=sp->rx_buff[sp->rx_bytes-4];
-       int offset=sp->rx_bytes-9-packet_bytes;
-       if (offset>=0) {
-       unsigned char *packet=&sp->rx_buff[offset];
-       printf("Saw RFD900 RX envelope for %d byte packet @ offset %d.\n",
-              packet_bytes,offset);
-       record_rfd900_rx_event(sp,packet,packet_bytes);
-       sp->rfd900_rx_count++;
-       }
-    }
-    
-    if (sp->tx_state == 0)
-    {
-      // Not in ! escape mode
-      if (c == '!')
-        sp->tx_state = 1;
-      else
-      {
-        if (sp->tx_bytes < 1024)
-          sp->tx_buff[sp->tx_bytes++] = c;
-      }
-    }
-    else
-    {
-      switch (c)
-      {
-      case '!':
-        // Double ! = TX packet
-        printf("Recognised TX of %d byte packet.\n", sp->tx_bytes);
-        dump_packet("sent packet", sp->tx_buff, sp->tx_bytes);
+        if (sp->rx_bytes >= 1024)
+        {
+            // shift RX bytes down
+            memmove(&sp->rx_buff[0],&sp->rx_buff[1],1023);
 
-        record_rfd900_tx_event(sp);
+            sp->rx_bytes--;
+        }
+        sp->rx_buff[sp->rx_bytes++]=c;
 
-        sp->rfd900_tx_count++;
-        sp->tx_bytes = 0;
-        break;
-      case '.':
-        // Escaped !
-        if (sp->tx_bytes < 1024)
-          sp->tx_buff[sp->tx_bytes++] = '!';
-        break;
-      case 'c':
-      case 'C':
-        // Flush TX buffer
-        sp->tx_bytes = 0;
-        break;
-      default:
-        // Some other character we don't know what to do with
-        break;
-      }
-      sp->tx_state = 0;
-    }
-  } while (0);
+        if ((sp->rx_buff[sp->rx_bytes-1]==0x55)
+            &&(sp->rx_buff[sp->rx_bytes-8]==0x55)
+            &&(sp->rx_buff[sp->rx_bytes-9]==0xaa))
+        {
+            int packet_bytes=sp->rx_buff[sp->rx_bytes-4];
+            int offset=sp->rx_bytes-9-packet_bytes;
+            if (offset>=0) {
+                unsigned char *packet=&sp->rx_buff[offset];
+                printf("Saw RFD900 RX envelope for %d byte packet @ offset %d.\n",
+                       packet_bytes,offset);
+                record_rfd900_event(sp, packet, packet_bytes, "RX");
+                sp->rfd900_rx_count++;
+            }
+        }
 
-  return retVal;
+        if (sp->tx_state == 0)
+        {
+            // Not in ! escape mode
+            if (c == '!')
+                sp->tx_state = 1;
+            else
+            {
+                if (sp->tx_bytes < 1024)
+                    sp->tx_buff[sp->tx_bytes++] = c;
+            }
+        }
+        else
+        {
+            switch (c)
+            {
+                case '!':
+                    // Double ! = TX packet
+                    printf("Recognised TX of %d byte packet.\n", sp->tx_bytes);
+                    dump_packet("sent packet", sp->tx_buff, sp->tx_bytes);
+
+                    record_rfd900_event(sp, sp->tx_buff, sp->tx_bytes, "TX");
+
+                    sp->rfd900_tx_count++;
+                    sp->tx_bytes = 0;
+                    break;
+                case '.':
+                    // Escaped !
+                    if (sp->tx_bytes < 1024)
+                        sp->tx_buff[sp->tx_bytes++] = '!';
+                    break;
+                case 'c':
+                case 'C':
+                    // Flush TX buffer
+                    sp->tx_bytes = 0;
+                    break;
+                default:
+                    // Some other character we don't know what to do with
+                    break;
+            }
+            sp->tx_state = 0;
+        }
+    } while (0);
+
+    return retVal;
 }
 
 int process_serial_port(struct serial_port *sp)
@@ -509,25 +457,35 @@ int process_serial_port(struct serial_port *sp)
   return retVal;
 }
 
-void dump_packet(char *msg, unsigned char *b, int n)
+void dump_packet(char *msg, unsigned char *buffer, int n)
 {
-  printf("%s: Displaying %d bytes.\n", msg, n);
-  int i;
-  for (i = 0; i < n; i += 16)
-  {
-    int j;
-    printf("%08X : ", i);
-    for (j = 0; j < 16 && (i + j) < n; j++)
-      printf("%02X ", b[i + j]);
-    for (; j < 16; j++)
-      printf("   ");
-    for (j = 0; j < 16 && (i + j) < n; j++)
-      if (b[i + j] >= ' ' && b[i + j] < 0x7f)
-        printf("%c", b[i + j]);
-      else
-        printf(".");
-    printf("\n");
-  }
+    printf("%s: Displaying %d bytes.\n", msg, n);
+    for (int offset = 0; offset < n; offset += 16)
+    {
+        // Print the offset
+        printf("%08X : ", offset);
+
+        // Print a line of 16 bytes
+        int j;
+        for (j = 0; j < 16; j++)
+        {
+            // Check if there are more bytes available
+            if ((offset + j) < n)
+                // Print the next byte
+                printf("%02X ", buffer[offset + j]);
+            else
+                // Pad the missing byte
+                printf("   ");
+        }
+
+        // Print an ASCII representation of the line
+        for (j = 0; j < 16 && (offset + j) < n; j++)
+            if (buffer[offset + j] >= ' ' && buffer[offset + j] < 0x7f)
+                printf("%c", buffer[offset + j]);
+            else
+                printf(".");
+        printf("\n");
+    }
 }
 
 int main(int argc, char **argv)
