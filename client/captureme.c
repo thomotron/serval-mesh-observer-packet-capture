@@ -353,26 +353,36 @@ int process_serial_char(struct serial_port *sp, unsigned char c)
 
     do
     {
+        // Check if the buffer is full
         if (sp->rx_bytes >= 1024)
         {
-            // shift RX bytes down
+            // Shift bytes left by one
             memmove(&sp->rx_buff[0],&sp->rx_buff[1],1023);
 
+            // Decrement the number of bytes in the buffer
             sp->rx_bytes--;
         }
-        sp->rx_buff[sp->rx_bytes++]=c;
 
-        if ((sp->rx_buff[sp->rx_bytes-1]==0x55)
-            &&(sp->rx_buff[sp->rx_bytes-8]==0x55)
-            &&(sp->rx_buff[sp->rx_bytes-9]==0xaa))
+        // Place the character at the end of the buffer and increment the byte count
+        sp->rx_buff[sp->rx_bytes++] = c;
+
+        // Check if the buffer ends with an RFD900 envelope
+        if ((sp->rx_buff[sp->rx_bytes - 1] == 0x55) &&
+            (sp->rx_buff[sp->rx_bytes - 8] == 0x55) &&
+            (sp->rx_buff[sp->rx_bytes - 9] == 0xaa))
         {
-            int packet_bytes=sp->rx_buff[sp->rx_bytes-4];
-            int offset=sp->rx_bytes-9-packet_bytes;
-            if (offset>=0) {
-                unsigned char *packet=&sp->rx_buff[offset];
-                printf("Saw RFD900 RX envelope for %d byte packet @ offset %d.\n",
-                       packet_bytes,offset);
-                record_rfd900_event(sp, packet, packet_bytes, "RX");
+            // Get the packet length from the envelope
+            int packet_bytes = sp->rx_buff[sp->rx_bytes - 4];
+
+            // Get the offset for the start of the packet
+            int offset = sp->rx_bytes - 9 - packet_bytes;
+            if (offset >= 0) {
+                printf("Got RFD900 RX envelope for %d byte packet at offset %d.\n", packet_bytes, offset);
+
+                // Send the packet to the server
+                record_rfd900_event(sp, &sp->rx_buff[offset], packet_bytes, "RX");
+
+                // Increment the number of RX packets we've received
                 sp->rfd900_rx_count++;
             }
         }
