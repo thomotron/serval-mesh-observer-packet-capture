@@ -306,6 +306,7 @@ int setup_monitor_port(char *path, int speed)
 
     do
     {
+        // Make sure we're not registering more ports than we're designed to
         if (serial_port_count >= MAX_PORTS)
         {
             fprintf(stderr, "Too many serial ports. (Increase MAX_PORTS?)\n");
@@ -313,7 +314,7 @@ int setup_monitor_port(char *path, int speed)
             break;
         }
 
-        //open serial port
+        // Open the serial port
         int r1 = open(path, O_RDONLY | O_NOCTTY | O_NDELAY);
         if (r1 == -1)
         {
@@ -322,6 +323,7 @@ int setup_monitor_port(char *path, int speed)
             break;
         }
 
+        // Set up a new struct for the this serial port
         serial_ports[serial_port_count].fd = r1;
         serial_ports[serial_port_count].port = strdup(path);
         serial_ports[serial_port_count].id = serial_port_count;
@@ -330,17 +332,18 @@ int setup_monitor_port(char *path, int speed)
         serial_ports[serial_port_count].tx_state = 0;
         serial_ports[serial_port_count].tx_bytes = 0;
 
-        //set non blocking for the serial ports for continous loop
+        // Set this serial port to non-blocking mode to make reading easier
         set_nonblock(r1);
 
-        //set serial port speeds
+        // Set the serial port speed
         serial_setup_port_with_speed(r1, speed);
 
         printf("Initialised '%s' as serial port %d\n", path, serial_port_count);
 
+        // Increment the number of serial ports we have configured
         serial_port_count++;
-
     } while (0);
+
     return retVal;
 }
 
