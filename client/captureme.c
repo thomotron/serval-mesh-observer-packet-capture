@@ -284,7 +284,7 @@ int record_rfd900_rx_event(struct serial_port *sp, unsigned char *packet, int le
 
   do
   {
-    char message[1024] = "LBARD:RFD900:RX:";
+    char message[1024 + 16 + 1] = "LBARD:RFD900:RX:"; // 1024-byte max packet length + 16-byte header (this) + 1-byte newline
     char first_bytes_hex[16];
 
     printf("Current string: %s", message);
