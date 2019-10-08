@@ -387,45 +387,50 @@ int process_serial_char(struct serial_port *sp, unsigned char c)
             }
         }
 
+        // Check the escape character flag to see if the last character was a '!'
         if (sp->tx_state == 0)
         {
-            // Not in ! escape mode
+            // Is this a possible TX escape character?
             if (c == '!')
+            {
+                // Set the escape character flag so we can interpret the sequence on the next pass
                 sp->tx_state = 1;
+            }
             else
             {
-                if (sp->tx_bytes < 1024)
-                    sp->tx_buff[sp->tx_bytes++] = c;
+                // If the TX buffer is not full yet, append the character to the end of the TX buffer
+                if (sp->tx_bytes < 1024) sp->tx_buff[sp->tx_bytes++] = c;
             }
         }
         else
         {
+            // Check what character is being escaped
             switch (c)
             {
-                case '!':
-                    // Double ! = TX packet
+                case '!': // '!!' = TX packet
                     printf("Recognised TX of %d byte packet.\n", sp->tx_bytes);
                     dump_packet("sent packet", sp->tx_buff, sp->tx_bytes);
 
+                    // Send the packet to the server
                     record_rfd900_event(sp, sp->tx_buff, sp->tx_bytes, "TX");
 
+                    // Increment the number of TX packets we have seen and reset the buffer offset
                     sp->rfd900_tx_count++;
                     sp->tx_bytes = 0;
                     break;
-                case '.':
-                    // Escaped !
-                    if (sp->tx_bytes < 1024)
-                        sp->tx_buff[sp->tx_bytes++] = '!';
+                case '.': // '!.' = Escaped '!'
+                    // If the TX buffer is not full yet, append the character to the end of the TX buffer
+                    if (sp->tx_bytes < 1024) sp->tx_buff[sp->tx_bytes++] = '!';
                     break;
                 case 'c':
-                case 'C':
-                    // Flush TX buffer
+                case 'C': // '!c' or '!C' = Flush TX buffer
                     sp->tx_bytes = 0;
                     break;
-                default:
-                    // Some other character we don't know what to do with
+                default: // Some other character we don't know what to do with
                     break;
             }
+
+            // Reset the escape character flag
             sp->tx_state = 0;
         }
     } while (0);
