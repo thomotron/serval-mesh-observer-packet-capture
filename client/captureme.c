@@ -196,9 +196,9 @@ int serial_setup_port_with_speed(int fd, int speed)
     struct termios t;
 
     tcgetattr(fd, &t);
-    fprintf(stderr, "Serial port settings before tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
-            (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
-            (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
+    //fprintf(stderr, "Serial port settings before tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
+    //        (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
+    //        (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
 
     speed_t baud_rate;
     switch (speed)
@@ -244,16 +244,16 @@ int serial_setup_port_with_speed(int fd, int speed)
     // no output processing
     t.c_oflag &= ~OPOST;
 
-    fprintf(stderr, "Serial port settings attempting to be set: c=%08x, i=%08x, o=%08x, l=%08x\n",
-            (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
-            (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
+    //fprintf(stderr, "Serial port settings attempting to be set: c=%08x, i=%08x, o=%08x, l=%08x\n",
+    //        (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
+    //        (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
 
     tcsetattr(fd, TCSANOW, &t);
 
     tcgetattr(fd, &t);
-    fprintf(stderr, "Serial port settings after tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
-            (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
-            (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
+    //fprintf(stderr, "Serial port settings after tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
+    //        (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
+    //        (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
 
     set_nonblock(fd);
 
