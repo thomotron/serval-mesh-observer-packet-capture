@@ -509,34 +509,29 @@ int main(int argc, char **argv)
 
     do
     {
-        printf("Before variable declaration\n");
-        int sockfd;
-        FILE *outFile = fopen(PCAP_FILE, "ab"); // append to file only
+        FILE *outFile = fopen(PCAP_FILE, "ab"); // Open file in append-only mode
 
-        //setup wireless capture settings
-        char *dev = args.wifidev;
-        char errbuf[PCAP_ERRBUF_SIZE];
-        struct bpf_program fp; // hold compiled libpcap filter program
-        pcap_t *handle;
-        struct pcap_pkthdr header;
+        // Define up wireless capture variables
+        char *wifi_dev = args.wifidev;
+        char pcap_errbuf[PCAP_ERRBUF_SIZE];
+        struct bpf_program pcap_filter; // Compiled libpcap filter program
+        pcap_t *pcap_handle;
+        struct pcap_pkthdr pcap_packet_header;
         int timeout = 10, n;
-        bpf_u_int32 maskp;                       // subnet mask
-        bpf_u_int32 ip;                          // ip
+        bpf_u_int32 maskp; // Subnet mask
+        bpf_u_int32 ip; // IP address
 
-        printf("Before packet injection setup\n");
-        //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
-        u_char *capPacket;
-        bzero((char *)&serv_addr, sizeof(serv_addr));
-        serv_addr.sin_family = AF_INET;
-        serv_addr.sin_addr = args.address;
-        int portno = args.port;
-        serv_addr.sin_port = htons(portno);
-        char hbuf[NI_MAXHOST];
-        socklen_t len = sizeof(struct sockaddr_in);
+        // Set up UDP socket variables
+        // (derived from https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c)
+        // Clear out the server address struct and populate it from config
+        u_char *capPacket; // Outgoing UDP packet buffer
+        bzero((char *)&serv_addr, sizeof(serv_addr)); // Clear out the server address struct
+        serv_addr.sin_family = AF_INET; // Address family (IPv4)
+        serv_addr.sin_addr = args.address; // Server IP address
+        serv_addr.sin_port = htons(args.port); // Server port
 
-        //setup sockets
-        printf("Before socket setup\n");
-        sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+        // Set up the UDP socket
+        int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
         if (sockfd < 0)
         {
             perror("Error setting up socket\n");
@@ -551,21 +546,17 @@ int main(int argc, char **argv)
 
         if (args.uhfCapture)
         {
-            printf("Before serial port setup\n");
-
-            //setup serial ports
-            // Start with all on same speed, so that we can
-            // figure out the pairs of ports that are connected
-            // to the same wire
+            // Set up serial ports
+            // Start with them all on same speed, so that we can figure out
+            // which pairs of ports that are connected to the same wire.
             setup_monitor_port("/dev/ttyUSB0", 230400);
             setup_monitor_port("/dev/ttyUSB1", 230400);
             setup_monitor_port("/dev/ttyUSB2", 230400);
             setup_monitor_port("/dev/ttyUSB3", 230400);
 
-            // Then wait for input on one, and see if the same character
-            // appears on another very soon there after.
-            // (This assumes that there is traffic on at least one
-            // of the ports. If not, then there is nothing to collect, anyway.
+            // Wait for input on one and see if the same character appears on another very soon there after
+            // This assumes that there is traffic on at least one of the ports. If not, then there is
+            // nothing to collect anyway.
             int links_setup = 0;
             while (links_setup == 0)
             {
@@ -576,7 +567,7 @@ int main(int argc, char **argv)
                     int n = read(serial_ports[i].fd, buff, 1024);
                     if (n > 0)
                     {
-                        // We have some input, so now look for it on the other ports.
+                        // We have some input, so now let's look for it on the other ports.
                         // But give the USB serial adapters time to catch up, as they frequently
                         // have 16ms of latency. We allow 50ms here to be safe.
                         usleep(50000);
@@ -587,32 +578,31 @@ int main(int argc, char **argv)
                             // Don't look for the data on ourselves
                             if (i == j)
                                 continue;
-                            int n2 = read(serial_ports[j].fd, buff2, 1024);
-                            if (n2 >= n)
-                            {
-                                if (!bcmp(buff, buff2, n))
-                                {
-                                    printf("Serial ports %d and %d seem to be linked.\n", i, j);
 
-                                    // Set one of those to 115200, and then one of the other two ports to 115200,
-                                    // and then we should have both speeds on both ports available
-                                    serial_setup_port_with_speed(serial_ports[i].fd, 115200);
-                                    int k = 0;
-                                    for (; k < 4; k++)
-                                    {
-                                        if (k == i)
-                                            continue;
-                                        if (k == j)
-                                            continue;
-                                        serial_setup_port_with_speed(serial_ports[k].fd, 115200);
-                                        links_setup = 1;
-                                        break;
-                                    }
+                            int n2 = read(serial_ports[j].fd, buff2, 1024);
+                            if (n2 >= n && !bcmp(buff, buff2, n))
+                            {
+                                printf("Serial ports %d and %d seem to be linked.\n", i, j);
+
+                                // Set one of those to 115200, and then one of the other two ports to 115200,
+                                // and then we should have both speeds on both ports available
+                                serial_setup_port_with_speed(serial_ports[i].fd, 115200);
+                                int k = 0;
+                                for (; k < 4; k++)
+                                {
+                                    if (k == i)
+                                        continue;
+                                    if (k == j)
+                                        continue;
+                                    serial_setup_port_with_speed(serial_ports[k].fd, 115200);
+                                    links_setup = 1;
+                                    break;
                                 }
                             }
                         }
                     }
                 }
+
                 // Wait a little while before trying again
                 usleep(50000);
             }
@@ -620,32 +610,33 @@ int main(int argc, char **argv)
 
         if (args.wifiCapture)
         {
-            printf("Before pcap setup\n");
+            // Lookup the IP address and netmask for the Wi-Fi device
+            pcap_lookupnet(wifi_dev, &ip, &maskp, pcap_errbuf);
 
-            pcap_lookupnet(dev, &ip, &maskp, errbuf);
-
-            //open handle for wireless device
-            handle = pcap_open_live(dev, BUFSIZ, 1, timeout, errbuf);
-            if (handle == NULL)
+            // Open the Wi-Fi interface
+            pcap_handle = pcap_open_live(wifi_dev, BUFSIZ, 1, timeout, pcap_errbuf);
+            if (pcap_handle == NULL)
             {
-                printf("Error starting pcap device: %s\n", errbuf);
+                printf("Error starting pcap device: %s\n", pcap_errbuf);
             }
 
             // Set non-blocking mode
-            if (pcap_setnonblock(handle, 1, errbuf))
+            if (pcap_setnonblock(pcap_handle, 1, pcap_errbuf))
             {
-                printf("Error setting pcap device to non-blocking: %s\n", errbuf);
+                printf("Error setting pcap device to non-blocking: %s\n", pcap_errbuf);
             }
 
-            if (pcap_compile(handle, &fp, args.filter, 0, ip) == -1)
+            // Compile the filter
+            if (pcap_compile(pcap_handle, &pcap_filter, args.filter, 0, ip) == -1)
             {
-                printf("Bad filter - %s\n", pcap_geterr(handle));
+                printf("Bad filter - %s\n", pcap_geterr(pcap_handle));
                 printf("For more information on pcap filters, see 'man pcap-filter' or https://www.tcpdump.org/manpages/pcap-filter.7.html\n");
                 retVal = -8;
                 break;
             }
 
-            if (pcap_setfilter(handle, &fp) == -1)
+            // Apply the filter
+            if (pcap_setfilter(pcap_handle, &pcap_filter) == -1)
             {
                 fprintf(stderr, "Error setting filter\n");
                 retVal = -8;
@@ -653,14 +644,13 @@ int main(int argc, char **argv)
             }
         }
 
-        // While loop that serially searches for a packet to be captured by all devices (round robin)
-        printf("Before loop\n");
+        // Search for packets on each serial device in a round-robin manner (and also Wi-Fi if enabled)
         do
         {
             if (args.uhfCapture)
             {
-                int i;
-                for (i = 0; i < serial_port_count; i++)
+                // Iterate over each serial device and read from them
+                for (int i = 0; i < serial_port_count; i++)
                 {
                     process_serial_port(&serial_ports[i]);
                 }
@@ -668,13 +658,14 @@ int main(int argc, char **argv)
 
             if (args.wifiCapture)
             {
-                header.len = 0;
-                header.caplen = 0;
-                capPacket = pcap_next(handle, &header);
-                if (capPacket && header.len > 0)
+                // Try capturing Wi-Fi traffic
+                pcap_packet_header.len = 0;
+                pcap_packet_header.caplen = 0;
+                capPacket = pcap_next(pcap_handle, &pcap_packet_header);
+                if (capPacket && pcap_packet_header.len > 0)
                 {
-                    printf("Captured WIFI packet total length %i\n", header.len);
-                    n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+                    printf("Captured WIFI packet total length %i\n", pcap_packet_header.len);
+                    n = sendto(sockfd, capPacket, pcap_packet_header.len, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
                     //dump_packet("Captured Packet", capPacket, n);
                     printf("Size Written %i\n", n);
                     if (n < 0)
@@ -688,10 +679,8 @@ int main(int argc, char **argv)
             }
         } while (1);
 
-        printf("Closing output file.\n");
-        //close opened file
+        // Close the output file
         fclose(outFile);
-
     } while (0);
 
     return (retVal);
