@@ -328,7 +328,7 @@ int record_rfd900_tx_event(struct serial_port *sp)
   do
   {
       printf("[record_rfd900_tx_event] Section 1\n");
-    char message[1024] = "LBARD:RFD900:TX:";
+    char message[1024 + 16 + 1] = "LBARD:RFD900:TX:"; // 1024-byte max packet length + 16-byte header (this) + 1-byte newline
     char first_bytes_hex[16];
 
       printf("[record_rfd900_tx_event] Section 2\n");
