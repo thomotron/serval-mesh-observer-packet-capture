@@ -324,9 +324,11 @@ int record_rfd900_tx_event(struct serial_port *sp)
 
   do
   {
+      printf("[record_rfd900_tx_event] Section 1");
     char message[1024] = "LBARD:RFD900:TX:";
     char first_bytes_hex[16];
 
+      printf("[record_rfd900_tx_event] Section 2");
     snprintf(first_bytes_hex, 16, "%02X%02X%02X%02X%02X%02X",
              sp->tx_buff[0], sp->tx_buff[1],
              sp->tx_buff[2], sp->tx_buff[3],
@@ -335,11 +337,13 @@ int record_rfd900_tx_event(struct serial_port *sp)
 
     printf("Current string: %s", message);
 
+      printf("[record_rfd900_tx_event] Section 3");
     int offset = strlen(message);
     memcpy(&message[offset], sp->tx_buff, sp->tx_bytes);
     offset += sp->tx_bytes;
     message[offset++] = '\n';
 
+      printf("[record_rfd900_tx_event] Section 4");
     if (!start_time)
       start_time = gettime_ms();
     printf("T+%lldms: Before sendto of RFD900 packet\n", gettime_ms() - start_time);
@@ -349,6 +353,7 @@ int record_rfd900_tx_event(struct serial_port *sp)
     snprintf(peer_prefix, 6 * 2 + 1, "%02x%02x%02x%02x%02x%02x",
              msg[0], msg[1], msg[2], msg[3], msg[4], msg[5]);*/
 
+      printf("[record_rfd900_tx_event] Section 5");
     errno = 0;
     int n = sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     printf("Size Written %i using %p\n", offset, sp);
