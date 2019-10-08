@@ -27,6 +27,7 @@
 #include "sync.h"
 #include "lbard.h"
 #include "message_handlers.h"
+#include "packet_parser.h"
 
 #define MAX_PACKET_SIZE 255
 #define RADIO_RXBUFFER_SIZE 64 + MAX_PACKET_SIZE
@@ -167,41 +168,110 @@ int parse_mac(unsigned char* mac, char* buffer)
 
 void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 {
-	uint16_t frame_control;
-	uint16_t duration_id;
-	uint8_t srcMac[6];
-	uint8_t dstMac[6];
-	uint16_t seq_ctrl;
-
 	printf("\n\n WIFI PACKET \n");
-	//check if big or little endin
 
-	printf("Before bit shift\n");
-	frame_control = (packet[0] >> 4) & 0x03; //bit shift to get the bits we want
+    // Dump the contents to the terminal
+    dump_packet("Packet contents", packet, len);
 
-	//copy in mac addresses
-	for (int i = 0; i < 6; i++)
-	{
-		srcMac[i] = packet[i + 4];
-		dstMac[i] = packet[i + 10];
-	}
-
-	dump_packet("Packet contents", packet, len);
+	// Parse the packet headers
+    parsed_packet headers = parse_packet(packet, len);
 
 	// Parse the MAC addresses as neatly-formatted C strings
 	char parsedSrcMac[18];
     char parsedDstMac[18];
-    parse_mac(srcMac, parsedSrcMac);
-    parse_mac(dstMac, parsedDstMac);
+    parse_mac(headers.header_80211.source, parsedSrcMac);
+    parse_mac(headers.header_80211.dest, parsedDstMac);
 
     // Print out the source and destination
 	printf("src MAC: %s\n", parsedSrcMac);
 	printf("dst MAC: %s\n", parsedDstMac);
 
-	// Write to the diagram
-	fprintf(output_file, "\"%s\" -> \"%s\": T+%lldms\n", parsedSrcMac, parsedDstMac, gettime_ms() - start_time);
+	// Parse the header on the highest level of the OSI stack
+	char protocol[16];
+	char message[64];
+	switch (headers.highest_header)
+    {
+        case Rhizome:
+            printf("This is a Rhizome packet\n");
+            sprintf(protocol, "Rhizome");
+            sprintf(message, "%s", headers.header_rhizome.type == 0 ? "BAR response" : "BAR request");
+            break;
+        case UDP:
+            printf("This is a UDP packet\n");
+            sprintf(protocol, "UDP");
+            sprintf(message, "%d -> %d", headers.header_udp.source_port, headers.header_udp.dest_port);
+            break;
+        case TCP:
+            // TODO: Parse TCP properly
+            printf("This is a TCP packet\n");
+            sprintf(protocol, "TCP");
+            sprintf(message, "TCP parsing is not implemented yet");
+            break;
+        case IPv6:
+            printf("This is an IPv6 packet\n");
+            sprintf(protocol, "IPv6");
+            switch (headers.header_ipv6.payload_proto)
+            {
+                case 0x06: // TCP
+                    sprintf(message, "%s", "TCP");
+                    break;
+                case 0x11: // UDP
+                    sprintf(message, "%s", "UDP");
+                    break;
+                default:
+                    sprintf(message, "Unknown protocol (%02X)", headers.header_ipv6.payload_proto);
+                    break;
+            }
+            break;
+        case IPv4:
+            printf("This is an IPv4 packet\n");
+            sprintf(protocol, "IPv4");
+            switch (headers.header_ipv4.payload_proto)
+            {
+                case 0x06: // TCP
+                    sprintf(message, "%s", "TCP");
+                    break;
+                case 0x11: // UDP
+                    sprintf(message, "%s", "UDP");
+                    break;
+                default:
+                    sprintf(message, "Unknown protocol (%02X)", headers.header_ipv4.payload_proto);
+                    break;
+            }
+            break;
+        case LLC:
+            printf("This is an 802.11 data frame with an LLC header\n");
+            sprintf(protocol, "LLC");
+            switch (headers.header_llc.type)
+            {
+                case 0x0800: // IPv4
+                    sprintf(message, "%s", "IPv4");
+                    break;
+                case 0x0806: // ARP
+                    sprintf(message, "%s", "ARP");
+                    break;
+                case 0x86DD: // IPv6
+                    sprintf(message, "%s", "IPv6");
+                    break;
+                default:
+                    sprintf(message, "Unknown protocol (%04X)", headers.header_llc.type);
+                    break;
+            }
+            break;
+        case MAC_80211:
+            printf("This is an 802.11 frame\n");
+            sprintf(protocol, "802.11");
+            sprintf(message, "%s", wifi_frame_description[headers.header_80211.frame_version][headers.header_80211.frame_type][headers.header_80211.frame_subtype]);
+            break;
+        default:
+            printf("This is an unknown packet type\n");
+            sprintf(protocol, "???");
+            sprintf(message, "%s", "");
+            break;
+    }
 
-	//ARP has mac address destination of 00:00:00:00:00:00
+	// Write to the diagram
+	fprintf(output_file, "\"%s\" -> \"%s\": T+%lldms - %s: %s\n", parsedSrcMac, parsedDstMac, gettime_ms() - start_time, protocol, message);
 }
 
 int decode_lbard(unsigned char *msg, int len, FILE *output_file, char *myAttachedMeshExtender)
