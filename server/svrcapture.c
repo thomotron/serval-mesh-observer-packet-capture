@@ -1,30 +1,17 @@
-/* A simple server in the internet domain using TCP
-   The port number is passed as an argument
-   This version runs forever, forking off a separate
-   process for each connection
-   gcc server2.c -lsocket
-*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <string.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include <pcap.h>
-#include <netdb.h>
-#include <sys/uio.h>
 #include <errno.h>
 #include <time.h>
-#include <assert.h>
 #include <linux/limits.h>
-#include <assert.h>
 #include <signal.h>
 #include <argp.h>
 
-#include "sync.h"
 #include "lbard.h"
 #include "message_handlers.h"
 #include "packet_parser.h"

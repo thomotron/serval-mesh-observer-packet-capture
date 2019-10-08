@@ -1,17 +1,9 @@
-/*
- * File:   captureme.c
- * Author: honours
- *
- * Created on November 13, 2018, 5:53 PM
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <pcap.h>
 #include <termios.h>
 #include <fcntl.h>
-#include <time.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -19,7 +11,6 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <errno.h>
-#include <ctype.h>
 #include <argp.h>
 
 //#define TEST
