@@ -12,12 +12,10 @@
 #include <signal.h>
 #include <argp.h>
 
+#include "sync.h"
 #include "lbard.h"
 #include "message_handlers.h"
 #include "packet_parser.h"
-
-#define MAX_PACKET_SIZE 255
-#define RADIO_RXBUFFER_SIZE 64 + MAX_PACKET_SIZE
 
 // Define some default argument values
 #define DEFAULT_ADDRESS INADDR_ANY
@@ -97,7 +95,6 @@ void sigint_handler(int signal)
 }
 
 long long start_time = 0;
-
 long long gettime_ms()
 {
     long long retVal = -1;
@@ -261,40 +258,40 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
     fprintf(output_file, "\"%s\" -> \"%s\": T+%lldms - %s: %s\n", parsedSrcMac, parsedDstMac, gettime_ms() - start_time, protocol, message);
 }
 
-int decode_lbard(unsigned char *msg, int len, FILE *output_file, char *myAttachedMeshExtender)
+int decode_lbard(unsigned char *msg, int len, FILE *output_file)
 {
-    int areWeSending=1; //use this to see if we are sending or recieving
-    int iterationTest = 1;
+    int areWeSending = 1; // Use this to see if we are sending or receiving
     int offset = 8;
     int peer_index = -1;
+
+    // Iterate over the message buffer
     while (offset < len)
     {
-        /*
-    Parse message and act on it.
-    */
-
         // All valid messages must be at least 8 bytes long.
         if (len < 8)
             return -1;
+
         char peer_prefix[6 * 2 + 1];
         snprintf(peer_prefix, 6 * 2 + 1, "%02x%02x%02x%02x%02x%02x",
                  msg[0], msg[1], msg[2], msg[3], msg[4], msg[5]);
         int msg_number = msg[6] + 256 * (msg[7] & 0x7f);
         int is_retransmission = msg[7] & 0x80;
 
-        // Find or create peer structure for this.
+        // Try find an existing struct for this peer
         struct peer_state *p = NULL;
         for (int i = 0; i < peer_count; i++)
         {
+            // Check if the struct's prefix matches this one
             if (!strcasecmp(peer_records[i]->sid_prefix, peer_prefix))
             {
+                // Set this as our peer struct
                 p = peer_records[i];
                 peer_index = i;
                 break;
             }
         }
 
-
+        // If we didn't find an existing peer struct, make one
         if (!p)
         {
             p = calloc(1, sizeof(struct peer_state));
@@ -316,64 +313,62 @@ int decode_lbard(unsigned char *msg, int len, FILE *output_file, char *myAttache
         }
         p->last_message_time = time(0);
 
+        // Update the last message number, given this isn't a retransmission
         if (!is_retransmission)
             p->last_message_number = msg_number;
-        int advance;
+
+        int message_length;
         while (offset < len)
         {
+            // Dump the packet to STDOUT
             printf("Offset: %i, len %i\n", offset, len);
             dump_packet("Packet offset", msg, len);
-
-            iterationTest ++;
             printf("Message Type: %c - 0x%02X\n", msg[offset], msg[offset]);
 
+            // Check if there's a handler for this message type
             if (message_handlers[msg[offset]])
             {
+                // Call the handler and get the message description
                 char message_description[8192];
-                printf("Calling message handler for type 0x%02x @ offset 0x%x\n",
-                       msg[offset], offset);
-                advance = message_handlers[msg[offset]](p, peer_prefix, NULL, NULL,
-                                                        &msg[offset], len - offset, message_description);
+                printf("Calling message handler for type 0x%02x @ offset 0x%x\n", msg[offset], offset);
+                message_length = message_handlers[msg[offset]](p, peer_prefix, NULL, NULL, &msg[offset], len - offset, message_description);
                 printf("Message description: %s\n", message_description);
 
+                // Get the current time for the diagram
                 long long relative_time_ms;
                 relative_time_ms = gettime_ms() - start_time;
 
+                // Check if this is an outgoing transmission from our Mesh Extender
                 if (strncasecmp(msg, "LBARD:RFD900:TX:", 16))
                 {
+                    // Write as an outgoing transmission to the diagram
                     fprintf(output_file, "%s -> BROADCAST: T+%lldms %c - %s\n", peer_prefix,
                             relative_time_ms, msg[offset], message_description);
-                } else
+                }
+                else
                 {
+                    // Write as an incoming transmission to the diagram
                     fprintf(output_file, "BROADCAST -> %s: T+%lldms %c - %s\n", peer_prefix,
                             relative_time_ms, msg[offset], message_description);
                 }
 
-
-                if (advance < 1)
+                // Report an error if the packet length is less than 1 byte
+                if (message_length < 1)
                 {
                     fprintf(stderr,
                             "At packet offset 0x%x, message parser 0x%02x returned zero or negative message length (=%d).\n"
                             "  Assuming packet is corrupt.\n",
-                            offset, msg[offset], advance);
+                            offset, msg[offset], message_length);
                     return -1;
                 }
-                printf("### %s : Handler consumed %d packet bytes.\n", timestamp_str(), advance);
-                offset += advance;
+                printf("### %s : Handler consumed %d packet bytes.\n", timestamp_str(), message_length);
+                offset += message_length;
             }
             else
             {
-                // No parser for this message type
-                // invalid message field.
-
+                // No parser for this message type (i.e. invalid message field)
                 char sender_prefix[128];
-                char monitor_log_buf[1024];
                 sprintf(sender_prefix, "%s*", p->sid_prefix);
-
-                /*snprintf(monitor_log_buf, sizeof(monitor_log_buf),
-                         "Illegal message field 0x%02X at radio packet offset %d",
-                         msg[offset], offset);
-                fprintf(stderr, "Illegal message type 0x%02x at offset %d\n", msg[offset], offset);*/
 
                 return -1;
             }
@@ -388,7 +383,6 @@ int main(int argc, char *argv[])
     signal(SIGINT, sigint_handler);
 
     int retVal;
-    //int fd = fileno(stdin);
 
     // Define args struct and populate simple defaults
     arguments args;
@@ -412,7 +406,7 @@ int main(int argc, char *argv[])
 
     do
     {
-        //get time to write to file name
+        // Get the time to write as the file name
         time_t rawTime;
         int bufferSize = 100;
         struct tm *timeInfo;
@@ -422,23 +416,14 @@ int main(int argc, char *argv[])
         char *time = asctime(timeInfo);
         time[strlen(time) - 1] = 0; //remove the new line at end of time
         snprintf(timingDiagramFileName, bufferSize, "timingDiagram_%s.txt", time);
-        char myAttachedMeshExtender = argv[1];
 
+        // Open the file and add the PlantUML prefix
         FILE *outFile;
         outFile = fopen(timingDiagramFileName, "w"); //open file to write to
         fprintf(outFile, "@startuml\n");			 //write first line of uml file
 
-        //init socket variables
-        int sockfd, portno = args.port;
-
-        sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-        if (sockfd < 0)
-        {
-            perror("ERROR opening socket");
-            exit(-1);
-        }
-
-        //build server's internet address
+        // Initialise socket variables
+        int sockfd;
         struct sockaddr_in serv_addr, client_addr;
         memset(&serv_addr, 0, sizeof(serv_addr)); //clear struct before setting up
         memset(&client_addr, 0, sizeof(client_addr));
@@ -446,20 +431,26 @@ int main(int argc, char *argv[])
         serv_addr.sin_addr = args.address; //any source address
         serv_addr.sin_port = htons(args.port);
 
-        //bind sockets
+        // Try opening the socket
+        sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+        if (sockfd < 0)
+        {
+            perror("ERROR opening socket");
+            exit(-1);
+        }
+
+        // Bind the listen address to the socket
         if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
         {
             perror("ERROR on binding");
             exit(-1);
         }
+        else
+        {
+            printf("Listening at %s:%i\n", inet_ntoa(serv_addr.sin_addr), args.port);
+        }
 
-        printf("Listening at %s:%i\n", inet_ntoa(serv_addr.sin_addr), args.port);
-
-        //make variables for reading in packets
-        u_char packet[8192];
-
-        //main while loop to accept packet
-        //set starting time
+        // Set the start time
         start_time = gettime_ms();
 
         // Print out a helpful reminder that this will run until you tell it to stop
@@ -475,6 +466,7 @@ int main(int argc, char *argv[])
         fflush(stdout);
 
         // Accept and process incoming packets, will iterate until desired number of packets reached or stopped manually
+        u_char packet[8192];
         for (int i = 0; args.packets > 0 ? i < args.packets && !sigint_flag : !sigint_flag; i++)
         {
             int bytesReceived = 0;
@@ -553,7 +545,7 @@ int main(int argc, char *argv[])
                     // 16 byte offset before analysis to remove packet header
                     // 32 bytes of Reed-Solomon error correction trimmed from the end
                     // 1 byte of new line character that is an artifact of data collection removed from the end also
-                    decode_lbard(&packet[16], bytesReceived - 16 - 32 - 1, outFile, myAttachedMeshExtender);
+                    decode_lbard(&packet[16], bytesReceived - 16 - 32 - 1, outFile);
 
                     // Null-terminate the decoded packet buffer
                     lbardResult[0] = '\0';
@@ -569,25 +561,21 @@ int main(int argc, char *argv[])
             packet[0] = '\0';
         }
 
-        //add final line to file
+        // Append the PlantUML suffix to the fille
         fprintf(outFile, "@enduml");
 
-        //run the program to create the graph
-        //change the arguments to where file location is ect
-        char *location = args.jarpath;
-        //get current working directory as this is where the generated textural file will be saved
+        // Get current working directory as this is where the generated text file is saved
         char cwd[PATH_MAX];
         char command[256];
         getcwd(cwd, sizeof(cwd));
 
-        //wait to finish writing file
-        printf("writing diagram text file\n");
+        // Wait until the file is written and close it
+        printf("Writing diagram template file...\n");
         fclose(outFile);
 
-        //call program to make graph
-        printf("Making diagram in: %s\n", cwd);
-        snprintf(command, 256, "java -jar \'%s\' \'%s/%s\'", location, cwd, timingDiagramFileName);
-        //printf("Running following command to make graph\n %s\nPlease wait - Program will finish when diagram is made\n\n", command);
+        // Run PlantUML on the text file we just generated
+        printf("Making diagram in '%s'. This may take a while.\n", cwd);
+        snprintf(command, 256, "java -jar \'%s\' \'%s/%s\'", args.jarpath, cwd, timingDiagramFileName);
         system(command);
 
     } while (0);

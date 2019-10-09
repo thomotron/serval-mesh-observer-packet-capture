@@ -13,15 +13,14 @@
 #include <errno.h>
 #include <argp.h>
 
-//#define TEST
 #define DEFAULT_SERVER_PORT 3940
 #define DEFAULT_PCAP_DEV "mon0"
 #define DEFAULT_PCAP_FILTER ""
 #define PCAP_FILE "testFile"
 
 // The number of mandatory arguments and a string containing them in the correct order delimited by spaces
-#define NUM_MANDATORY_ARGS 2
-static char argument_doc[] = "SID ADDRESS";
+#define NUM_MANDATORY_ARGS 1
+static char argument_doc[] = "ADDRESS";
 
 // List our arguments for argp
 static struct argp_option options[] =
@@ -37,7 +36,6 @@ static struct argp_option options[] =
 // Define a struct to hold our arg values
 typedef struct arguments
 {
-    char*          sid;
     struct in_addr address;
     int            port;
     char*          wifidev;
@@ -93,11 +91,8 @@ static error_t parse_arg(int key, char* arg, struct argp_state* state)
             // Check if we have too many args
             if (state->arg_num >= NUM_MANDATORY_ARGS) argp_usage(state);
 
-            // Set the SID
-            if (state->arg_num == 0) arguments->sid = arg;
-
             // Parse and set the server address, printing usage on failure
-            if (state->arg_num == 1 && !inet_aton(arg, &arguments->address)) argp_usage(state);
+            if (state->arg_num == 0 && !inet_aton(arg, &arguments->address)) argp_usage(state);
             break;
         case ARGP_KEY_END:
             // Check if we have too few args
@@ -114,8 +109,7 @@ static error_t parse_arg(int key, char* arg, struct argp_state* state)
 static struct argp argp_parser = {options, parse_arg, argument_doc, 0};
 
 struct sockaddr_in serv_addr;
-int serversock = -1;
-char *myMeshExtenderID;
+int server_socket = -1;
 
 void dump_packet(char *msg, unsigned char *buffer, int n);
 
@@ -202,9 +196,9 @@ int serial_setup_port_with_speed(int fd, int speed)
     struct termios t;
 
     tcgetattr(fd, &t);
-    fprintf(stderr, "Serial port settings before tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
-            (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
-            (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
+    //fprintf(stderr, "Serial port settings before tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
+    //        (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
+    //        (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
 
     speed_t baud_rate;
     switch (speed)
@@ -250,16 +244,16 @@ int serial_setup_port_with_speed(int fd, int speed)
     // no output processing
     t.c_oflag &= ~OPOST;
 
-    fprintf(stderr, "Serial port settings attempting to be set: c=%08x, i=%08x, o=%08x, l=%08x\n",
-            (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
-            (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
+    //fprintf(stderr, "Serial port settings attempting to be set: c=%08x, i=%08x, o=%08x, l=%08x\n",
+    //        (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
+    //        (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
 
     tcsetattr(fd, TCSANOW, &t);
 
     tcgetattr(fd, &t);
-    fprintf(stderr, "Serial port settings after tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
-            (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
-            (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
+    //fprintf(stderr, "Serial port settings after tcsetaddr: c=%08x, i=%08x, o=%08x, l=%08x\n",
+    //        (unsigned int)t.c_cflag, (unsigned int)t.c_iflag,
+    //        (unsigned int)t.c_oflag, (unsigned int)t.c_lflag);
 
     set_nonblock(fd);
 
@@ -291,7 +285,7 @@ int record_rfd900_event(struct serial_port *sp, unsigned char *packet, int len, 
         // Try writing the message to the server socket
         errno = 0;
         printf("T+%lldms: Writing %i bytes to the server socket from serial port %p\n", gettime_ms() - start_time, offset, sp);
-        if (sendto(serversock, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+        if (sendto(server_socket, message, offset, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
         {
             perror("Error sending");
             retVal = -7;
@@ -312,6 +306,7 @@ int setup_monitor_port(char *path, int speed)
 
     do
     {
+        // Make sure we're not registering more ports than we're designed to
         if (serial_port_count >= MAX_PORTS)
         {
             fprintf(stderr, "Too many serial ports. (Increase MAX_PORTS?)\n");
@@ -319,7 +314,7 @@ int setup_monitor_port(char *path, int speed)
             break;
         }
 
-        //open serial port
+        // Open the serial port
         int r1 = open(path, O_RDONLY | O_NOCTTY | O_NDELAY);
         if (r1 == -1)
         {
@@ -328,6 +323,7 @@ int setup_monitor_port(char *path, int speed)
             break;
         }
 
+        // Set up a new struct for the this serial port
         serial_ports[serial_port_count].fd = r1;
         serial_ports[serial_port_count].port = strdup(path);
         serial_ports[serial_port_count].id = serial_port_count;
@@ -336,17 +332,18 @@ int setup_monitor_port(char *path, int speed)
         serial_ports[serial_port_count].tx_state = 0;
         serial_ports[serial_port_count].tx_bytes = 0;
 
-        //set non blocking for the serial ports for continous loop
+        // Set this serial port to non-blocking mode to make reading easier
         set_nonblock(r1);
 
-        //set serial port speeds
+        // Set the serial port speed
         serial_setup_port_with_speed(r1, speed);
 
         printf("Initialised '%s' as serial port %d\n", path, serial_port_count);
 
+        // Increment the number of serial ports we have configured
         serial_port_count++;
-
     } while (0);
+
     return retVal;
 }
 
@@ -356,69 +353,84 @@ int process_serial_char(struct serial_port *sp, unsigned char c)
 
     do
     {
+        // Check if the buffer is full
         if (sp->rx_bytes >= 1024)
         {
-            // shift RX bytes down
+            // Shift bytes left by one
             memmove(&sp->rx_buff[0],&sp->rx_buff[1],1023);
 
+            // Decrement the number of bytes in the buffer
             sp->rx_bytes--;
         }
-        sp->rx_buff[sp->rx_bytes++]=c;
 
-        if ((sp->rx_buff[sp->rx_bytes-1]==0x55)
-            &&(sp->rx_buff[sp->rx_bytes-8]==0x55)
-            &&(sp->rx_buff[sp->rx_bytes-9]==0xaa))
+        // Place the character at the end of the buffer and increment the byte count
+        sp->rx_buff[sp->rx_bytes++] = c;
+
+        // Check if the buffer ends with an RFD900 envelope
+        if ((sp->rx_buff[sp->rx_bytes - 1] == 0x55) &&
+            (sp->rx_buff[sp->rx_bytes - 8] == 0x55) &&
+            (sp->rx_buff[sp->rx_bytes - 9] == 0xaa))
         {
-            int packet_bytes=sp->rx_buff[sp->rx_bytes-4];
-            int offset=sp->rx_bytes-9-packet_bytes;
-            if (offset>=0) {
-                unsigned char *packet=&sp->rx_buff[offset];
-                printf("Saw RFD900 RX envelope for %d byte packet @ offset %d.\n",
-                       packet_bytes,offset);
-                record_rfd900_event(sp, packet, packet_bytes, "RX");
+            // Get the packet length from the envelope
+            int packet_bytes = sp->rx_buff[sp->rx_bytes - 4];
+
+            // Get the offset for the start of the packet
+            int offset = sp->rx_bytes - 9 - packet_bytes;
+            if (offset >= 0) {
+                printf("Got RFD900 RX envelope for %d byte packet at offset %d.\n", packet_bytes, offset);
+
+                // Send the packet to the server
+                record_rfd900_event(sp, &sp->rx_buff[offset], packet_bytes, "RX");
+
+                // Increment the number of RX packets we've seen
                 sp->rfd900_rx_count++;
             }
         }
 
+        // Check the escape character flag to see if the last character was a '!'
         if (sp->tx_state == 0)
         {
-            // Not in ! escape mode
+            // Is this a possible TX escape character?
             if (c == '!')
+            {
+                // Set the escape character flag so we can interpret the sequence on the next pass
                 sp->tx_state = 1;
+            }
             else
             {
-                if (sp->tx_bytes < 1024)
-                    sp->tx_buff[sp->tx_bytes++] = c;
+                // If the TX buffer is not full yet, append the character to the end of the TX buffer
+                if (sp->tx_bytes < 1024) sp->tx_buff[sp->tx_bytes++] = c;
             }
         }
         else
         {
+            // Check what character is being escaped
             switch (c)
             {
-                case '!':
-                    // Double ! = TX packet
+                case '!': // '!!' = TX packet
                     printf("Recognised TX of %d byte packet.\n", sp->tx_bytes);
-                    dump_packet("sent packet", sp->tx_buff, sp->tx_bytes);
+                    dump_packet("Outgoing packet dump", sp->tx_buff, sp->tx_bytes);
 
+                    // Send the packet to the server
                     record_rfd900_event(sp, sp->tx_buff, sp->tx_bytes, "TX");
 
+                    // Increment the number of TX packets we have seen and reset the buffer offset
                     sp->rfd900_tx_count++;
                     sp->tx_bytes = 0;
                     break;
-                case '.':
-                    // Escaped !
-                    if (sp->tx_bytes < 1024)
-                        sp->tx_buff[sp->tx_bytes++] = '!';
+                case '.': // '!.' = Escaped '!'
+                    // If the TX buffer is not full yet, append the character to the end of the TX buffer
+                    if (sp->tx_bytes < 1024) sp->tx_buff[sp->tx_bytes++] = '!';
                     break;
                 case 'c':
-                case 'C':
-                    // Flush TX buffer
+                case 'C': // '!c' or '!C' = Flush TX buffer
                     sp->tx_bytes = 0;
                     break;
-                default:
-                    // Some other character we don't know what to do with
+                default: // Some other character we don't know what to do with
                     break;
             }
+
+            // Reset the escape character flag
             sp->tx_state = 0;
         }
     } while (0);
@@ -428,19 +440,20 @@ int process_serial_char(struct serial_port *sp, unsigned char c)
 
 int process_serial_port(struct serial_port *sp)
 {
-    int i;
     int retVal = 0;
-    int bytes_read;
-    unsigned char buffer[128]; // small buffer, so we round-robin among the ports more often
+
     do
     {
-        bytes_read = read(sp->fd, buffer, sizeof(buffer));
+        unsigned char buffer[128]; // Use a small buffer so we round-robin among the ports more often
+        int bytes_read = read(sp->fd, buffer, sizeof(buffer)); // Read bytes from the serial port into the buffer
 
         if (bytes_read > 0)
         {
-            dump_packet("read", buffer, bytes_read);
-            printf("Read Size: %i\n", bytes_read);
-            for (i = 0; i < bytes_read; i++)
+            // Dump the packet
+            dump_packet("Incoming packet dump", buffer, bytes_read);
+
+            // Process each character sequentially
+            for (int i = 0; i < bytes_read; i++)
                 process_serial_char(sp, buffer[i]);
         }
     } while (0);
@@ -496,39 +509,29 @@ int main(int argc, char **argv)
 
     do
     {
-        printf("Before variable declaration\n");
-        int sockfd;
-        FILE *outFile = fopen(PCAP_FILE, "ab"); // append to file only
-#ifdef TEST
-        int serverlen;
-#endif
+        FILE *outFile = fopen(PCAP_FILE, "ab"); // Open file in append-only mode
 
-        //setup wireless capture settings
-        char *dev = args.wifidev;
-        char errbuf[PCAP_ERRBUF_SIZE];
-        struct bpf_program fp; // hold compiled libpcap filter program
-        pcap_t *handle;
-        struct pcap_pkthdr header;
+        // Define up wireless capture variables
+        char *wifi_dev = args.wifidev;
+        char pcap_errbuf[PCAP_ERRBUF_SIZE];
+        struct bpf_program pcap_filter; // Compiled libpcap filter program
+        pcap_t *pcap_handle;
+        struct pcap_pkthdr pcap_packet_header;
         int timeout = 10, n;
-        bpf_u_int32 maskp;                       // subnet mask
-        bpf_u_int32 ip;                          // ip
+        bpf_u_int32 maskp; // Subnet mask
+        bpf_u_int32 ip; // IP address
 
-        printf("My Mesh Extender ID is: %s\n", myMeshExtenderID);
+        // Set up UDP socket variables
+        // (derived from https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c)
+        // Clear out the server address struct and populate it from config
+        u_char *capPacket; // Outgoing UDP packet buffer
+        bzero((char *)&serv_addr, sizeof(serv_addr)); // Clear out the server address struct
+        serv_addr.sin_family = AF_INET; // Address family (IPv4)
+        serv_addr.sin_addr = args.address; // Server IP address
+        serv_addr.sin_port = htons(args.port); // Server port
 
-        printf("Before packet injection setup\n");
-        //setup packet injection - source used: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpclient.c
-        u_char *capPacket;
-        bzero((char *)&serv_addr, sizeof(serv_addr));
-        serv_addr.sin_family = AF_INET;
-        serv_addr.sin_addr = args.address;
-        int portno = args.port;
-        serv_addr.sin_port = htons(portno);
-        char hbuf[NI_MAXHOST];
-        socklen_t len = sizeof(struct sockaddr_in);
-
-        //setup sockets
-        printf("Before socket setup\n");
-        sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+        // Set up the UDP socket
+        int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
         if (sockfd < 0)
         {
             perror("Error setting up socket\n");
@@ -539,39 +542,21 @@ int main(int argc, char **argv)
         {
             printf("Will send data to %s:%i\n", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
         }
-
-        serversock = sockfd;
-
-#ifdef TEST
-        if (getnameinfo((struct sockaddr *)&serv_addr, len, hbuf, sizeof(hbuf), NULL, 0, 0))
-    {
-      printf("could not resolve IP\n");
-      retVal = -1;
-      return (retVal);
-    }
-    else
-    {
-      printf("host=%s\n", hbuf);
-    }
-#endif
+        server_socket = sockfd;
 
         if (args.uhfCapture)
         {
-            printf("Before serial port setup\n");
-
-            //setup serial ports
-            // Start with all on same speed, so that we can
-            // figure out the pairs of ports that are connected
-            // to the same wire
+            // Set up serial ports
+            // Start with them all on same speed, so that we can figure out
+            // which pairs of ports that are connected to the same wire.
             setup_monitor_port("/dev/ttyUSB0", 230400);
             setup_monitor_port("/dev/ttyUSB1", 230400);
             setup_monitor_port("/dev/ttyUSB2", 230400);
             setup_monitor_port("/dev/ttyUSB3", 230400);
 
-            // Then wait for input on one, and see if the same character
-            // appears on another very soon there after.
-            // (This assumes that there is traffic on at least one
-            // of the ports. If not, then there is nothing to collect, anyway.
+            // Wait for input on one and see if the same character appears on another very soon there after
+            // This assumes that there is traffic on at least one of the ports. If not, then there is
+            // nothing to collect anyway.
             int links_setup = 0;
             while (links_setup == 0)
             {
@@ -582,7 +567,7 @@ int main(int argc, char **argv)
                     int n = read(serial_ports[i].fd, buff, 1024);
                     if (n > 0)
                     {
-                        // We have some input, so now look for it on the other ports.
+                        // We have some input, so now let's look for it on the other ports.
                         // But give the USB serial adapters time to catch up, as they frequently
                         // have 16ms of latency. We allow 50ms here to be safe.
                         usleep(50000);
@@ -593,32 +578,31 @@ int main(int argc, char **argv)
                             // Don't look for the data on ourselves
                             if (i == j)
                                 continue;
-                            int n2 = read(serial_ports[j].fd, buff2, 1024);
-                            if (n2 >= n)
-                            {
-                                if (!bcmp(buff, buff2, n))
-                                {
-                                    printf("Serial ports %d and %d seem to be linked.\n", i, j);
 
-                                    // Set one of those to 115200, and then one of the other two ports to 115200,
-                                    // and then we should have both speeds on both ports available
-                                    serial_setup_port_with_speed(serial_ports[i].fd, 115200);
-                                    int k = 0;
-                                    for (; k < 4; k++)
-                                    {
-                                        if (k == i)
-                                            continue;
-                                        if (k == j)
-                                            continue;
-                                        serial_setup_port_with_speed(serial_ports[k].fd, 115200);
-                                        links_setup = 1;
-                                        break;
-                                    }
+                            int n2 = read(serial_ports[j].fd, buff2, 1024);
+                            if (n2 >= n && !bcmp(buff, buff2, n))
+                            {
+                                printf("Serial ports %d and %d seem to be linked.\n", i, j);
+
+                                // Set one of those to 115200, and then one of the other two ports to 115200,
+                                // and then we should have both speeds on both ports available
+                                serial_setup_port_with_speed(serial_ports[i].fd, 115200);
+                                int k = 0;
+                                for (; k < 4; k++)
+                                {
+                                    if (k == i)
+                                        continue;
+                                    if (k == j)
+                                        continue;
+                                    serial_setup_port_with_speed(serial_ports[k].fd, 115200);
+                                    links_setup = 1;
+                                    break;
                                 }
                             }
                         }
                     }
                 }
+
                 // Wait a little while before trying again
                 usleep(50000);
             }
@@ -626,32 +610,33 @@ int main(int argc, char **argv)
 
         if (args.wifiCapture)
         {
-            printf("Before pcap setup\n");
+            // Lookup the IP address and netmask for the Wi-Fi device
+            pcap_lookupnet(wifi_dev, &ip, &maskp, pcap_errbuf);
 
-            pcap_lookupnet(dev, &ip, &maskp, errbuf);
-
-            //open handle for wireless device
-            handle = pcap_open_live(dev, BUFSIZ, 1, timeout, errbuf);
-            if (handle == NULL)
+            // Open the Wi-Fi interface
+            pcap_handle = pcap_open_live(wifi_dev, BUFSIZ, 1, timeout, pcap_errbuf);
+            if (pcap_handle == NULL)
             {
-                printf("Error starting pcap device: %s\n", errbuf);
+                printf("Error starting pcap device: %s\n", pcap_errbuf);
             }
 
             // Set non-blocking mode
-            if (pcap_setnonblock(handle, 1, errbuf))
+            if (pcap_setnonblock(pcap_handle, 1, pcap_errbuf))
             {
-                printf("Error setting pcap device to non-blocking: %s\n", errbuf);
+                printf("Error setting pcap device to non-blocking: %s\n", pcap_errbuf);
             }
 
-            if (pcap_compile(handle, &fp, args.filter, 0, ip) == -1)
+            // Compile the filter
+            if (pcap_compile(pcap_handle, &pcap_filter, args.filter, 0, ip) == -1)
             {
-                printf("Bad filter - %s\n", pcap_geterr(handle));
+                printf("Bad filter - %s\n", pcap_geterr(pcap_handle));
                 printf("For more information on pcap filters, see 'man pcap-filter' or https://www.tcpdump.org/manpages/pcap-filter.7.html\n");
                 retVal = -8;
                 break;
             }
 
-            if (pcap_setfilter(handle, &fp) == -1)
+            // Apply the filter
+            if (pcap_setfilter(pcap_handle, &pcap_filter) == -1)
             {
                 fprintf(stderr, "Error setting filter\n");
                 retVal = -8;
@@ -659,14 +644,13 @@ int main(int argc, char **argv)
             }
         }
 
-        // While loop that serially searches for a packet to be captured by all devices (round robin)
-        printf("Before loop\n");
+        // Search for packets on each serial device in a round-robin manner (and also Wi-Fi if enabled)
         do
         {
             if (args.uhfCapture)
             {
-                int i;
-                for (i = 0; i < serial_port_count; i++)
+                // Iterate over each serial device and read from them
+                for (int i = 0; i < serial_port_count; i++)
                 {
                     process_serial_port(&serial_ports[i]);
                 }
@@ -674,13 +658,14 @@ int main(int argc, char **argv)
 
             if (args.wifiCapture)
             {
-                header.len = 0;
-                header.caplen = 0;
-                capPacket = pcap_next(handle, &header);
-                if (capPacket && header.len > 0)
+                // Try capturing Wi-Fi traffic
+                pcap_packet_header.len = 0;
+                pcap_packet_header.caplen = 0;
+                capPacket = pcap_next(pcap_handle, &pcap_packet_header);
+                if (capPacket && pcap_packet_header.len > 0)
                 {
-                    printf("Captured WIFI packet total length %i\n", header.len);
-                    n = sendto(sockfd, capPacket, header.len, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+                    printf("Captured WIFI packet total length %i\n", pcap_packet_header.len);
+                    n = sendto(sockfd, capPacket, pcap_packet_header.len, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
                     //dump_packet("Captured Packet", capPacket, n);
                     printf("Size Written %i\n", n);
                     if (n < 0)
@@ -694,10 +679,8 @@ int main(int argc, char **argv)
             }
         } while (1);
 
-        printf("Closing output file.\n");
-        //close opened file
+        // Close the output file
         fclose(outFile);
-
     } while (0);
 
     return (retVal);
