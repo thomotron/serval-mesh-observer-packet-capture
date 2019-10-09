@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <argp.h>
 
+#include "sync.h"
 #include "lbard.h"
 #include "message_handlers.h"
 #include "packet_parser.h"
