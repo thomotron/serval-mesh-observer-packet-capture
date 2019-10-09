@@ -382,7 +382,6 @@ int main(int argc, char *argv[])
     signal(SIGINT, sigint_handler);
 
     int retVal;
-    //int fd = fileno(stdin);
 
     // Define args struct and populate simple defaults
     arguments args;
@@ -406,7 +405,7 @@ int main(int argc, char *argv[])
 
     do
     {
-        //get time to write to file name
+        // Get the time to write as the file name
         time_t rawTime;
         int bufferSize = 100;
         struct tm *timeInfo;
@@ -417,21 +416,13 @@ int main(int argc, char *argv[])
         time[strlen(time) - 1] = 0; //remove the new line at end of time
         snprintf(timingDiagramFileName, bufferSize, "timingDiagram_%s.txt", time);
 
+        // Open the file and add the PlantUML prefix
         FILE *outFile;
         outFile = fopen(timingDiagramFileName, "w"); //open file to write to
         fprintf(outFile, "@startuml\n");			 //write first line of uml file
 
-        //init socket variables
-        int sockfd, portno = args.port;
-
-        sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-        if (sockfd < 0)
-        {
-            perror("ERROR opening socket");
-            exit(-1);
-        }
-
-        //build server's internet address
+        // Initialise socket variables
+        int sockfd;
         struct sockaddr_in serv_addr, client_addr;
         memset(&serv_addr, 0, sizeof(serv_addr)); //clear struct before setting up
         memset(&client_addr, 0, sizeof(client_addr));
@@ -439,20 +430,26 @@ int main(int argc, char *argv[])
         serv_addr.sin_addr = args.address; //any source address
         serv_addr.sin_port = htons(args.port);
 
-        //bind sockets
+        // Try opening the socket
+        sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+        if (sockfd < 0)
+        {
+            perror("ERROR opening socket");
+            exit(-1);
+        }
+
+        // Bind the listen address to the socket
         if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
         {
             perror("ERROR on binding");
             exit(-1);
         }
+        else
+        {
+            printf("Listening at %s:%i\n", inet_ntoa(serv_addr.sin_addr), args.port);
+        }
 
-        printf("Listening at %s:%i\n", inet_ntoa(serv_addr.sin_addr), args.port);
-
-        //make variables for reading in packets
-        u_char packet[8192];
-
-        //main while loop to accept packet
-        //set starting time
+        // Set the start time
         start_time = gettime_ms();
 
         // Print out a helpful reminder that this will run until you tell it to stop
@@ -468,6 +465,7 @@ int main(int argc, char *argv[])
         fflush(stdout);
 
         // Accept and process incoming packets, will iterate until desired number of packets reached or stopped manually
+        u_char packet[8192];
         for (int i = 0; args.packets > 0 ? i < args.packets && !sigint_flag : !sigint_flag; i++)
         {
             int bytesReceived = 0;
@@ -562,25 +560,21 @@ int main(int argc, char *argv[])
             packet[0] = '\0';
         }
 
-        //add final line to file
+        // Append the PlantUML suffix to the fille
         fprintf(outFile, "@enduml");
 
-        //run the program to create the graph
-        //change the arguments to where file location is ect
-        char *location = args.jarpath;
-        //get current working directory as this is where the generated textural file will be saved
+        // Get current working directory as this is where the generated text file is saved
         char cwd[PATH_MAX];
         char command[256];
         getcwd(cwd, sizeof(cwd));
 
-        //wait to finish writing file
+        // Wait until the file is written and close it
         printf("writing diagram text file\n");
         fclose(outFile);
 
-        //call program to make graph
+        // Run PlantUML on the text file we just generated
         printf("Making diagram in: %s\n", cwd);
-        snprintf(command, 256, "java -jar \'%s\' \'%s/%s\'", location, cwd, timingDiagramFileName);
-        //printf("Running following command to make graph\n %s\nPlease wait - Program will finish when diagram is made\n\n", command);
+        snprintf(command, 256, "java -jar \'%s\' \'%s/%s\'", args.jarpath, cwd, timingDiagramFileName);
         system(command);
 
     } while (0);
