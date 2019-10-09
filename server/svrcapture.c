@@ -301,6 +301,9 @@ int decode_lbard(unsigned char *msg, int len, FILE *output_file)
             p->last_message_number = -1;
             p->tx_bundle = -1;
             p->request_bitmap_bundle = -1;
+
+            // Store it in the peer_records array
+            peer_records[peer_count++] = p;
         }
 
         // Update time stamp and most recent message from peer
@@ -578,6 +581,13 @@ int main(int argc, char *argv[])
         snprintf(command, 256, "java -jar \'%s\' \'%s/%s\'", args.jarpath, cwd, timingDiagramFileName);
         system(command);
 
+        // Clear out allocated memory blocks
+        for (int i = 0; i < peer_count; i++)
+        {
+            free(peer_records[i]->sid_prefix); // strdup'd string
+            free(peer_records[i]); // calloc'd struct
+        }
+        printf("Freed %d peer records", peer_count);
     } while (0);
 
     return retVal;
