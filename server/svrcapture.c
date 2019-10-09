@@ -569,11 +569,11 @@ int main(int argc, char *argv[])
         getcwd(cwd, sizeof(cwd));
 
         // Wait until the file is written and close it
-        printf("writing diagram text file\n");
+        printf("Writing diagram template file...\n");
         fclose(outFile);
 
         // Run PlantUML on the text file we just generated
-        printf("Making diagram in: %s\n", cwd);
+        printf("Making diagram in '%s'. This may take a while.\n", cwd);
         snprintf(command, 256, "java -jar \'%s\' \'%s/%s\'", args.jarpath, cwd, timingDiagramFileName);
         system(command);
 
