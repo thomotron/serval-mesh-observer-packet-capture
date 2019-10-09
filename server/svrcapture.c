@@ -16,9 +16,6 @@
 #include "message_handlers.h"
 #include "packet_parser.h"
 
-#define MAX_PACKET_SIZE 255
-#define RADIO_RXBUFFER_SIZE 64 + MAX_PACKET_SIZE
-
 // Define some default argument values
 #define DEFAULT_ADDRESS INADDR_ANY
 #define DEFAULT_PORT 3940
