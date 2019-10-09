@@ -94,7 +94,6 @@ void sigint_handler(int signal)
 }
 
 long long start_time = 0;
-
 long long gettime_ms()
 {
     long long retVal = -1;
@@ -260,38 +259,38 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
 
 int decode_lbard(unsigned char *msg, int len, FILE *output_file)
 {
-    int areWeSending=1; //use this to see if we are sending or recieving
-    int iterationTest = 1;
+    int areWeSending = 1; // Use this to see if we are sending or receiving
     int offset = 8;
     int peer_index = -1;
+
+    // Iterate over the message buffer
     while (offset < len)
     {
-        /*
-    Parse message and act on it.
-    */
-
         // All valid messages must be at least 8 bytes long.
         if (len < 8)
             return -1;
+
         char peer_prefix[6 * 2 + 1];
         snprintf(peer_prefix, 6 * 2 + 1, "%02x%02x%02x%02x%02x%02x",
                  msg[0], msg[1], msg[2], msg[3], msg[4], msg[5]);
         int msg_number = msg[6] + 256 * (msg[7] & 0x7f);
         int is_retransmission = msg[7] & 0x80;
 
-        // Find or create peer structure for this.
+        // Try find an existing struct for this peer
         struct peer_state *p = NULL;
         for (int i = 0; i < peer_count; i++)
         {
+            // Check if the struct's prefix matches this one
             if (!strcasecmp(peer_records[i]->sid_prefix, peer_prefix))
             {
+                // Set this as our peer struct
                 p = peer_records[i];
                 peer_index = i;
                 break;
             }
         }
 
-
+        // If we didn't find an existing peer struct, make one
         if (!p)
         {
             p = calloc(1, sizeof(struct peer_state));
@@ -313,64 +312,62 @@ int decode_lbard(unsigned char *msg, int len, FILE *output_file)
         }
         p->last_message_time = time(0);
 
+        // Update the last message number, given this isn't a retransmission
         if (!is_retransmission)
             p->last_message_number = msg_number;
-        int advance;
+
+        int message_length;
         while (offset < len)
         {
+            // Dump the packet to STDOUT
             printf("Offset: %i, len %i\n", offset, len);
             dump_packet("Packet offset", msg, len);
-
-            iterationTest ++;
             printf("Message Type: %c - 0x%02X\n", msg[offset], msg[offset]);
 
+            // Check if there's a handler for this message type
             if (message_handlers[msg[offset]])
             {
+                // Call the handler and get the message description
                 char message_description[8192];
-                printf("Calling message handler for type 0x%02x @ offset 0x%x\n",
-                       msg[offset], offset);
-                advance = message_handlers[msg[offset]](p, peer_prefix, NULL, NULL,
-                                                        &msg[offset], len - offset, message_description);
+                printf("Calling message handler for type 0x%02x @ offset 0x%x\n", msg[offset], offset);
+                message_length = message_handlers[msg[offset]](p, peer_prefix, NULL, NULL, &msg[offset], len - offset, message_description);
                 printf("Message description: %s\n", message_description);
 
+                // Get the current time for the diagram
                 long long relative_time_ms;
                 relative_time_ms = gettime_ms() - start_time;
 
+                // Check if this is an outgoing transmission from our Mesh Extender
                 if (strncasecmp(msg, "LBARD:RFD900:TX:", 16))
                 {
+                    // Write as an outgoing transmission to the diagram
                     fprintf(output_file, "%s -> BROADCAST: T+%lldms %c - %s\n", peer_prefix,
                             relative_time_ms, msg[offset], message_description);
-                } else
+                }
+                else
                 {
+                    // Write as an incoming transmission to the diagram
                     fprintf(output_file, "BROADCAST -> %s: T+%lldms %c - %s\n", peer_prefix,
                             relative_time_ms, msg[offset], message_description);
                 }
 
-
-                if (advance < 1)
+                // Report an error if the packet length is less than 1 byte
+                if (message_length < 1)
                 {
                     fprintf(stderr,
                             "At packet offset 0x%x, message parser 0x%02x returned zero or negative message length (=%d).\n"
                             "  Assuming packet is corrupt.\n",
-                            offset, msg[offset], advance);
+                            offset, msg[offset], message_length);
                     return -1;
                 }
-                printf("### %s : Handler consumed %d packet bytes.\n", timestamp_str(), advance);
-                offset += advance;
+                printf("### %s : Handler consumed %d packet bytes.\n", timestamp_str(), message_length);
+                offset += message_length;
             }
             else
             {
-                // No parser for this message type
-                // invalid message field.
-
+                // No parser for this message type (i.e. invalid message field)
                 char sender_prefix[128];
-                char monitor_log_buf[1024];
                 sprintf(sender_prefix, "%s*", p->sid_prefix);
-
-                /*snprintf(monitor_log_buf, sizeof(monitor_log_buf),
-                         "Illegal message field 0x%02X at radio packet offset %d",
-                         msg[offset], offset);
-                fprintf(stderr, "Illegal message type 0x%02x at offset %d\n", msg[offset], offset);*/
 
                 return -1;
             }
