@@ -301,6 +301,9 @@ int decode_lbard(unsigned char *msg, int len, FILE *output_file)
             p->last_message_number = -1;
             p->tx_bundle = -1;
             p->request_bitmap_bundle = -1;
+
+            // Store it in the peer_records array
+            peer_records[peer_count++] = p;
         }
 
         // Update time stamp and most recent message from peer
