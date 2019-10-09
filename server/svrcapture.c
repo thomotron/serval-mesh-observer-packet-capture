@@ -258,7 +258,7 @@ void decode_wifi(unsigned char *packet, int len, FILE* output_file)
     fprintf(output_file, "\"%s\" -> \"%s\": T+%lldms - %s: %s\n", parsedSrcMac, parsedDstMac, gettime_ms() - start_time, protocol, message);
 }
 
-int decode_lbard(unsigned char *msg, int len, FILE *output_file, char *myAttachedMeshExtender)
+int decode_lbard(unsigned char *msg, int len, FILE *output_file)
 {
     int areWeSending=1; //use this to see if we are sending or recieving
     int iterationTest = 1;
@@ -419,7 +419,6 @@ int main(int argc, char *argv[])
         char *time = asctime(timeInfo);
         time[strlen(time) - 1] = 0; //remove the new line at end of time
         snprintf(timingDiagramFileName, bufferSize, "timingDiagram_%s.txt", time);
-        char myAttachedMeshExtender = argv[1];
 
         FILE *outFile;
         outFile = fopen(timingDiagramFileName, "w"); //open file to write to
@@ -550,7 +549,7 @@ int main(int argc, char *argv[])
                     // 16 byte offset before analysis to remove packet header
                     // 32 bytes of Reed-Solomon error correction trimmed from the end
                     // 1 byte of new line character that is an artifact of data collection removed from the end also
-                    decode_lbard(&packet[16], bytesReceived - 16 - 32 - 1, outFile, myAttachedMeshExtender);
+                    decode_lbard(&packet[16], bytesReceived - 16 - 32 - 1, outFile);
 
                     // Null-terminate the decoded packet buffer
                     lbardResult[0] = '\0';
