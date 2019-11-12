@@ -587,7 +587,6 @@ int main(int argc, char *argv[])
             free(peer_records[i]->sid_prefix); // strdup'd string
             free(peer_records[i]); // calloc'd struct
         }
-        printf("Freed %d peer records", peer_count);
     } while (0);
 
     return retVal;
