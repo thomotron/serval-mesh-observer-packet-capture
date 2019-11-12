@@ -54,3 +54,4 @@ dkms.conf
 # JetBrains CLion
 .idea/
 cmake-build-debug/
+CMakeLists.txt
