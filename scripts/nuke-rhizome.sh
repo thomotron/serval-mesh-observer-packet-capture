@@ -8,6 +8,6 @@ for host in meshex{1..14}; do
     sshpass -p root ssh $host "ps | grep -E \"(servald)|(lbard)\" | cut -d ' ' -f 1 | xargs kill"
     sshpass -p root ssh $host "ps | grep -E \"(servald)|(lbard)\" | cut -d ' ' -f 2 | xargs kill"
     echo "Nuking Rhizome database"
-    sshpass -p root ssh $host "rm -rf /serval-var/rhizome/*"
+    sshpass -p root ssh $host "rm -rvf /serval-var/rhizome/"
     echo ""
 done

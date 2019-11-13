@@ -16,4 +16,4 @@ if [ ! -e .setup-meshex-script.sh ]; then
 fi
 
 # Run the commands via SSH
-sed -E "s/ADDRESS/$1/" .setup-meshex-script.sh | sshpass -p root ssh-until root@192.168.1.1 "ash -s"
+sed -E "s/ADDRESS/$1/" .setup-meshex-script.sh | sshpass -p root ssh root@192.168.1.1 "ash -s"
