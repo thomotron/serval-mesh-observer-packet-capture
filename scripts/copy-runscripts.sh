@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for host in 192.168.1.{101..114}; do
+for host in 192.168.1.1{01..14}; do
     # Start an nc listener for runlbard, then for runservald, and do it in the background (it will die automatically)
     nc -l 12344 < runlbard &
     nc -l 12345 < runservald &
