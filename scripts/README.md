@@ -1,5 +1,5 @@
 # Mesh Extender and Observer scripts
-This directory contains a variety of scripts used to test the 2019 Mesh Extender Test Network at Tonsley.
+This directory contains a variety of scripts used to test the 2019 Mesh Extender Test Network at Tonsley. There are also several alternate runscripts and configuration files within the [`alternate-runscripts-and-configs/`](alternate-runscripts-and-configs/) directory, and Rhizome database samples in the [`rhizome-databases/`](rhizome-databases/) directory.
 
 The table below has some descriptions about each script, what they do, and how they might be useful:
 
