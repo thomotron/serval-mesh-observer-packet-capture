@@ -2,6 +2,10 @@
 
 # Configures a freshly-flashed Mesh Extender with the given IP address
 # and enables persistent SSH access with the password 'root'.
+# 
+# This script depends on another script named '.setup-meshex.script.sh'
+# which is piped into the shell on the target device. This script
+# merely opens a shell instance and pipes it.
 
 # Make sure we get an IP address
 if [ ! "$1" ]; then
