@@ -1,7 +1,7 @@
 # MeshObserver Packet Capture
 These are the client and server programs used for capturing Serval Mesh packets with a Mesh Observer device.
 
-There are also some scripts used internally for conducting tests of the 2019 Mesh Extender test network at Tonsley. These are all kept within the `scripts/` directory.
+There are also some scripts used internally for conducting tests of the 2019 Mesh Extender test network at Tonsley. These are all kept within the [`scripts/`](scripts/) directory.
 
 # Building
 ## Prerequisites
