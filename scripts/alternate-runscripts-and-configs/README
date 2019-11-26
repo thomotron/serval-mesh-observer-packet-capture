@@ -1,7 +1,0 @@
-Inside here are alternate runXXX and configuration files intended to replace
-the ones that come packaged on Mesh Extenders by default for testing
-purposes.
-
-runlbard    - Belongs in /etc/serval/runlbard and manages the LBARD daemon
-runservald  - Belongs in /etc/serval/runservald and manages the ServalD daemon
-serval.conf - Belongs in /serval-var/serval.conf and defines ServalD behaviour
