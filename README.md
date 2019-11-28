@@ -77,3 +77,12 @@ Only capture frames containing UDP packets with the destination port 4110 ([Rhiz
 ```sh
 capture -f "udp dst port 4110 && wlan type data subtype data" 192.168.1.41
 ```
+
+### Generating large diagrams
+PlantUML will generate diagrams up to 4096px\*4096px by default. Diagrams that are larger than this will be truncated to fit within the space. To generate larger diagrams, you will have to run PlantUML yourself and provide it with the `PLANTUML_LIMIT_SIZE` parameter.
+
+To regenerate the diagram at a larger size, run:
+```sh
+java -DPLANTUML_LIMIT_SIZE=<size> -jar plantuml.jar <diagram_txt>
+```
+where `<size>` is the maximum size in pixels for both axes, and `<diagram_txt>` is the path to the diagram text file that PlantUML should read from (usually named something like `timingDiagram_... .txt`). It may take a while for PlantUML to regenerate the diagram, especially if it is very large. A PNG file of the diagram will appear when the process is complete.
