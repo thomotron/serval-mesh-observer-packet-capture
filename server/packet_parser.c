@@ -234,7 +234,7 @@ header_udp get_header_udp(unsigned char* packet, int* offset)
     header.dest_port = (packet[*offset+2] << 8) | packet[*offset+3];
 
     // Get the packet and content length
-    header.length = packet[*offset+4] | (packet[*offset+5] << 8);
+    header.length = (packet[*offset+4] << 8) | packet[*offset+5];
     header.payload_length = header.length - 8;
 
 #ifdef DEBUG
