@@ -66,14 +66,14 @@ Filters can be passed to the client program through the `-f` or `--filter` optio
 
 #### Examples
 Only capture frames from the MAC address `e2:95:6e:4c:a8:c6`:
-```
-ether host e2:95:6e:4c:a8:c6
+```sh
+capture -f "ether host e2:95:6e:4c:a8:c6" 192.168.1.41
 ```
 As above, but only [data frames](https://en.wikipedia.org/wiki/IEEE_802.11#Data_frames) or [control frames](https://en.wikipedia.org/wiki/IEEE_802.11#Control_frames):
-```
-ether host e2:95:6e:4c:a8:c6 && (wlan type data || wlan type ctl)
+```sh
+capture -f "ether host e2:95:6e:4c:a8:c6 && (wlan type data || wlan type ctl)" 192.168.1.41
 ```
 Only capture frames containing UDP packets with the destination port 4110 ([Rhizome](https://github.com/servalproject/serval-dna/blob/development/doc/REST-API-Rhizome.md) packets) that are standard, unencrypted [data frames](https://en.wikipedia.org/wiki/IEEE_802.11#Data_frames):
-```
-udp dst port 4110 && wlan type data subtype data
+```sh
+capture -f "udp dst port 4110 && wlan type data subtype data" 192.168.1.41
 ```
