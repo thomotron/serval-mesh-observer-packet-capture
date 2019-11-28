@@ -196,6 +196,7 @@ header_ipv4 get_header_ipv4(unsigned char* packet, int* offset)
     return header;
 }
 
+// Scrapes information from the given packet's IPv6 header
 header_ipv6 get_header_ipv6(unsigned char* packet, int* offset)
 {
     header_ipv6 header = {0};
@@ -226,6 +227,7 @@ header_ipv6 get_header_ipv6(unsigned char* packet, int* offset)
     return header;
 }
 
+// Scrapes information from the given packet's UDP header
 header_udp get_header_udp(unsigned char* packet, int* offset)
 {
     header_udp header = {0};
@@ -248,6 +250,7 @@ header_udp get_header_udp(unsigned char* packet, int* offset)
     return header;
 }
 
+// Scrapes information from the given packet's Rhizome header
 header_rhizome get_header_rhizome(unsigned char* packet, int* offset, int len)
 {
     header_rhizome header = {0};
@@ -265,6 +268,7 @@ header_rhizome get_header_rhizome(unsigned char* packet, int* offset, int len)
     return header;
 }
 
+// Scrapes information from the given packet's Bundle Archive Record header
 header_bar get_header_bar(unsigned char* packet, int* offset)
 {
     header_bar header = {0};
