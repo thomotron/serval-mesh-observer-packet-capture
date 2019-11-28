@@ -20,6 +20,7 @@ The client and server programs will be available at `client/capture` and `server
 ## Client
 To start capturing packets and send them to a capture server, run `capture <address>`. When you are done capturing, press `Ctrl+C` to stop.  
 By default the capture program will capture UHF and Wi-Fi packets and send them to the given address at port 3940.
+When capturing Wi-Fi packets, make sure to use a [filter](#user-content-filters) to strip away irrelevant packets.
 
 The following is the help text printed by the client program:
 ```
@@ -54,4 +55,25 @@ Usage: svrCap [OPTION...]
 
 Mandatory or optional arguments to long options are also mandatory or optional
 for any corresponding short options.
+```
+
+## Additional usage notes
+### Filters
+The Wi-Fi packet capture mode uses [libpcap](https://www.tcpdump.org/) to capture packets directly from the Wi-Fi radio.
+By default this will capture *all* traffic and forward it to the capture server.
+It is recommended that you use [filters](https://www.tcpdump.org/manpages/pcap-filter.7.html) to discard any irrelevant traffic to avoid bogging down the capture server and to generate a cleaner diagram.
+Filters can be passed to the client program through the `-f` or `--filter` option.
+
+#### Examples
+Only capture frames from the MAC address `e2:95:6e:4c:a8:c6`:
+```
+ether host e2:95:6e:4c:a8:c6
+```
+As above, but only [data frames](https://en.wikipedia.org/wiki/IEEE_802.11#Data_frames) or [control frames](https://en.wikipedia.org/wiki/IEEE_802.11#Control_frames):
+```
+ether host e2:95:6e:4c:a8:c6 && (wlan type data || wlan type ctl)
+```
+Only capture frames containing UDP packets with the destination port 4110 ([Rhizome](https://github.com/servalproject/serval-dna/blob/development/doc/REST-API-Rhizome.md) packets) that are standard, unencrypted [data frames](https://en.wikipedia.org/wiki/IEEE_802.11#Data_frames):
+```
+udp dst port 4110 && wlan type data subtype data
 ```
