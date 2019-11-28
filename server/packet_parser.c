@@ -10,7 +10,8 @@
 #include "packet_parser.h"
 #include "radiotap_iter.h"
 
-#define DEBUG
+// Print out each header and its content when it is parsed
+#define PRINT_HEADERS
 
 // Massive lookup array for 802.11 frame versions, types, and subtypes
 // Plug values like this: wifi_frame_decription[version][type][subtype]
@@ -115,8 +116,8 @@ header_80211 get_header_80211(unsigned char* packet, int* offset, int* trailer_l
         header.source[i] = packet[*offset+10+i];
     }
 
-#ifdef DEBUG
-    printf("[DEBUG] 802.11 FRAME: VER %d, TYPE %d, SUBTYPE %d, SOURCE %02X:%02X:%02X:%02X:%02X:%02X, DEST %02X:%02X:%02X:%02X:%02X:%02X, FROM DIST? %s, TO DIST? %s\n",
+#ifdef PRINT_HEADERS
+    printf("802.11 FRAME: VER %d, TYPE %d, SUBTYPE %d, SOURCE %02X:%02X:%02X:%02X:%02X:%02X, DEST %02X:%02X:%02X:%02X:%02X:%02X, FROM DIST? %s, TO DIST? %s\n",
             header.frame_version,
             header.frame_type,
             header.frame_subtype,
@@ -163,8 +164,8 @@ header_llc get_header_llc(unsigned char* packet, int* offset)
         *offset += 3;
     }
 
-#ifdef DEBUG
-    printf("[DEBUG] LLC HEADER: OUI %06X, TYPE %04X\n", header.org_code, header.type);
+#ifdef PRINT_HEADERS
+    printf("LLC HEADER: OUI %06X, TYPE %04X\n", header.org_code, header.type);
 #endif
 
     return header;
@@ -185,8 +186,8 @@ header_ipv4 get_header_ipv4(unsigned char* packet, int* offset)
     header.source.s_addr = packet[*offset+12] | (packet[*offset+13] << 8) | (packet[*offset+14] << 16) | (packet[*offset+15] << 24);
     header.dest.s_addr = packet[*offset+16] | (packet[*offset+17] << 8) | (packet[*offset+18] << 16) | (packet[*offset+19] << 24);
 
-#ifdef DEBUG
-    printf("[DEBUG] IPv4 HEADER: SRC %s, DEST %s, LEN %d, PROTO %02X\n", inet_ntoa(header.source), inet_ntoa(header.dest), header.length, header.payload_proto);
+#ifdef PRINT_HEADERS
+    printf("IPv4 HEADER: SRC %s, DEST %s, LEN %d, PROTO %02X\n", inet_ntoa(header.source), inet_ntoa(header.dest), header.length, header.payload_proto);
 #endif
 
     // Skip the remainder of the header
@@ -209,14 +210,14 @@ header_ipv6 get_header_ipv6(unsigned char* packet, int* offset)
         header.dest.__in6_u.__u6_addr8[i] = packet[*offset+24+i];
     }
 
-#ifdef DEBUG
+#ifdef PRINT_HEADERS
     // Parse the source and destination addresses
     char source_buffer[INET6_ADDRSTRLEN];
     char dest_buffer[INET6_ADDRSTRLEN];
     inet_ntop(AF_INET6, &header.source, source_buffer, INET6_ADDRSTRLEN);
     inet_ntop(AF_INET6, &header.dest, dest_buffer, INET6_ADDRSTRLEN);
 
-    printf("[DEBUG] IPv6 HEADER: SRC %s, DEST %s, PROTO %02x\n", source_buffer, dest_buffer, header.payload_proto);
+    printf("IPv6 HEADER: SRC %s, DEST %s, PROTO %02x\n", source_buffer, dest_buffer, header.payload_proto);
 #endif
 
     // Skip the remainder of the header
@@ -237,8 +238,8 @@ header_udp get_header_udp(unsigned char* packet, int* offset)
     header.length = (packet[*offset+4] << 8) | packet[*offset+5];
     header.payload_length = header.length - 8;
 
-#ifdef DEBUG
-    printf("[DEBUG] UDP HEADER: SRC PORT %d, DEST PORT %d, LEN %d\n", header.source_port, header.dest_port, header.length);
+#ifdef PRINT_HEADERS
+    printf("UDP HEADER: SRC PORT %d, DEST PORT %d, LEN %d\n", header.source_port, header.dest_port, header.length);
 #endif
 
     // Skip the remainder of the header
@@ -254,8 +255,8 @@ header_rhizome get_header_rhizome(unsigned char* packet, int* offset, int len)
     // Get the packet type
     header.type = packet[*offset];
 
-#ifdef DEBUG
-    printf("[DEBUG] RHIZOME HEADER: TYPE %d\n", header.type);
+#ifdef PRINT_HEADERS
+    printf("RHIZOME HEADER: TYPE %d\n", header.type);
 #endif
 
     // Skip the remainder of the packet
@@ -278,8 +279,8 @@ header_bar get_header_bar(unsigned char* packet, int* offset)
     header.lon_min = packet[*offset+26];
     header.ttl = packet[*offset+27];
 
-#ifdef DEBUG
-    printf("[DEBUG] RHIZOME BUNDLE ANNOUNCEMENT: MANIFEST PREFIX %s, LENGTH %d, LOW VERSION %s, BOUNDS (lat %d, lon %d) -> (lat %d, lon %d), TTL %d",
+#ifdef PRINT_HEADERS
+    printf("RHIZOME BUNDLE ANNOUNCEMENT: MANIFEST PREFIX %s, LENGTH %d, LOW VERSION %s, BOUNDS (lat %d, lon %d) -> (lat %d, lon %d), TTL %d",
             header.manifest_prefix,
             header.log_length,
             header.lower_version,
@@ -309,8 +310,8 @@ parsed_packet parse_packet(unsigned char* packet, int len)
     // Skip past the RadioTap header
     offset += radiotap_header->it_len;
 
-#ifdef DEBUG
-    printf("[DEBUG] Starting packet parsing at offset %d\n", offset);
+#ifdef PRINT_HEADERS
+    printf("Starting packet parsing at offset %d\n", offset);
 #endif
 
     // Enter a run-once loop so we can break execution neatly
