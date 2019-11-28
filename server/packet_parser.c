@@ -261,6 +261,8 @@ header_rhizome get_header_rhizome(unsigned char* packet, int* offset, int len)
 
     // Skip the remainder of the packet
     *offset += len;
+
+    return header;
 }
 
 header_bar get_header_bar(unsigned char* packet, int* offset)
