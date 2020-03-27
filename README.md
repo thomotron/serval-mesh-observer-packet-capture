@@ -1,3 +1,5 @@
+# This repo is deprecated, see [the official Serval fork](https://github.com/servalproject/serval-mesh-observer-packet-capture/)
+
 # Mesh Observer Packet Capture
 These are the client and server programs used for capturing Serval Mesh packets with a Mesh Observer device.
 
